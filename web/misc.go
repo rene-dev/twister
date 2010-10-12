@@ -261,9 +261,9 @@ func dehex(c byte) byte {
 	return notHex
 }
 
-// parseUrlEncodedFormBytes parses the URL-encoded form and appends the values to
+// ParseUrlEncodedFormBytes parses the URL-encoded form and appends the values to
 // the supplied map. This function modifies the contents of p.
-func parseUrlEncodedFormBytes(p []byte, m StringsMap) os.Error {
+func ParseUrlEncodedFormBytes(p []byte, m StringsMap) os.Error {
 	key := ""
 	j := 0
 	for i := 0; i < len(p); {
@@ -301,8 +301,7 @@ func parseUrlEncodedFormBytes(p []byte, m StringsMap) os.Error {
 	return nil
 }
 
-func parseCookieValues(values []string) StringsMap {
-	m := make(StringsMap)
+func parseCookieValues(values []string, m StringsMap) os.Error {
 	for _, s := range values {
 		key := ""
 		begin := 0
@@ -335,6 +334,5 @@ func parseCookieValues(values []string) StringsMap {
 			m.Append(key, s[begin:end])
 		}
 	}
-	return m
+	return nil
 }
-

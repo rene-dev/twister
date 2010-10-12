@@ -62,8 +62,8 @@ Content-Type: text/html
 func TestParse(t *testing.T) {
 	for _, tt := range parseTests {
 		b := bufio.NewReader(bytes.NewBufferString(tt.s))
-		method, url, version, statusErr := parseRequestLine(b)
-		header, headerErr := parseHeader(b)
+		method, url, version, statusErr := readRequestLine(b)
+		header, headerErr := readHeader(b)
 		if tt.method == "" {
 			if statusErr == nil && headerErr == nil {
 				t.Errorf("%s: expected error", tt.name)

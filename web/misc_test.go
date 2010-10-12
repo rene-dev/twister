@@ -38,7 +38,10 @@ var ParseCookieValuesTests = []ParseCookieValuesTest{
 
 func TestParseCookieValues(t *testing.T) {
 	for _, pt := range ParseCookieValuesTests {
-		m := parseCookieValues(pt.values)
+		m := make(StringsMap)
+		if err := parseCookieValues(pt.values, m); err != nil {
+			t.Errorf("error parsing values %s", err)
+		}
 		if !reflect.DeepEqual(pt.m, m) {
 			t.Errorf("values=%s,\nexpected %q\nactual   %q", pt.values, pt.m, m)
 		}
@@ -62,7 +65,7 @@ func TestParseUrlEncodedForm(t *testing.T) {
 	for _, pt := range ParseUrlEncodedFormTests {
 		p := []byte(pt.s)
 		m := make(StringsMap)
-		parseUrlEncodedFormBytes(p, m)
+		ParseUrlEncodedFormBytes(p, m)
 		if !reflect.DeepEqual(pt.m, m) {
 			t.Errorf("form=%s,\nexpected %q\nactual   %q", pt.s, pt.m, m)
 		}

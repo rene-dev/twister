@@ -79,9 +79,9 @@ func trimWSRight(p []byte) []byte {
 	return p[0:i]
 }
 
-var requestLineRegexp = regexp.MustCompile("^([_A-Za-z0-9]+) ([^ ]+) HTTP/([0-9]+)\\.([0-9]+)$")
+var requestLineRegexp = regexp.MustCompile("^([_A-Za-z0-9]+) ([^ ]+) HTTP/([0-9]+)\\.([0-9]+)[\r\n ]+$")
 
-func parseRequestLine(b *bufio.Reader) (method string, url string, version int, err os.Error) {
+func readRequestLine(b *bufio.Reader) (method string, url string, version int, err os.Error) {
 
 	p, err := b.ReadSlice('\n')
 	if err != nil {
@@ -90,8 +90,6 @@ func parseRequestLine(b *bufio.Reader) (method string, url string, version int, 
 		}
 		return
 	}
-
-	p = trimWSRight(p)
 
 	m := requestLineRegexp.FindSubmatch(p)
 	if m == nil {
@@ -118,7 +116,7 @@ func parseRequestLine(b *bufio.Reader) (method string, url string, version int, 
 	return
 }
 
-func parseHeader(b *bufio.Reader) (header web.StringsMap, err os.Error) {
+func readHeader(b *bufio.Reader) (header web.StringsMap, err os.Error) {
 
 	const (
 		// Max size for header line
@@ -217,12 +215,12 @@ func parseHeader(b *bufio.Reader) (header web.StringsMap, err os.Error) {
 
 func (c *conn) prepare() (err os.Error) {
 
-	method, rawURL, version, err := parseRequestLine(c.br)
+	method, rawURL, version, err := readRequestLine(c.br)
 	if err != nil {
 		return err
 	}
 
-	header, err := parseHeader(c.br)
+	header, err := readHeader(c.br)
 	if err != nil {
 		return err
 	}

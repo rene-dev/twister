@@ -18,6 +18,7 @@ TARG=web
 GOFILES=\
     misc.go\
     web.go\
+    oauth.go\
     router.go\
     middleware.go\
     websocket.go\

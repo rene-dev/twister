@@ -171,10 +171,15 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 		ErrorHandler:    defaultErrorHandler,
 		Param:           make(StringsMap),
 		Header:          header,
-		Cookie:          parseCookieValues(header[HeaderCookie]),
+		Cookie:          make(StringsMap),
 	}
 
-	err = parseUrlEncodedFormBytes([]byte(req.URL.RawQuery), req.Param)
+	err = ParseUrlEncodedFormBytes([]byte(req.URL.RawQuery), req.Param)
+	if err != nil {
+		return nil, err
+	}
+
+	err = parseCookieValues(header[HeaderCookie], req.Cookie)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +282,7 @@ func (req *Request) ParseForm() os.Error {
 		req.formParseErr = err
 		return err
 	}
-	if err := parseUrlEncodedFormBytes(p, req.Param); err != nil {
+	if err := ParseUrlEncodedFormBytes(p, req.Param); err != nil {
 		req.formParseErr = err
 		return err
 	}
