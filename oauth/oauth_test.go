@@ -12,17 +12,18 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-package web
+package oauth
 
 import (
 	"testing"
 	"bytes"
+	"github.com/garyburd/twister/web"
 )
 
 type BaseStringTest struct {
 	method string
 	url    string
-	param  StringsMap
+	param  web.StringsMap
 	result string
 }
 
@@ -30,7 +31,7 @@ var BaseStringTests = []BaseStringTest{
 	BaseStringTest{
 		"GeT",
 		"hTtp://pHotos.example.net/photos",
-		NewStringsMap(
+		web.NewStringsMap(
 			"oauth_consumer_key", "dpf43f3p2l4k3l03",
 			"oauth_token", "nnch734d00sl2jdk",
 			"oauth_nonce", "kllo9940pd9333jh",
@@ -43,7 +44,7 @@ var BaseStringTests = []BaseStringTest{
 	BaseStringTest{
 		"GET",
 		"http://PHOTOS.example.net:8001/Photos",
-		NewStringsMap(
+		web.NewStringsMap(
 			"oauth_consumer_key", "dpf43f3++p+#2l4k3l03",
 			"oauth_token", "nnch734d(0)0sl2jdk",
 			"oauth_nonce", "kllo~9940~pd9333jh",

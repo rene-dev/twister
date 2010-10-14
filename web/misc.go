@@ -68,7 +68,6 @@ func IsSpaceByte(c byte) bool {
 }
 
 // HTTP status codes from RFC 2606
-
 const (
 	StatusContinue                     = 100
 	StatusSwitchingProtocols           = 101
@@ -289,6 +288,10 @@ func ParseUrlEncodedFormBytes(p []byte, m StringsMap) os.Error {
 			p[j] = a<<4 | b
 			j += 1
 			i += 3
+		case '+':
+			p[j] = ' '
+			j += 1
+			i += 1
 		default:
 			p[j] = p[i]
 			j += 1

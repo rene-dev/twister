@@ -14,15 +14,11 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=web
+TARG=oauth
 GOFILES=\
-    misc.go\
-    web.go\
-    router.go\
-    middleware.go\
-    websocket.go\
+    oauth.go\
 
 include $(GOROOT)/src/Make.pkg
 
 goinstall:
-	goinstall github.com/garyburd/twister/web
+	goinstall github.com/garyburd/twister/oauth

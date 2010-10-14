@@ -83,6 +83,16 @@ func (m StringsMap) Set(key string, value string) {
 	m[key] = []string{value}
 }
 
+// StringMap returns a string to string map by discarding all but the first
+// value for a key.
+func (m StringsMap) StringMap() map[string]string {
+	result := make(map[string]string)
+	for key, values := range m {
+		result[key] = values[0]
+	}
+	return result
+}
+
 // RequestBody represents the request body.
 type RequestBody interface {
 	io.Reader
