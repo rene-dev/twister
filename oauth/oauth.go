@@ -12,7 +12,8 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// The oauth package implements the connsumer interface to OAuth as defined in RFC 5849.
+// The oauth package implements a subset of the client interface to OAuth as
+// defined in RFC 5849.
 package oauth
 
 import (
@@ -30,6 +31,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"fmt"
+	"strconv"
 )
 
 var noEscape = [256]bool{
@@ -189,7 +192,7 @@ func nonce() string {
 		binary.Read(rand.Reader, binary.BigEndian, &nonceCounter)
 	}
 	nonceCounter++
-	return string(nonceCounter)
+	return strconv.Uitob64(nonceCounter, 16)
 }
 
 // Client represents an OAuth client.
@@ -198,7 +201,6 @@ type Client struct {
 	TemporaryCredentialRequestURI string // Also known as request token URL
 	ResourceOwnerAuthorizationURI string // Also known as authorization URL
 	TokenRequestURI               string // Alos known as request token URL
-	Post                          func(url string, param web.StringsMap) (status int, body io.Reader, err os.Error)
 }
 
 // Credentials represents client, temporary and token credentials.
@@ -211,7 +213,7 @@ type Credentials struct {
 func (c *Client) SignParam(credentials *Credentials, method, url string, param web.StringsMap) {
 	param.Set("oauth_consumer_key", c.Credentials.Token)
 	param.Set("oauth_signature_method", "HMAC-SHA1")
-	param.Set("oauth_timestamp", string(time.Seconds()))
+	param.Set("oauth_timestamp", strconv.Itoa64(time.Seconds()))
 	param.Set("oauth_nonce", nonce())
 	param.Set("oauth_version", "1.0")
 	if credentials != nil {
@@ -220,19 +222,19 @@ func (c *Client) SignParam(credentials *Credentials, method, url string, param w
 	param.Set("oauth_signature", signature(&c.Credentials, credentials, method, url, param))
 }
 
-func (c *Client) request(credentials *Credentials, url string) (*Credentials, web.StringsMap, os.Error) {
-	param := make(web.StringsMap)
+func (c *Client) request(credentials *Credentials, url string, param web.StringsMap) (*Credentials, web.StringsMap, os.Error) {
 	c.SignParam(credentials, "POST", url, param)
-	status, body, err := c.Post(url, param)
+	resp, err := http.PostForm(url, param.StringMap())
 	if err != nil {
 		return nil, nil, err
 	}
-	if status != 200 {
-		return nil, nil, os.NewError("status not ok")
-	}
-	p, err := ioutil.ReadAll(body)
+	p, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 	if err != nil {
 		return nil, nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, nil, os.NewError(fmt.Sprintf("OAuth server status %d, %s", resp.StatusCode, string(p)))
 	}
 	m := make(web.StringsMap)
 	err = web.ParseUrlEncodedFormBytes(p, m)
@@ -241,23 +243,27 @@ func (c *Client) request(credentials *Credentials, url string) (*Credentials, we
 	}
 	credentials = &Credentials{Token: m.GetDef("oauth_token", ""), Secret: m.GetDef("oauth_token_secret", "")}
 	if credentials.Token == "" {
-		return nil, nil, os.NewError("no token in result")
+		return nil, nil, os.NewError("No OAuth token in server result")
 	}
 	if credentials.Secret == "" {
-		return nil, nil, os.NewError("no secret in result")
+		return nil, nil, os.NewError("No OAuth secret in server result")
 	}
 	return credentials, m, nil
 }
 
 // RequestTemporaryCredentials requests temporary credentials from the server.
-func (c *Client) RequestTemporaryCredentials() (*Credentials, os.Error) {
-	credentials, _, err := c.request(nil, c.TemporaryCredentialRequestURI)
+func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, os.Error) {
+	m := make(web.StringsMap)
+	if callbackURL != "" {
+		m.Set("oauth_callback", callbackURL)
+	}
+	credentials, _, err := c.request(nil, c.TemporaryCredentialRequestURI, m)
 	return credentials, err
 }
 
 // RequestToken requests token credentials from the server. 
 func (c *Client) RequestToken(temporaryCredentials *Credentials) (*Credentials, map[string]string, os.Error) {
-	credentials, m, err := c.request(temporaryCredentials, c.TokenRequestURI)
+	credentials, m, err := c.request(temporaryCredentials, c.TokenRequestURI, make(web.StringsMap))
 	if err != nil {
 		return nil, nil, err
 	}

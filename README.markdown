@@ -8,7 +8,11 @@ Twister is a work in progress.
 
 * twister/web - Defines the application interface to a server and includes functionality used by most web applications.
 * twister/server - An HTTP server impelemented in Go.
-* twister/example - An example application.
+* twister/oauth - OAuth client
+
+## Examples
+
+* twister/examples/demo - Illustrates basic features of Twister.
 
 ## Installation
 

@@ -346,10 +346,7 @@ func (c *conn) Respond(status int, header web.StringsMap) (body web.ResponseBody
 		proto = "HTTP/1.1"
 	}
 	statusString := strconv.Itoa(status)
-	text, found := web.StatusText[status]
-	if !found {
-		text = "status code " + statusString
-	}
+	text := web.StatusText(status)
 
 	var b bytes.Buffer
 	b.WriteString(proto)

@@ -17,18 +17,16 @@
 package web
 
 import (
-	"bytes"
 	"container/vector"
-	"fmt"
 	"http"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"path"
 	"strconv"
 	"strings"
-	"time"
-	"net"
+	"log"
 )
 
 var (
@@ -147,7 +145,7 @@ type Request struct {
 
 	// ErrorHandler responds to the request with the given status code.
 	// Applications set their error handler in middleware. 
-	ErrorHandler func(req *Request, status int, message string)
+	ErrorHandler func(req *Request, status int, err os.Error)
 
 	// ContentLength is the length of the request body or -1 if the content
 	// length is not known.
@@ -165,7 +163,8 @@ type Handler interface {
 }
 
 // HandlerFunc is a type adapter to allow the use of ordinary functions as web
-// handlers.
+// handlers. If the function returns an error, then the adapter responds to the
+// request with an error response.
 type HandlerFunc func(*Request)
 
 // ServeWeb calls f(req).
@@ -218,30 +217,22 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 // Respond is a convenience function that adds (key, value) pairs in kvs to a
 // StringsMap and calls through to the connection's Respond method.
 func (req *Request) Respond(status int, kvs ...string) ResponseBody {
-	if len(kvs)%2 == 1 {
-		panic("twister: respond requires even number of kvs args")
-	}
-	header := StringsMap(make(map[string][]string))
-	for i := 0; i < len(kvs); i += 2 {
-		header.Append(kvs[i], kvs[i+1])
-	}
-	return req.Responder.Respond(status, header)
+	return req.Responder.Respond(status, NewStringsMap(kvs...))
 }
 
-func defaultErrorHandler(req *Request, status int, message string) {
+func defaultErrorHandler(req *Request, status int, reason os.Error) {
 	w := req.Respond(status, HeaderContentType, "text/plain; charset=utf-8")
-	if w != nil {
-		fmt.Fprintln(w, message)
-	}
+	io.WriteString(w, StatusText(status))
+	log.Println(req.URL, status, reason)
 }
 
 // Error responds to the request with an error. 
-func (req *Request) Error(status int, message string) {
-	req.ErrorHandler(req, status, message)
+func (req *Request) Error(status int, reason os.Error) {
+	req.ErrorHandler(req, status, reason)
 }
 
 // Redirect responds to the request with a redirect the specified URL.
-func (req *Request) Redirect(url string, perm bool) {
+func (req *Request) Redirect(url string, perm bool, kvs ...string) {
 	status := StatusFound
 	if perm {
 		status = StatusMovedPermanently
@@ -254,7 +245,9 @@ func (req *Request) Redirect(url string, perm bool) {
 		url = d + url
 	}
 
-	req.Respond(status, HeaderLocation, url)
+	header := NewStringsMap(kvs...)
+	header.Set(HeaderLocation, url)
+	req.Responder.Respond(status, header)
 }
 
 // BodyBytes returns the request body a slice of bytees.
@@ -313,50 +306,9 @@ func RedirectHandler(url string, permanent bool) Handler {
 	return &redirectHandler{url, permanent}
 }
 
-var notFoundHandler = HandlerFunc(func(req *Request) { req.Error(StatusNotFound, "Not Found") })
+var notFoundHandler = HandlerFunc(func(req *Request) { req.Error(StatusNotFound, nil) })
 
 // NotFoundHandler returns a request handler that responds with 404 not found.
 func NotFoundHandler() Handler {
 	return notFoundHandler
-}
-
-type Cookie struct {
-	Name     string
-	Value    string
-	MaxAge   int
-	Path     string
-	Domain   string
-	HttpOnly bool
-	Secure   bool
-}
-
-func (c *Cookie) String() string {
-	var b bytes.Buffer
-	b.WriteString(c.Name)
-	b.WriteRune('=')
-	b.WriteString(c.Value)
-	if c.MaxAge < 0 {
-		// A date in the past will delete the cookie.
-		b.WriteString("; Expires=Mon, 02 Jan 2006 15:04:05 GMT")
-	}
-	if c.MaxAge > 0 {
-		// Write expires attribute because some browsers do not support max-age.
-		b.WriteString("; Expires=")
-		b.WriteString(time.SecondsToUTC(time.Seconds() + int64(c.MaxAge)).Format(TimeLayout))
-	}
-	if c.Path != "" {
-		b.WriteString("; Path=")
-		b.WriteString(c.Path)
-	}
-	if c.Domain != "" {
-		b.WriteString("; Domain=")
-		b.WriteString(c.Domain)
-	}
-	if c.Secure {
-		b.WriteString("; Secure")
-	}
-	if c.HttpOnly {
-		b.WriteString("; HttpOnly")
-	}
-	return b.String()
 }

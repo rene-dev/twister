@@ -17,11 +17,12 @@ package web
 import (
 	"bytes"
 	"container/vector"
-	"regexp"
-	"utf8"
 	"flag"
-	"strings"
 	"http"
+	"regexp"
+	"strings"
+	"utf8"
+	"os"
 )
 
 // Router dispatches HTTP requests to a handler using the path component of the
@@ -142,12 +143,12 @@ func (router *Router) Register(pattern string, handlers ...interface{}) *Router 
 }
 
 type routerError struct {
-	status  int
-	message string
+	status int
+	reason os.Error
 }
 
 func (re *routerError) ServeWeb(req *Request) {
-	req.Error(re.status, re.message)
+	req.Error(re.status, re.reason)
 }
 
 // addSlash redirects to the request URL with a trailing slash.
@@ -158,6 +159,12 @@ func addSlash(req *Request) {
 	}
 	req.Redirect(path, true)
 }
+
+var (
+	errBadPathCommponent  = &routerError{400, os.NewError("router: bad path component")}
+	errMethodNotSupported = &routerError{405, os.NewError("router: method not supported")}
+	errNotFound           = &routerError{404, os.NewError("router: not found")}
+)
 
 // Given the path componennt of the request URL and the request method, find
 // the handler and path parameters.
@@ -174,7 +181,7 @@ func (router *Router) find(path string, method string) (Handler, []string, []str
 		values = values[1:]
 		for j := 0; j < len(values); j++ {
 			if value, e := http.URLUnescape(values[j]); e != nil {
-				return &routerError{400, "Bad request."}, nil, nil
+				return errBadPathCommponent, nil, nil
 			} else {
 				values[j] = value
 			}
@@ -190,9 +197,9 @@ func (router *Router) find(path string, method string) (Handler, []string, []str
 		if handler := r.handlers["*"]; handler != nil {
 			return handler, r.names, values
 		}
-		return &routerError{405, "Method not supported."}, nil, nil
+		return errMethodNotSupported, nil, nil
 	}
-	return &routerError{404, "Not found."}, nil, nil
+	return errNotFound, nil, nil
 }
 
 // ServeWeb dispatches the request to a registered handler.

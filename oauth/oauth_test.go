@@ -20,15 +20,18 @@ import (
 	"github.com/garyburd/twister/web"
 )
 
-type BaseStringTest struct {
-	method string
-	url    string
-	param  web.StringsMap
-	result string
+type SignatureTest struct {
+	method            string
+	url               string
+	param             web.StringsMap
+	base              string
+	clientCredentials Credentials
+	credentials       Credentials
+	sig               string
 }
 
-var BaseStringTests = []BaseStringTest{
-	BaseStringTest{
+var SignatureTests = []SignatureTest{
+	SignatureTest{
 		"GeT",
 		"hTtp://pHotos.example.net/photos",
 		web.NewStringsMap(
@@ -40,8 +43,11 @@ var BaseStringTests = []BaseStringTest{
 			"oauth_version", "1.0",
 			"size", "original",
 			"file", "vacation.jpg"),
-		"GET&http%3A%2F%2Fphotos.example.net%2Fphotos&file%3Dvacation.jpg%26oauth_consumer_key%3Ddpf43f3p2l4k3l03%26oauth_nonce%3Dkllo9940pd9333jh%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1191242096%26oauth_token%3Dnnch734d00sl2jdk%26oauth_version%3D1.0%26size%3Doriginal"},
-	BaseStringTest{
+		"GET&http%3A%2F%2Fphotos.example.net%2Fphotos&file%3Dvacation.jpg%26oauth_consumer_key%3Ddpf43f3p2l4k3l03%26oauth_nonce%3Dkllo9940pd9333jh%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1191242096%26oauth_token%3Dnnch734d00sl2jdk%26oauth_version%3D1.0%26size%3Doriginal",
+		Credentials{"dpf43f3p2l4k3l03", "kd94hf93k423kf44"},
+		Credentials{"kd94hf93k423kf44", "pfkkdhi9sl3r4s00"},
+		"tR3+Ty81lMeYAr/Fid0kMTYa/WM="},
+	SignatureTest{
 		"GET",
 		"http://PHOTOS.example.net:8001/Photos",
 		web.NewStringsMap(
@@ -53,16 +59,23 @@ var BaseStringTests = []BaseStringTest{
 			"oauth_version", "1.0",
 			"photo size", "300%",
 			"title", "Back of $100 Dollars Bill"),
-		"GET&http%3A%2F%2Fphotos.example.net%3A8001%2FPhotos&oauth_consumer_key%3Ddpf43f3%252B%252Bp%252B%25232l4k3l03%26oauth_nonce%3Dkllo~9940~pd9333jh%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1191242096%26oauth_token%3Dnnch734d%25280%25290sl2jdk%26oauth_version%3D1.0%26photo%2520size%3D300%2525%26title%3DBack%2520of%2520%2524100%2520Dollars%2520Bill"},
+		"GET&http%3A%2F%2Fphotos.example.net%3A8001%2FPhotos&oauth_consumer_key%3Ddpf43f3%252B%252Bp%252B%25232l4k3l03%26oauth_nonce%3Dkllo~9940~pd9333jh%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1191242096%26oauth_token%3Dnnch734d%25280%25290sl2jdk%26oauth_version%3D1.0%26photo%2520size%3D300%2525%26title%3DBack%2520of%2520%2524100%2520Dollars%2520Bill",
+		Credentials{"dpf43f3++p+#2l4k3l03", "kd9@4h%%4f93k423kf44"},
+		Credentials{"nnch734d(0)0sl2jdk", "pfkkd#hi9_sl-3r=4s00"},
+		"tTFyqivhutHiglPvmyilZlHm5Uk="},
 }
 
-func TestBaseString(t *testing.T) {
-	for _, bst := range BaseStringTests {
+func TestSignature(t *testing.T) {
+	for _, st := range SignatureTests {
 		var buf bytes.Buffer
-		writeBaseString(&buf, bst.method, bst.url, bst.param)
-		result := buf.String()
-		if result != bst.result {
-			t.Errorf("%s %s:\nexpected %q\nactual   %q", bst.method, bst.url, bst.result, result)
+		writeBaseString(&buf, st.method, st.url, st.param)
+		base := buf.String()
+		if base != st.base {
+			t.Errorf("%s %s:\nexpected %q\nactual   %q", st.method, st.url, st.base, base)
+		}
+		sig := signature(&st.clientCredentials, &st.credentials, st.method, st.url, st.param)
+		if sig != st.sig {
+			t.Errorf("%s %s:\nexpected %q\nactual   %q", st.method, st.url, st.sig, sig)
 		}
 	}
 }

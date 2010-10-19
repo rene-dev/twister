@@ -15,12 +15,19 @@
 package web
 
 import (
-	"strings"
 	"os"
+	"strings"
+	"time"
+	"fmt"
 )
 
 // TimeLayout is the time layout used for HTTP headers and other values.
 const TimeLayout = "Mon, 02 Jan 2006 15:04:05 GMT"
+
+// FormatTimeDelta returns current time plus delta formatted per HTTP conventions.
+func FormatTimeDelta(delta int) string {
+	return time.SecondsToUTC(time.Seconds() + int64(delta)).Format(TimeLayout)
+}
 
 // Octet tyeps from RFC 2616
 
@@ -111,7 +118,7 @@ const (
 	StatusHTTPVersionNotSupported      = 505
 )
 
-var StatusText = map[int]string{
+var statusText = map[int]string{
 	StatusContinue:                     "Continue",
 	StatusSwitchingProtocols:           "Switching Protocols",
 	StatusOK:                           "OK",
@@ -152,6 +159,14 @@ var StatusText = map[int]string{
 	StatusServiceUnavailable:           "Service Unavailable",
 	StatusGatewayTimeout:               "Gateway Timeout",
 	StatusHTTPVersionNotSupported:      "HTTP Version Not Supported",
+}
+
+func StatusText(status int) string {
+	s, found := statusText[status]
+	if !found {
+		s = fmt.Sprintf("Status %d", status)
+	}
+	return s
 }
 
 // Canonical header name constants.

@@ -17,6 +17,8 @@ package web
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
+	"os"
 )
 
 type respondFilter struct {
@@ -36,7 +38,7 @@ func FilterRespond(req *Request, filter func(status int, header StringsMap) (int
 }
 
 // SetErrorHandler returns a handler that sets the request's error handler to the supplied handler.
-func SetErrorHandler(errorHandler func(req *Request, status int, message string), handler Handler) Handler {
+func SetErrorHandler(errorHandler func(req *Request, status int, reason os.Error), handler Handler) Handler {
 	return HandlerFunc(func(req *Request) {
 		req.ErrorHandler = errorHandler
 		handler.ServeWeb(req)
@@ -58,12 +60,12 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 			if _, found := req.Header.Get(HeaderExpect); found {
 				status = StatusExpectationFailed
 			}
-			req.Error(status, "Request entity too large.")
+			req.Error(status, os.NewError("twister: Request entity too large."))
 			return
 		}
 
 		if err := req.ParseForm(); err != nil {
-			req.Error(StatusBadRequest, "Error reading or parsing form.")
+			req.Error(StatusBadRequest, os.NewError("twister: Error reading or parsing form."))
 			return
 		}
 
@@ -79,15 +81,9 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 					panic("twister: rand read failed")
 				}
 				token = hex.EncodeToString(p)
-				c := Cookie{
-					Name:     XSRFCookieName,
-					Value:    token,
-					Path:     "/",
-					HttpOnly: true,
-				}
-				value := c.String()
+				c := fmt.Sprintf("%s=%s; Path=/; HttpOnly", XSRFCookieName, token)
 				FilterRespond(req, func(status int, header StringsMap) (int, StringsMap) {
-					header.Append(HeaderSetCookie, value)
+					header.Append(HeaderSetCookie, c)
 					return status, header
 				})
 			}
@@ -95,7 +91,7 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 			if token != req.Param.GetDef(XSRFParamName, "") {
 				req.Param.Set(XSRFParamName, token)
 				if req.Method == "POST" || req.Method == "PUT" {
-					req.Error(StatusNotFound, "Bad token")
+					req.Error(StatusNotFound, os.NewError("twister: bad xsrf token"))
 					return
 				}
 			}
