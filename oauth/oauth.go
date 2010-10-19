@@ -262,8 +262,12 @@ func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, 
 }
 
 // RequestToken requests token credentials from the server. 
-func (c *Client) RequestToken(temporaryCredentials *Credentials) (*Credentials, map[string]string, os.Error) {
-	credentials, m, err := c.request(temporaryCredentials, c.TokenRequestURI, make(web.StringsMap))
+func (c *Client) RequestToken(temporaryCredentials *Credentials, verifier string) (*Credentials, map[string]string, os.Error) {
+	m := make(web.StringsMap)
+	if verifier != "" {
+		m.Set("oauth_verifier", verifier)
+	}
+	credentials, m, err := c.request(temporaryCredentials, c.TokenRequestURI, m)
 	if err != nil {
 		return nil, nil, err
 	}

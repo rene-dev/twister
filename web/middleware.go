@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"log"
 )
 
 type respondFilter struct {
@@ -97,6 +98,22 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 			}
 		}
 
+		handler.ServeWeb(req)
+	})
+}
+
+// DebugLogger returns a handler that logs the request and response.
+func DebugLogger(enabled bool, handler Handler) Handler {
+	if !enabled {
+		return handler
+	}
+	// TODO: improve format of output
+	return HandlerFunc(func(req *Request) {
+		log.Println(req, "\n")
+		FilterRespond(req, func(status int, header StringsMap) (int, StringsMap) {
+			log.Println(status, header, "\n")
+			return status, header
+		})
 		handler.ServeWeb(req)
 	})
 }

@@ -24,13 +24,17 @@ import (
 // TimeLayout is the time layout used for HTTP headers and other values.
 const TimeLayout = "Mon, 02 Jan 2006 15:04:05 GMT"
 
-// FormatTimeDelta returns current time plus delta formatted per HTTP conventions.
-func FormatTimeDelta(delta int) string {
+// FormatDeltaSeconds returns current time plus delta formatted per HTTP conventions.
+func FormatDeltaSeconds(delta int) string {
 	return time.SecondsToUTC(time.Seconds() + int64(delta)).Format(TimeLayout)
 }
 
-// Octet tyeps from RFC 2616
+// FormatDeltaDays returns current time plus delta formatted per HTTP conventions.
+func FormatDeltaDays(delta int) string {
+	return FormatDeltaSeconds(delta * 60 * 60 * 24)
+}
 
+// Octet tyeps from RFC 2616
 var (
 	isText  [256]bool
 	isToken [256]bool
@@ -260,6 +264,12 @@ func ProtocolVersion(major int, minor int) int {
 	}
 	return major*1000 + minor
 }
+
+const (
+	ProtocolVersion10 = 1000 // HTTP/1.0
+	ProtocolVersion11 = 1001 // HTTP/1.1
+	ContentTypeHTML   = "text/html; charset=\"utf-8\""
+)
 
 const notHex = 127
 

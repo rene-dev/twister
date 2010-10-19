@@ -1,3 +1,17 @@
+// Copyright 2010 Gary Burd
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
@@ -14,9 +28,7 @@ import (
 )
 
 var oauthClient = oauth.Client{
-	Credentials: oauth.Credentials{
-		"bD3jC40mGxqQtVHomJolg",
-		"WWCbD3zYL8Y98WKBauejx93VYqS0kBaHjOcp3PQtw"},
+	Credentials:                   oauth.Credentials{clientToken, clientSecret},
 	TemporaryCredentialRequestURI: "http://api.twitter.com/oauth/request_token",
 	ResourceOwnerAuthorizationURI: "http://api.twitter.com/oauth/authenticate",
 	TokenRequestURI:               "http://api.twitter.com/oauth/access_token",
@@ -48,18 +60,21 @@ func credentials(req *web.Request, key string) (*oauth.Credentials, os.Error) {
 	return &oauth.Credentials{token, secret}, nil
 }
 
+// login redirects the user to the Twitter authorization page.
 func login(req *web.Request) {
-	temporaryCredentials, err := oauthClient.RequestTemporaryCredentials("")
+	callback := req.URL.Scheme + "://" + req.URL.Host + "/twitter-callback"
+	temporaryCredentials, err := oauthClient.RequestTemporaryCredentials(callback)
 	if err != nil {
 		req.Error(web.StatusInternalServerError, err)
 		return
 	}
 	req.Redirect(oauthClient.AuthorizationURL(temporaryCredentials), false,
-		web.HeaderSetCookie, fmt.Sprintf("tc=%s; Path=/; HttpOnly", encodeCredentials(temporaryCredentials)))
+		web.HeaderSetCookie, fmt.Sprintf("tmp=%s; Path=/; HttpOnly", encodeCredentials(temporaryCredentials)))
 }
 
+// twitterCallback handles OAuth callbacks from Twitter.
 func twitterCallback(req *web.Request) {
-	temporaryCredentials, err := credentials(req, "tc")
+	temporaryCredentials, err := credentials(req, "tmp")
 	if err != nil {
 		req.Error(web.StatusNotFound, err)
 		return
@@ -73,32 +88,59 @@ func twitterCallback(req *web.Request) {
 		req.Error(web.StatusNotFound, os.NewError("main: token mismatch"))
 		return
 	}
-	tokenCredentials, _, err := oauthClient.RequestToken(temporaryCredentials)
-	if s != temporaryCredentials.Token {
+	tokenCredentials, _, err := oauthClient.RequestToken(temporaryCredentials, req.Param.GetDef("oauth_verifier", ""))
+	if err != nil {
 		req.Error(web.StatusNotFound, err)
 		return
 	}
 	req.Redirect("/", false,
-		web.HeaderSetCookie, fmt.Sprintf("auth=%s; Path=/; HttpOnly", encodeCredentials(tokenCredentials)))
+		web.HeaderSetCookie, fmt.Sprintf("tok=%s; Path=/; HttpOnly; Expires=%s",
+			encodeCredentials(tokenCredentials),
+			web.FormatDeltaDays(30)))
 }
 
+// homeLoggedOut handles request to the home page for logged out users.
+func homeLoggedOut(req *web.Request) {
+	homeLoggedOutTempl.Execute(req,
+		req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML))
+}
 
+// home handles requests to the home page.
 func home(req *web.Request) {
-
+	fmt.Print(req)
+	_, err := credentials(req, "tok")
+	if err != nil {
+		homeLoggedOut(req)
+		return
+	}
+	homeTempl.Execute(req,
+		req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML))
 }
 
 func main() {
 	flag.Parse()
-	h := web.ProcessForm(10000, true, web.NewRouter().
+	h := web.ProcessForm(10000, true, web.DebugLogger(true, web.NewRouter().
 		Register("/", "GET", home).
 		Register("/login", "GET", login).
-		Register("/account/twitter-callback", "GET", twitterCallback))
+		Register("/account/twitter-callback", "GET", twitterCallback).
+		Register("/twitter-callback", "GET", twitterCallback)))
 
 	err := server.ListenAndServe("localhost:8080", ":8080", h)
 	if err != nil {
 		log.Exit("ListenAndServe:", err)
 	}
 }
+
+var homeLoggedOutTempl = template.MustParse(homeLoggedOutStr, nil)
+
+const homeLoggedOutStr = `
+<html>
+<head>
+</head>
+<body>
+<a href="/login"><img src="http://a0.twimg.com/images/dev/buttons/sign-in-with-twitter-d.png"></a>
+</body>
+</html>`
 
 var homeTempl = template.MustParse(homeStr, nil)
 
