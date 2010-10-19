@@ -14,6 +14,9 @@
 
 package main
 
+// Copy this file to settings.go and edit to include your Twitter consumer
+// token and secret.  You can get a token and secret by registering an
+// application at http://developer.twitter.com/apps/new .
 const (
 	clientToken  = "<consumer token>"
 	clientSecret = "<consumer secret>"
