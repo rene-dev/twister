@@ -14,7 +14,8 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=web
+DEPS=../web
+TARG=server
 GOFILES=\
     server.go\
 

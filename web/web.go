@@ -17,16 +17,17 @@
 package web
 
 import (
+	"bytes"
 	"container/vector"
 	"http"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"path"
 	"strconv"
 	"strings"
-	"log"
 )
 
 var (
@@ -89,6 +90,26 @@ func (m StringsMap) StringMap() map[string]string {
 		result[key] = values[0]
 	}
 	return result
+}
+
+// FormEncode returns a buffer containing the URL form encoding of the map.
+func (m StringsMap) FormEncode() []byte {
+	var b bytes.Buffer
+	sep := false
+	for key, values := range m {
+		escapedKey := http.URLEscape(key)
+		for _, value := range values {
+			if sep {
+				b.WriteByte('&')
+			} else {
+				sep = true
+			}
+			b.WriteString(escapedKey)
+			b.WriteByte('=')
+			b.WriteString(http.URLEscape(value))
+		}
+	}
+	return b.Bytes()
 }
 
 // RequestBody represents the request body.

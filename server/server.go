@@ -214,7 +214,6 @@ func readHeader(b *bufio.Reader) (header web.StringsMap, err os.Error) {
 }
 
 func (c *conn) prepare() (err os.Error) {
-
 	method, rawURL, version, err := readRequestLine(c.br)
 	if err != nil {
 		return err
@@ -477,7 +476,7 @@ func (c chunkedWriter) Write(p []byte) (int, os.Error) {
 		return n, c.responseErr
 	}
 	_, c.responseErr = io.WriteString(c.netConn, "\r\n")
-	return 0, c.responseErr
+	return n, c.responseErr
 }
 
 func serveConnection(serverName string, secure bool, handler web.Handler, netConn net.Conn) {
@@ -490,7 +489,7 @@ func serveConnection(serverName string, secure bool, handler web.Handler, netCon
 			br:         br}
 		if err := c.prepare(); err != nil {
 			if err != os.EOF {
-				log.Stderr("twister/sever: prepare failed", err)
+				log.Stderr("twister/server: prepare failed", err)
 			}
 			break
 		}
@@ -499,7 +498,7 @@ func serveConnection(serverName string, secure bool, handler web.Handler, netCon
 			return
 		}
 		if err := c.finish(); err != nil {
-			log.Stderr("twister/sever: finish failed", err)
+			log.Stderr("twister/server: finish failed", err)
 			break
 		}
 		if c.closeAfterResponse {

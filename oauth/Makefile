@@ -14,6 +14,7 @@
 
 include $(GOROOT)/src/Make.inc
 
+DEPS=../web
 TARG=oauth
 GOFILES=\
     oauth.go\

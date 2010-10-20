@@ -3,6 +3,7 @@ run: clean goinstall example
  
 include $(GOROOT)/src/Make.inc
 
+DEPS=../../server ../../web ../../oauth
 TARG=example
 GOFILES=\
     main.go\

@@ -15,12 +15,15 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"github.com/garyburd/twister/oauth"
 	"github.com/garyburd/twister/server"
 	"github.com/garyburd/twister/web"
 	"http"
+	"io/ioutil"
+	"json"
 	"log"
 	"os"
 	"strings"
@@ -108,13 +111,36 @@ func homeLoggedOut(req *web.Request) {
 // home handles requests to the home page.
 func home(req *web.Request) {
 	fmt.Print(req)
-	_, err := credentials(req, "tok")
+	token, err := credentials(req, "tok")
 	if err != nil {
 		homeLoggedOut(req)
 		return
 	}
-	homeTempl.Execute(req,
-		req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML))
+	param := make(web.StringsMap)
+	url := "http://api.twitter.com/1/statuses/home_timeline.json"
+	oauthClient.SignParam(token, "GET", url, param)
+	url = url + "?" + string(param.FormEncode())
+	resp, _, err := http.Get(url)
+	if err != nil {
+		req.Error(web.StatusInternalServerError, err)
+		return
+	}
+	p, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		req.Error(web.StatusInternalServerError, err)
+		return
+	}
+	if resp.StatusCode != 200 {
+		req.Error(web.StatusInternalServerError, os.NewError(fmt.Sprint("Status ", resp.StatusCode)))
+		return
+	}
+	w := req.Respond(web.StatusOK, web.HeaderContentType, "text/plain")
+	var buf bytes.Buffer
+	json.Indent(&buf, p, "", "  ")
+	log.Print("START")
+	w.Write(buf.Bytes())
+	log.Print("END")
 }
 
 func main() {
