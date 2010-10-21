@@ -18,6 +18,7 @@ TARG=github.com/garyburd/twister/web
 GOFILES=\
     misc.go\
     web.go\
+    handlers.go\
     router.go\
     middleware.go\
     websocket.go\

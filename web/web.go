@@ -312,24 +312,3 @@ func (req *Request) ParseForm() os.Error {
 	}
 	return nil
 }
-
-type redirectHandler struct {
-	url       string
-	permanent bool
-}
-
-func (rh *redirectHandler) ServeWeb(req *Request) {
-	req.Redirect(rh.url, rh.permanent)
-}
-
-// RedirectHandler returns a request handler that redirects to the given URL. 
-func RedirectHandler(url string, permanent bool) Handler {
-	return &redirectHandler{url, permanent}
-}
-
-var notFoundHandler = HandlerFunc(func(req *Request) { req.Error(StatusNotFound, nil) })
-
-// NotFoundHandler returns a request handler that responds with 404 not found.
-func NotFoundHandler() Handler {
-	return notFoundHandler
-}
