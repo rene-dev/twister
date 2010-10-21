@@ -15,11 +15,8 @@
 include $(GOROOT)/src/Make.inc
 
 DEPS=../web
-TARG=oauth
+TARG=github.com/garyburd/twister/oauth
 GOFILES=\
     oauth.go\
 
 include $(GOROOT)/src/Make.pkg
-
-goinstall:
-	goinstall github.com/garyburd/twister/oauth

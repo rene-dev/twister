@@ -15,11 +15,8 @@
 include $(GOROOT)/src/Make.inc
 
 DEPS=../web
-TARG=server
+TARG=github.com/garyburd/twister/server
 GOFILES=\
     server.go\
 
 include $(GOROOT)/src/Make.pkg
-
-goinstall:
-	goinstall github.com/garyburd/twister/server

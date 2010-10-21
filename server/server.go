@@ -298,18 +298,18 @@ func (c requestReader) Read(p []byte) (int, os.Error) {
 
 func (c *conn) Respond(status int, header web.StringsMap) (body web.ResponseBody) {
 	if c.hijacked {
-		log.Stderr("twister: Respond called on hijacked connection")
+		log.Println("twister: Respond called on hijacked connection")
 		return nil
 	}
 	if c.respondCalled {
-		log.Stderr("twister: multiple calls to Respond")
+		log.Println("twister: multiple calls to Respond")
 		return nil
 	}
 	c.respondCalled = true
 	c.requestErr = web.ErrInvalidState
 
 	if _, found := header.Get(web.HeaderTransferEncoding); found {
-		log.Stderr("twister: transfer encoding not allowed")
+		log.Println("twister: transfer encoding not allowed")
 		header[web.HeaderTransferEncoding] = nil, false
 	}
 
@@ -489,7 +489,7 @@ func serveConnection(serverName string, secure bool, handler web.Handler, netCon
 			br:         br}
 		if err := c.prepare(); err != nil {
 			if err != os.EOF {
-				log.Stderr("twister/server: prepare failed", err)
+				log.Println("twister/server: prepare failed", err)
 			}
 			break
 		}
@@ -498,7 +498,7 @@ func serveConnection(serverName string, secure bool, handler web.Handler, netCon
 			return
 		}
 		if err := c.finish(); err != nil {
-			log.Stderr("twister/server: finish failed", err)
+			log.Println("twister/server: finish failed", err)
 			break
 		}
 		if c.closeAfterResponse {

@@ -166,7 +166,7 @@ type Request struct {
 
 	// ErrorHandler responds to the request with the given status code.
 	// Applications set their error handler in middleware. 
-	ErrorHandler func(req *Request, status int, err os.Error)
+	ErrorHandler func(req *Request, status int, reason os.Error)
 
 	// ContentLength is the length of the request body or -1 if the content
 	// length is not known.
