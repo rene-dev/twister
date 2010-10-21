@@ -7,12 +7,19 @@ Twister is a work in progress.
 ## Packages
 
 * twister/web - Defines the application interface to a server and includes functionality used by most web applications.
+  * Routing to handlers using regular expression match on path.
+  * Routing to handlers using host.
+  * Protection against cross site request forgery.
+  * Extensible model for middleware.
+  * Cookie parsing.
+  * WebSockets.
 * twister/server - An HTTP server impelemented in Go.
 * twister/oauth - OAuth client
 
 ## Examples
 
 * twister/examples/demo - Illustrates basic features of Twister.
+* twister/examples/twitter - Login to Twitter with OAuth and display home timeline.
 
 ## Installation
 
