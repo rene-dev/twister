@@ -13,6 +13,8 @@ Twister is a work in progress.
   * Extensible model for middleware.
   * Cookie parsing.
   * WebSockets.
+  * Static file handling
+  * Signed values for cookies and form parameters
 * twister/server - An HTTP server impelemented in Go.
 * twister/oauth - OAuth client
 

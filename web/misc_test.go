@@ -71,3 +71,14 @@ func TestParseUrlEncodedForm(t *testing.T) {
 		}
 	}
 }
+
+func TestSignValue(t *testing.T) {
+    secret:="7d1355a24a7bc1ad97a01f0252a5ba23e8b0aa366f1aa4d2c84b78ccdd6743a7"
+    context:= "UID"
+    expectedValue := "admin~role"
+    actualValue, err := VerifyValue(secret, context, SignValue(secret, context, 3600, expectedValue))
+    if  err != nil || expectedValue != actualValue {
+        t.Error("verify failed", err, actualValue)
+    }
+}
+

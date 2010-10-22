@@ -18,6 +18,7 @@ package main
 // token and secret.  You can get a token and secret by registering an
 // application at http://developer.twitter.com/apps/new .
 const (
+    cookieSecret = "<random string>"
 	clientToken  = "<consumer token>"
 	clientSecret = "<consumer secret>"
 )

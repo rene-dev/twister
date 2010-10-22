@@ -16,9 +16,13 @@ package web
 
 import (
 	"os"
+	"io"
 	"strings"
+	"crypto/hmac"
+	"strconv"
 	"time"
 	"fmt"
+	"encoding/hex"
 )
 
 // TimeLayout is the time layout used for HTTP headers and other values.
@@ -363,4 +367,49 @@ func parseCookieValues(values []string, m StringsMap) os.Error {
 		}
 	}
 	return nil
+}
+
+func signature(secret, key, expiration, value string) string {
+	hm := hmac.NewSHA1([]byte(key))
+	io.WriteString(hm, key)
+	hm.Write([]byte{0})
+	io.WriteString(hm, expiration)
+	hm.Write([]byte{0})
+	io.WriteString(hm, value)
+	return hex.EncodeToString(hm.Sum())
+}
+
+// SignValue timestamps and signs a string so that it cannot be forged.  
+func SignValue(secret, context string, maxAgeSeconds int, value string) string {
+	expiration := strconv.Itob64(time.Seconds()+int64(maxAgeSeconds), 16)
+	sig := signature(secret, context, expiration, value)
+	return sig + "~" + expiration + "~" + value
+}
+
+var errVerificationFailure = os.NewError("verification failed")
+
+// VerifyValue verifies a timestamped and signed value. 
+func VerifyValue(secret, context string, signedValue string) (string, os.Error) {
+	a := strings.Split(signedValue, "~", 3)
+	if len(a) != 3 {
+		return "", errVerificationFailure
+	}
+	expiration, err := strconv.Btoi64(a[1], 16)
+	if err != nil || expiration < time.Seconds() {
+		return "", errVerificationFailure
+	}
+	expectedSig := signature(secret, context, a[1], a[2])
+	actualSig := a[0]
+	if len(actualSig) != len(expectedSig) {
+		return "", errVerificationFailure
+	}
+	// Time independent compare
+	eq := 0
+	for i := 0; i < len(actualSig); i++ {
+		eq = eq | (int(actualSig[i]) ^ int(expectedSig[i]))
+	}
+	if eq != 0 {
+		return "", errVerificationFailure
+	}
+	return a[2], nil
 }
