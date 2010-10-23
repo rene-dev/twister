@@ -64,7 +64,14 @@ func (fh *fileHandler) ServeWeb(req *Request) {
 		return
 	}
 
-	info, err := os.Stat(fname)
+	f, err := os.Open(fname, os.O_RDONLY, 0)
+	if err != nil {
+		req.Error(StatusNotFound, err)
+		return
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
 	if err != nil || !info.IsRegular() {
 		req.Error(StatusNotFound, err)
 		return
@@ -91,13 +98,6 @@ func (fh *fileHandler) ServeWeb(req *Request) {
 			header.Set(HeaderCacheControl, "public")
 		}
 	}
-
-	f, err := os.Open(fname, os.O_RDONLY, 0)
-	if err != nil {
-		req.Error(StatusNotFound, err)
-		return
-	}
-	defer f.Close()
 
 	w := req.Responder.Respond(status, header)
 	if req.Method != "HEAD" && status != StatusNotModified {
