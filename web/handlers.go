@@ -81,7 +81,7 @@ func (fh *fileHandler) ServeWeb(req *Request) {
 	etag := strconv.Itob64(info.Mtime_ns, 36)
 	header := NewStringsMap(fh.header...)
 
-	if i := strings.Index(req.Header.GetDef(HeaderETag, ""), etag); i >= 0 {
+	if i := strings.Index(req.Header.GetDef(HeaderIfNoneMatch, ""), etag); i >= 0 {
 		status = StatusNotModified
 	} else {
 		header.Set(HeaderETag, etag)
