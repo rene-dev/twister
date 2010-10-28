@@ -15,9 +15,11 @@
 package web
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"log"
 )
@@ -102,16 +104,49 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 	})
 }
 
+func writeStringMap(w io.Writer, title string, m StringsMap) {
+	first := true
+	for key, values := range m {
+		if first {
+			fmt.Fprintf(w, "  %s:\n", title)
+			first = false
+		}
+		for _, value := range values {
+			fmt.Fprintf(w, "    %s: %s\n", key, value)
+		}
+	}
+}
+
+func logRequest(req *Request) {
+	var b = &bytes.Buffer{}
+	fmt.Fprintf(b, "REQUEST\n")
+	fmt.Fprintf(b, "  %s HTTP/%d.%d %s\n", req.Method, req.ProtocolVersion/1000, req.ProtocolVersion%1000, req.URL)
+	fmt.Fprintf(b, "  RemoteAddr:  %s\n", req.RemoteAddr)
+	fmt.Fprintf(b, "  ContentType:  %s\n", req.ContentType)
+	fmt.Fprintf(b, "  ContentLength:  %d\n", req.ContentLength)
+	writeStringMap(b, "Header", req.Header)
+	writeStringMap(b, "Param", req.Param)
+	writeStringMap(b, "Cookie", req.Cookie)
+	log.Print(b.String())
+}
+
+func logResponse(status int, header StringsMap) {
+	var b = &bytes.Buffer{}
+	fmt.Fprintf(b, "RESPONSE\n")
+	fmt.Fprintf(b, "  Status: %d\n", status)
+	writeStringMap(b, "Header", header)
+	log.Print(b.String())
+}
+
 // DebugLogger returns a handler that logs the request and response.
 func DebugLogger(enabled bool, handler Handler) Handler {
 	if !enabled {
 		return handler
 	}
-	// TODO: improve format of output
 	return HandlerFunc(func(req *Request) {
-		log.Println(req, "\n")
+		logRequest(req)
 		FilterRespond(req, func(status int, header StringsMap) (int, StringsMap) {
-			log.Println(status, header, "\n")
+			logResponse(status, header)
 			return status, header
 		})
 		handler.ServeWeb(req)

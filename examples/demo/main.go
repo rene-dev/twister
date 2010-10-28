@@ -16,7 +16,7 @@ func homeHandler(req *web.Request) {
 func main() {
 	flag.Parse()
 	h := web.SetErrorHandler(coreErrorHandler,
-		web.ProcessForm(10000, true, web.NewHostRouter(nil).
+		web.ProcessForm(10000, true, web.DebugLogger(true, web.NewHostRouter(nil).
 			Register("www.example.com", web.NewRouter().
 			Register("/", "GET", homeHandler).
 			Register("/static/<path:.*>", "GET", web.FileHandler("static/")).
@@ -25,7 +25,7 @@ func main() {
 			Register("/core/", "GET", coreHandler).
 			Register("/core/a/<a>/", "GET", coreHandler).
 			Register("/core/b/<b>/c/<c>", "GET", coreHandler).
-			Register("/core/c", "POST", coreHandler))))
+			Register("/core/c", "POST", coreHandler)))))
 
 	err := server.ListenAndServe("localhost:8080", ":8080", h)
 	if err != nil {
