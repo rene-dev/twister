@@ -32,13 +32,13 @@ type parseTest struct {
 }
 
 var parseTests = []parseTest{
-	parseTest{"no body", "", "", 0, web.NewStringsMap(), "GET /foo HTTP/1.1\r\n"},
-	parseTest{"empty", "", "", 0, web.NewStringsMap(), " "},
-	parseTest{"simple", "GET", "/foo", web.ProtocolVersion(1, 1), web.NewStringsMap(),
+	{"no body", "", "", 0, web.NewStringsMap(), "GET /foo HTTP/1.1\r\n"},
+	{"empty", "", "", 0, web.NewStringsMap(), " "},
+	{"simple", "GET", "/foo", web.ProtocolVersion(1, 1), web.NewStringsMap(),
 		`GET /foo HTTP/1.1
 
 `},
-	parseTest{"multihdr", "GET", "/foo", web.ProtocolVersion(1, 0), web.NewStringsMap(
+	{"multihdr", "GET", "/foo", web.ProtocolVersion(1, 0), web.NewStringsMap(
 		web.HeaderContentType, "text/html",
 		web.HeaderCookie, "hello=world",
 		web.HeaderCookie, "foo=bar"),
@@ -48,7 +48,7 @@ CoOkie: hello=world
 Cookie: foo=bar
 
 `},
-	parseTest{"continuation", "GET", "/hello", web.ProtocolVersion(1, 1), web.NewStringsMap(
+	{"continuation", "GET", "/hello", web.ProtocolVersion(1, 1), web.NewStringsMap(
 		web.HeaderContentType, "text/html",
 		web.HeaderCookie, "hello=world, foo=bar"),
 		`GET /hello HTTP/1.1

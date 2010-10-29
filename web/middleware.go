@@ -24,12 +24,12 @@ import (
 	"log"
 )
 
-type respondFilter struct {
+type filterResponder struct {
 	Responder
 	filter func(status int, header StringsMap) (int, StringsMap)
 }
 
-func (rf *respondFilter) Respond(status int, header StringsMap) ResponseBody {
+func (rf *filterResponder) Respond(status int, header StringsMap) ResponseBody {
 	return rf.Responder.Respond(rf.filter(status, header))
 }
 
@@ -37,7 +37,7 @@ func (rf *respondFilter) Respond(status int, header StringsMap) ResponseBody {
 // arguments to Respond through the supplied filter. This function is intended
 // to be used by middleware.
 func FilterRespond(req *Request, filter func(status int, header StringsMap) (int, StringsMap)) {
-	req.Responder = &respondFilter{req.Responder, filter}
+	req.Responder = &filterResponder{req.Responder, filter}
 }
 
 // SetErrorHandler returns a handler that sets the request's error handler to the supplied handler.

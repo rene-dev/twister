@@ -31,7 +31,7 @@ type SignatureTest struct {
 }
 
 var SignatureTests = []SignatureTest{
-	SignatureTest{
+	{
 		"GeT",
 		"hTtp://pHotos.example.net/photos",
 		web.NewStringsMap(
@@ -47,7 +47,7 @@ var SignatureTests = []SignatureTest{
 		Credentials{"dpf43f3p2l4k3l03", "kd94hf93k423kf44"},
 		Credentials{"kd94hf93k423kf44", "pfkkdhi9sl3r4s00"},
 		"tR3+Ty81lMeYAr/Fid0kMTYa/WM="},
-	SignatureTest{
+	{
 		"GET",
 		"http://PHOTOS.example.net:8001/Photos",
 		web.NewStringsMap(

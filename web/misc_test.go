@@ -25,15 +25,15 @@ type ParseCookieValuesTest struct {
 }
 
 var ParseCookieValuesTests = []ParseCookieValuesTest{
-	ParseCookieValuesTest{[]string{"a=b"}, StringsMap{"a": []string{"b"}}},
-	ParseCookieValuesTest{[]string{"a=b; c"}, StringsMap{"a": []string{"b"}}},
-	ParseCookieValuesTest{[]string{"a=b; =c"}, StringsMap{"a": []string{"b"}}},
-	ParseCookieValuesTest{[]string{"a=b; ; "}, StringsMap{"a": []string{"b"}}},
-	ParseCookieValuesTest{[]string{"a=b; c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	ParseCookieValuesTest{[]string{"a=b; c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	ParseCookieValuesTest{[]string{"a=b;c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	ParseCookieValuesTest{[]string{" a=b;c=d "}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	ParseCookieValuesTest{[]string{"a=b", "c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b"}, StringsMap{"a": []string{"b"}}},
+	{[]string{"a=b; c"}, StringsMap{"a": []string{"b"}}},
+	{[]string{"a=b; =c"}, StringsMap{"a": []string{"b"}}},
+	{[]string{"a=b; ; "}, StringsMap{"a": []string{"b"}}},
+	{[]string{"a=b; c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b; c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b;c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{" a=b;c=d "}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b", "c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
 }
 
 func TestParseCookieValues(t *testing.T) {
@@ -54,11 +54,11 @@ type ParseUrlEncodedFormTest struct {
 }
 
 var ParseUrlEncodedFormTests = []ParseUrlEncodedFormTest{
-	ParseUrlEncodedFormTest{"a=", StringsMap{"a": []string{""}}},
-	ParseUrlEncodedFormTest{"a=b", StringsMap{"a": []string{"b"}}},
-	ParseUrlEncodedFormTest{"a=b&c=d", StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	ParseUrlEncodedFormTest{"a=b&a=c", StringsMap{"a": []string{"b", "c"}}},
-	ParseUrlEncodedFormTest{"a=Hello%20World", StringsMap{"a": []string{"Hello World"}}},
+	{"a=", StringsMap{"a": []string{""}}},
+	{"a=b", StringsMap{"a": []string{"b"}}},
+	{"a=b&c=d", StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{"a=b&a=c", StringsMap{"a": []string{"b", "c"}}},
+	{"a=Hello%20World", StringsMap{"a": []string{"Hello World"}}},
 }
 
 func TestParseUrlEncodedForm(t *testing.T) {
