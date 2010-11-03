@@ -16,7 +16,6 @@ package web
 
 import (
 	"bytes"
-	"container/vector"
 	"flag"
 	"http"
 	"regexp"
@@ -54,7 +53,7 @@ import (
 // trailing slash to the URL with the trailing slash.
 //
 type Router struct {
-	routes vector.Vector
+	routes []*route
 }
 
 type route struct {
@@ -138,7 +137,7 @@ func (router *Router) Register(pattern string, handlers ...interface{}) *Router 
 			panic("twister: Bad handler for pattern " + pattern + " and method " + method)
 		}
 	}
-	router.routes.Push(&r)
+	router.routes = append(router.routes, &r)
 	return router
 }
 
@@ -169,8 +168,7 @@ var (
 // Given the path componennt of the request URL and the request method, find
 // the handler and path parameters.
 func (router *Router) find(path string, method string) (Handler, []string, []string) {
-	for i := 0; i < router.routes.Len(); i++ {
-		r := router.routes.At(i).(*route)
+	for _, r := range router.routes {
 		values := r.regexp.FindStringSubmatch(path)
 		if len(values) == 0 {
 			continue

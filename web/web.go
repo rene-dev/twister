@@ -18,7 +18,6 @@ package web
 
 import (
 	"bytes"
-	"container/vector"
 	"http"
 	"io"
 	"io/ioutil"
@@ -72,9 +71,7 @@ func (m StringsMap) GetDef(key string, def string) string {
 
 // Append value to slice for given key.
 func (m StringsMap) Append(key string, value string) {
-	v := vector.StringVector(m[key])
-	v.Push(value)
-	m[key] = v
+	m[key] = append(m[key], value)
 }
 
 // Set value for given key, discarding previous values if any.
