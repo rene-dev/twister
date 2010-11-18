@@ -191,8 +191,9 @@ func nonce() string {
 	if nonceCounter == 0 {
 		binary.Read(rand.Reader, binary.BigEndian, &nonceCounter)
 	}
-	nonceCounter++
-	return strconv.Uitob64(nonceCounter, 16)
+	result := strconv.Uitob64(nonceCounter, 16)
+	nonceCounter += 1
+	return result
 }
 
 // Client represents an OAuth client.

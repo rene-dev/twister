@@ -27,13 +27,13 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"mime"
 )
 
 var (
 	// Object not in valid state for call.
 	ErrInvalidState = os.NewError("invalid state")
 	ErrBadFormat    = os.NewError("bad format")
-	errParsed       = os.NewError("item parsed")
 )
 
 // StringsMap maps strings to slices of strings.
@@ -161,6 +161,9 @@ type Request struct {
 	// Lowercase content type, not including params.
 	ContentType string
 
+	// Parameters from Content-Type header
+	ContentParam map[string]string
+
 	// ErrorHandler responds to the request with the given status code.
 	// Applications set their error handler in middleware. 
 	ErrorHandler func(req *Request, status int, reason os.Error)
@@ -172,7 +175,7 @@ type Request struct {
 	// The request body.
 	Body RequestBody
 
-	formParseErr os.Error
+	formParsed bool
 }
 
 // Handler is the interface for web handlers.
@@ -222,11 +225,7 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 	}
 
 	if s, found := req.Header.Get(HeaderContentType); found {
-		i := 0
-		for i < len(s) && (IsTokenByte(s[i]) || s[i] == '/') {
-			i++
-		}
-		req.ContentType = strings.ToLower(s[0:i])
+		req.ContentType, req.ContentParam = mime.ParseMediaType(s)
 	}
 
 	return req, nil
@@ -273,7 +272,7 @@ func (req *Request) BodyBytes() ([]byte, os.Error) {
 	var p []byte
 	if req.ContentLength > 0 {
 		p = make([]byte, req.ContentLength)
-		if _, err := req.Body.Read(p); err != nil {
+		if _, err := io.ReadFull(req.Body, p); err != nil {
 			return nil, err
 		}
 	} else {
@@ -287,24 +286,18 @@ func (req *Request) BodyBytes() ([]byte, os.Error) {
 
 // ParseForm parses url-encoded form bodies. ParseForm is idempotent.
 func (req *Request) ParseForm() os.Error {
-	if req.formParseErr == errParsed {
-		return nil
-	} else if req.formParseErr != nil {
-		return req.formParseErr
-	}
-	req.formParseErr = errParsed
-	if req.ContentType != "application/x-www-form-urlencoded" ||
+	if req.formParsed ||
+		req.ContentType != "application/x-www-form-urlencoded" ||
 		req.ContentLength == 0 ||
 		(req.Method != "POST" && req.Method != "PUT") {
 		return nil
 	}
+	req.formParsed = true
 	p, err := req.BodyBytes()
 	if err != nil {
-		req.formParseErr = err
 		return err
 	}
 	if err := ParseUrlEncodedFormBytes(p, req.Param); err != nil {
-		req.formParseErr = err
 		return err
 	}
 	return nil

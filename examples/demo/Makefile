@@ -9,5 +9,6 @@ GOFILES=\
     main.go\
     core.go\
     chat.go\
+    multipart.go\
 
 include $(GOROOT)/src/Make.cmd

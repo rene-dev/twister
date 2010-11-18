@@ -22,6 +22,7 @@ func main() {
 			Register("/static/<path:.*>", "GET", web.FileHandler("static/")).
 			Register("/chat", "GET", chatFrameHandler).
 			Register("/chat/ws", "GET", chatWsHandler).
+			Register("/mp", "GET", mpGetHandler, "POST", mpPostHandler).
 			Register("/core/", "GET", coreHandler).
 			Register("/core/a/<a>/", "GET", coreHandler).
 			Register("/core/b/<b>/c/<c>", "GET", coreHandler).
@@ -43,6 +44,7 @@ const homeStr = `
 <ul>
 <li><a href="/core">Core functionality</a>
 <li><a href="/chat">Chat using WebSockets</a>
+<li><a href="/mp">Multipart Form</a>
 </ul>
 </body>
 </html>`
