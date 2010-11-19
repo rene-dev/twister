@@ -38,11 +38,11 @@ type Part struct {
 // ParseMultipartForm parses a multipart/form-data body. Form fields are
 // added to the request Param. This function loads the entire request body in
 // memory. This may not be appropriate in some scenarios.
-func ParseMultipartForm(req *Request) ([]Part, os.Error) {
+func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error) {
 	if req.ContentType != "multipart/form-data" {
 		return nil, nil
 	}
-	p, err := req.BodyBytes()
+	p, err := req.BodyBytes(maxRequestBodyLen)
 	if err != nil {
 		return nil, err
 	}

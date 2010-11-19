@@ -53,22 +53,20 @@ const (
 	XSRFParamName  = "xsrf"
 )
 
-// ProcessForm returns a handler that checks the request body length, parses
-// url encoded forms and optionaly checks for XRSF.
+// ProcessForm returns a handler that parses url encoded forms if smaller than the 
+// specified size and optionally checks for XSRF.
 func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler {
 	return HandlerFunc(func(req *Request) {
 
-		if req.ContentLength > maxRequestBodyLen {
-			status := StatusRequestEntityTooLarge
-			if _, found := req.Header.Get(HeaderExpect); found {
-				status = StatusExpectationFailed
+		if err := req.ParseForm(maxRequestBodyLen); err != nil {
+			status := StatusBadRequest
+			if err == ErrRequestEntityTooLarge {
+				status = StatusRequestEntityTooLarge
+				if _, found := req.Header.Get(HeaderExpect); found {
+					status = StatusExpectationFailed
+				}
 			}
-			req.Error(status, os.NewError("twister: Request entity too large."))
-			return
-		}
-
-		if err := req.ParseForm(); err != nil {
-			req.Error(StatusBadRequest, os.NewError("twister: Error reading or parsing form."))
+			req.Error(status, os.NewError("twister: Error reading or parsing form."))
 			return
 		}
 

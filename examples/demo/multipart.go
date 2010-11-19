@@ -13,7 +13,7 @@ func mpGetHandler(req *web.Request) {
 }
 
 func mpPostHandler(req *web.Request) {
-	parts, err := web.ParseMultipartForm(req)
+	parts, err := web.ParseMultipartForm(req, -1)
 	var (
 		filename, contentType string
 		contentParam          map[string]string
@@ -61,7 +61,10 @@ file <input type="file" name="file"></br>
 err: {err}<br>
 hello: {hello}<br>
 foo: {foo}<br>
-file, name: {filename}, contentType: {contentType}, contentParam: {contentParam}, size: {size}
+file name: {filename}<br>
+file contentType: {contentType}<br>
+file contentParam: {contentParam}<br>
+file size: {size}<br>
 {.end}
 </body>
 </html>

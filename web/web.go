@@ -22,18 +22,20 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net"
 	"os"
 	"path"
 	"strconv"
 	"strings"
-	"mime"
+	"math"
 )
 
 var (
 	// Object not in valid state for call.
-	ErrInvalidState = os.NewError("invalid state")
-	ErrBadFormat    = os.NewError("bad format")
+	ErrInvalidState          = os.NewError("invalid state")
+	ErrBadFormat             = os.NewError("bad format")
+	ErrRequestEntityTooLarge = os.NewError("request entity too large")
 )
 
 // StringsMap maps strings to slices of strings.
@@ -267,17 +269,28 @@ func (req *Request) Redirect(url string, perm bool, kvs ...string) {
 	req.Responder.Respond(status, header)
 }
 
-// BodyBytes returns the request body a slice of bytees.
-func (req *Request) BodyBytes() ([]byte, os.Error) {
+// BodyBytes returns the request body a slice of bytees. If maxLen is negative,
+// then no limit is imposed on the length of the body. If the body is longer
+// than maxLen, then ErrRequestEntityTooLarge is returned.
+func (req *Request) BodyBytes(maxLen int) ([]byte, os.Error) {
 	var p []byte
-	if req.ContentLength > 0 {
+
+	if maxLen < 0 {
+		maxLen = math.MaxInt32
+	}
+
+	if req.ContentLength == 0 {
+		return nil, nil
+	} else if req.ContentLength > maxLen {
+		return nil, ErrRequestEntityTooLarge
+	} else if req.ContentLength > 0 {
 		p = make([]byte, req.ContentLength)
 		if _, err := io.ReadFull(req.Body, p); err != nil {
 			return nil, err
 		}
 	} else {
 		var err os.Error
-		if p, err = ioutil.ReadAll(req.Body); err != nil {
+		if p, err = ioutil.ReadAll(io.LimitReader(req.Body, int64(maxLen))); err != nil {
 			return nil, err
 		}
 	}
@@ -285,7 +298,7 @@ func (req *Request) BodyBytes() ([]byte, os.Error) {
 }
 
 // ParseForm parses url-encoded form bodies. ParseForm is idempotent.
-func (req *Request) ParseForm() os.Error {
+func (req *Request) ParseForm(maxRequestBodyLen int) os.Error {
 	if req.formParsed ||
 		req.ContentType != "application/x-www-form-urlencoded" ||
 		req.ContentLength == 0 ||
@@ -293,7 +306,7 @@ func (req *Request) ParseForm() os.Error {
 		return nil
 	}
 	req.formParsed = true
-	p, err := req.BodyBytes()
+	p, err := req.BodyBytes(maxRequestBodyLen)
 	if err != nil {
 		return err
 	}
