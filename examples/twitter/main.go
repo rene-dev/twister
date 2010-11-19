@@ -138,9 +138,7 @@ func home(req *web.Request) {
 	w := req.Respond(web.StatusOK, web.HeaderContentType, "text/plain")
 	var buf bytes.Buffer
 	json.Indent(&buf, p, "", "  ")
-	log.Print("START")
 	w.Write(buf.Bytes())
-	log.Print("END")
 }
 
 func main() {
@@ -165,19 +163,5 @@ const homeLoggedOutStr = `
 </head>
 <body>
 <a href="/login"><img src="http://a0.twimg.com/images/dev/buttons/sign-in-with-twitter-d.png"></a>
-</body>
-</html>`
-
-var homeTempl = template.MustParse(homeStr, nil)
-
-const homeStr = `
-<html>
-<head>
-</head>
-<body>
-<ul>
-<li><a href="/core">Core functionality</a>
-<li><a href="/chat">Chat using WebSockets</a>
-</ul>
 </body>
 </html>`

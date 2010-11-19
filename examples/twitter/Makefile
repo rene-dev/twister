@@ -1,4 +1,4 @@
-run: clean goinstall example
+run: example
 	./example 
  
 include $(GOROOT)/src/Make.inc
