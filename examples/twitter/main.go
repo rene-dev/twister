@@ -15,14 +15,12 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"github.com/garyburd/twister/oauth"
 	"github.com/garyburd/twister/server"
 	"github.com/garyburd/twister/web"
 	"http"
-	"io/ioutil"
 	"json"
 	"log"
 	"os"
@@ -125,20 +123,18 @@ func home(req *web.Request) {
 		req.Error(web.StatusInternalServerError, err)
 		return
 	}
-	p, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		req.Error(web.StatusInternalServerError, err)
-		return
-	}
+    defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		req.Error(web.StatusInternalServerError, os.NewError(fmt.Sprint("Status ", resp.StatusCode)))
 		return
 	}
-	w := req.Respond(web.StatusOK, web.HeaderContentType, "text/plain")
-	var buf bytes.Buffer
-	json.Indent(&buf, p, "", "  ")
-	w.Write(buf.Bytes())
+    var d interface{}
+    err = json.NewDecoder(resp.Body).Decode(&d)
+	if err != nil {
+		req.Error(web.StatusInternalServerError, err)
+		return
+	}
+	homeTempl.Execute(d, req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML))
 }
 
 func main() {
@@ -165,3 +161,16 @@ const homeLoggedOutStr = `
 <a href="/login"><img src="http://a0.twimg.com/images/dev/buttons/sign-in-with-twitter-d.png"></a>
 </body>
 </html>`
+
+var homeTempl = template.MustParse(homeStr, nil)
+
+const homeStr = `
+<html>
+<head>
+</head>
+<body>
+{.repeated section @}
+<p>{.section user}{screen_name}:{.end} {text}
+{.end}
+</body>`
+
