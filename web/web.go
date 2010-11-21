@@ -242,7 +242,7 @@ func (req *Request) Respond(status int, kvs ...string) ResponseBody {
 func defaultErrorHandler(req *Request, status int, reason os.Error) {
 	w := req.Respond(status, HeaderContentType, "text/plain; charset=utf-8")
 	io.WriteString(w, StatusText(status))
-	log.Println(req.URL, status, reason)
+	log.Println("ERROR", req.URL, status, reason)
 }
 
 // Error responds to the request with an error. 

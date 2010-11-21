@@ -23,6 +23,7 @@ Twister is a work in progress.
 
 * twister/examples/demo - Illustrates basic features of Twister.
 * twister/examples/twitter - Login to Twitter with OAuth and display home timeline.
+* twister/examples/facebook - Login to Facebook with OAuth2 and display news feed.
 
 ## Installation
 

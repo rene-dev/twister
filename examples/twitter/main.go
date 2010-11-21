@@ -35,9 +35,11 @@ var oauthClient = oauth.Client{
 	TokenRequestURI:               "http://api.twitter.com/oauth/access_token",
 }
 
-// encodeCredentials encodes OAuth credentials in a format suitable for storing in a cookie.
-func encodeCredentials(c *oauth.Credentials) string {
-	return http.URLEscape(c.Token) + "/" + http.URLEscape(c.Secret)
+// credentialsCookie encodes OAuth credentials to a Set-Cookie header value.
+func credentialsCookie(name string, c *oauth.Credentials, maxAgeDays int) string {
+	return web.NewCookie(name, http.URLEscape(c.Token)+"/"+http.URLEscape(c.Secret)).
+		MaxAgeDays(maxAgeDays).
+		String()
 }
 
 // credentials returns oauth credentials stored in cookie with name key.
@@ -63,18 +65,18 @@ func credentials(req *web.Request, key string) (*oauth.Credentials, os.Error) {
 
 // login redirects the user to the Twitter authorization page.
 func login(req *web.Request) {
-	callback := req.URL.Scheme + "://" + req.URL.Host + "/twitter-callback"
+	callback := req.URL.Scheme + "://" + req.URL.Host + "/callback"
 	temporaryCredentials, err := oauthClient.RequestTemporaryCredentials(callback)
 	if err != nil {
 		req.Error(web.StatusInternalServerError, err)
 		return
 	}
 	req.Redirect(oauthClient.AuthorizationURL(temporaryCredentials), false,
-		web.HeaderSetCookie, fmt.Sprintf("tmp=%s; Path=/; HttpOnly", encodeCredentials(temporaryCredentials)))
+		web.HeaderSetCookie, credentialsCookie("tmp", temporaryCredentials, 0))
 }
 
-// twitterCallback handles OAuth callbacks from Twitter.
-func twitterCallback(req *web.Request) {
+// authCallback handles OAuth callbacks from Twitter.
+func authCallback(req *web.Request) {
 	temporaryCredentials, err := credentials(req, "tmp")
 	if err != nil {
 		req.Error(web.StatusNotFound, err)
@@ -95,9 +97,8 @@ func twitterCallback(req *web.Request) {
 		return
 	}
 	req.Redirect("/", false,
-		web.HeaderSetCookie, fmt.Sprintf("tok=%s; Path=/; HttpOnly; Expires=%s",
-			encodeCredentials(tokenCredentials),
-			web.FormatDeltaDays(30)))
+		web.HeaderSetCookie, credentialsCookie("tok", tokenCredentials, 30),
+		web.HeaderSetCookie, web.NewCookie("tmp", "").Delete().String())
 }
 
 // homeLoggedOut handles request to the home page for logged out users.
@@ -108,7 +109,6 @@ func homeLoggedOut(req *web.Request) {
 
 // home handles requests to the home page.
 func home(req *web.Request) {
-	fmt.Print(req)
 	token, err := credentials(req, "tok")
 	if err != nil {
 		homeLoggedOut(req)
@@ -123,13 +123,13 @@ func home(req *web.Request) {
 		req.Error(web.StatusInternalServerError, err)
 		return
 	}
-    defer resp.Body.Close()
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		req.Error(web.StatusInternalServerError, os.NewError(fmt.Sprint("Status ", resp.StatusCode)))
 		return
 	}
-    var d interface{}
-    err = json.NewDecoder(resp.Body).Decode(&d)
+	var d interface{}
+	err = json.NewDecoder(resp.Body).Decode(&d)
 	if err != nil {
 		req.Error(web.StatusInternalServerError, err)
 		return
@@ -142,8 +142,7 @@ func main() {
 	h := web.ProcessForm(10000, true, web.DebugLogger(true, web.NewRouter().
 		Register("/", "GET", home).
 		Register("/login", "GET", login).
-		Register("/account/twitter-callback", "GET", twitterCallback).
-		Register("/twitter-callback", "GET", twitterCallback)))
+		Register("/callback", "GET", authCallback)))
 
 	err := server.ListenAndServe("localhost:8080", ":8080", h)
 	if err != nil {
@@ -170,7 +169,6 @@ const homeStr = `
 </head>
 <body>
 {.repeated section @}
-<p>{.section user}{screen_name}:{.end} {text}
+<p>{.section user}<b>{screen_name}</b> {.end}{text}
 {.end}
 </body>`
-

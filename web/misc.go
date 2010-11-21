@@ -15,6 +15,7 @@
 package web
 
 import (
+	"bytes"
 	"os"
 	"io"
 	"strings"
@@ -412,4 +413,79 @@ func VerifyValue(secret, context string, signedValue string) (string, os.Error) 
 		return "", errVerificationFailure
 	}
 	return a[2], nil
+}
+
+// Cookie is an HTTP cookie. 
+type Cookie struct {
+	name     string
+	value    string
+	path     string
+	domain   string
+	maxAge   int
+	secure   bool
+	httpOnly bool
+}
+
+// NewCookie returns a new cookie with parameters name=value; path=/; httponly.
+func NewCookie(name, value string) *Cookie {
+	return &Cookie{name: name, value: value, path: "/", httpOnly: true}
+}
+
+// Path sets the path for the cookie. The path defaults to "/"
+func (c *Cookie) Path(path string) *Cookie { c.path = path; return c }
+
+// Domain sets the domain for the cookie. 
+func (c *Cookie) Domain(domain string) *Cookie { c.domain = domain; return c }
+
+// MaxAge sets the maximum age for the cookie in seconds.
+func (c *Cookie) MaxAge(seconds int) *Cookie { c.maxAge = seconds; return c }
+
+// MaxAgeDays sets the maximum age for the cookie in days.
+func (c *Cookie) MaxAgeDays(days int) *Cookie { return c.MaxAge(days * 60 * 60 * 24) }
+
+// Delete sets the expiration date for the cookie in the past. This will cause
+// clients to delete the cookie.
+func (c *Cookie) Delete() *Cookie { return c.MaxAgeDays(-30).HTTPOnly(false) }
+
+// Secure sets the secure attribute on the cookie. The secure attribute
+// defaults to false.
+func (c *Cookie) Secure(secure bool) *Cookie { c.secure = secure; return c }
+
+// Secure sets the httponly attribute on the cookie. The httponly attribute
+// defaults to true.
+func (c *Cookie) HTTPOnly(httpOnly bool) *Cookie { c.httpOnly = httpOnly;
+return c }
+
+// String returns the Set-Cookie header value for the cookie.
+func (c *Cookie) String() string {
+	var buf bytes.Buffer
+
+	buf.WriteString(c.name)
+	buf.WriteByte('=')
+	buf.WriteString(c.value)
+
+	if c.path != "" {
+		buf.WriteString("; path=")
+		buf.WriteString(c.path)
+	}
+
+	if c.domain != "" {
+		buf.WriteString("; domain=")
+		buf.WriteString(c.domain)
+	}
+
+	if c.maxAge != 0 {
+		buf.WriteString("; expires=")
+		buf.WriteString(FormatDeltaSeconds(c.maxAge))
+	}
+
+	if c.secure {
+		buf.WriteString("; secure")
+	}
+
+	if c.httpOnly {
+		buf.WriteString("; httponly")
+	}
+
+	return buf.String()
 }
