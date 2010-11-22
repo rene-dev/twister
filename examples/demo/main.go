@@ -34,7 +34,7 @@ func main() {
 	}
 }
 
-var homeTempl = template.MustParse(homeStr, nil)
+var homeTempl = template.MustParse(homeStr, template.FormatterMap{"": template.HTMLFormatter})
 
 const homeStr = `
 <html>

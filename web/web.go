@@ -167,8 +167,8 @@ type Request struct {
 	ContentParam map[string]string
 
 	// ErrorHandler responds to the request with the given status code.
-	// Applications set their error handler in middleware. 
-	ErrorHandler func(req *Request, status int, reason os.Error, header StringsMap)
+	// Applications can set the error handler using middleware. 
+	ErrorHandler ErrorHandler
 
 	// ContentLength is the length of the request body or -1 if the content
 	// length is not known.
@@ -179,6 +179,8 @@ type Request struct {
 
 	formParsed bool
 }
+
+type ErrorHandler func(req *Request, status int, reason os.Error, header StringsMap)
 
 // Handler is the interface for web handlers.
 type Handler interface {

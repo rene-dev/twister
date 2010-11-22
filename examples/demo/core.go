@@ -27,7 +27,7 @@ func coreHandler(req *web.Request) {
 		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"))
 }
 
-var coreTempl = template.MustParse(coreStr, nil)
+var coreTempl = template.MustParse(coreStr, template.FormatterMap{"": template.HTMLFormatter})
 
 const coreStr = `
 <html>

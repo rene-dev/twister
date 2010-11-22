@@ -71,7 +71,7 @@ func chatFrameHandler(req *web.Request) {
 var chatTempl *template.Template
 
 func init() {
-	chatTempl = template.New(nil)
+	chatTempl = template.New(template.FormatterMap{"": template.HTMLFormatter})
 	chatTempl.SetDelims("«", "»")
 	if err := chatTempl.Parse(chatStr); err != nil {
 		panic("template error: " + err.String())

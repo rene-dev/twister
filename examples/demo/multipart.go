@@ -40,7 +40,7 @@ func mpPostHandler(req *web.Request) {
 		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"))
 }
 
-var mpTempl = template.MustParse(mpStr, nil)
+var mpTempl = template.MustParse(mpStr, template.FormatterMap{"": template.HTMLFormatter})
 
 const mpStr = `
 <html>
