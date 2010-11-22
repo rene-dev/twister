@@ -150,7 +150,8 @@ func main() {
 	}
 }
 
-var homeLoggedOutTempl = template.MustParse(homeLoggedOutStr, nil)
+var fmap = template.FormatterMap{"": template.HTMLFormatter}
+var homeLoggedOutTempl = template.MustParse(homeLoggedOutStr, fmap)
 
 const homeLoggedOutStr = `
 <html>
@@ -161,7 +162,7 @@ const homeLoggedOutStr = `
 </body>
 </html>`
 
-var homeTempl = template.MustParse(homeStr, nil)
+var homeTempl = template.MustParse(homeStr, fmap)
 
 const homeStr = `
 <html>
