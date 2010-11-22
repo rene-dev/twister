@@ -348,9 +348,13 @@ func parseCookieValues(values []string, m StringsMap) os.Error {
 					end = begin
 				}
 			case '=':
-				key = s[begin:end]
-				begin = i + 1
-				end = begin
+				if key == "" {
+					key = s[begin:end]
+					begin = i + 1
+					end = begin
+				} else {
+					end += 1
+				}
 			case ';':
 				if len(key) > 0 && key[0] != '$' && begin < end {
 					value := s[begin:end]
