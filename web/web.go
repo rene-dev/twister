@@ -168,7 +168,7 @@ type Request struct {
 
 	// ErrorHandler responds to the request with the given status code.
 	// Applications set their error handler in middleware. 
-	ErrorHandler func(req *Request, status int, reason os.Error)
+	ErrorHandler func(req *Request, status int, reason os.Error, header StringsMap)
 
 	// ContentLength is the length of the request body or -1 if the content
 	// length is not known.
@@ -239,15 +239,16 @@ func (req *Request) Respond(status int, kvs ...string) ResponseBody {
 	return req.Responder.Respond(status, NewStringsMap(kvs...))
 }
 
-func defaultErrorHandler(req *Request, status int, reason os.Error) {
-	w := req.Respond(status, HeaderContentType, "text/plain; charset=utf-8")
+func defaultErrorHandler(req *Request, status int, reason os.Error, header StringsMap) {
+	header.Set(HeaderContentType, "text/plain; charset=utf-8")
+	w := req.Responder.Respond(status, header)
 	io.WriteString(w, StatusText(status))
 	log.Println("ERROR", req.URL, status, reason)
 }
 
 // Error responds to the request with an error. 
-func (req *Request) Error(status int, reason os.Error) {
-	req.ErrorHandler(req, status, reason)
+func (req *Request) Error(status int, reason os.Error, kvs ...string) {
+	req.ErrorHandler(req, status, reason, NewStringsMap(kvs...))
 }
 
 // Redirect responds to the request with a redirect the specified URL.

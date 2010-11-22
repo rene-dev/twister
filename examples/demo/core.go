@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func coreErrorHandler(req *web.Request, status int, reason os.Error) {
+func coreErrorHandler(req *web.Request, status int, reason os.Error, header web.StringsMap) {
 
 	coreTempl.Execute(map[string]interface{}{
 		"req":     req,
@@ -14,7 +14,7 @@ func coreErrorHandler(req *web.Request, status int, reason os.Error) {
 		"message": reason,
 		"xsrf":    req.Param.GetDef(web.XSRFParamName, ""),
 	},
-		req.Respond(status, web.HeaderContentType, "text/html"))
+		req.Responder.Respond(status, header))
 }
 
 func coreHandler(req *web.Request) {

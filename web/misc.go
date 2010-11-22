@@ -453,8 +453,10 @@ func (c *Cookie) Secure(secure bool) *Cookie { c.secure = secure; return c }
 
 // Secure sets the httponly attribute on the cookie. The httponly attribute
 // defaults to true.
-func (c *Cookie) HTTPOnly(httpOnly bool) *Cookie { c.httpOnly = httpOnly;
-return c }
+func (c *Cookie) HTTPOnly(httpOnly bool) *Cookie {
+	c.httpOnly = httpOnly
+	return c
+}
 
 // String returns the Set-Cookie header value for the cookie.
 func (c *Cookie) String() string {
