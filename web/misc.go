@@ -39,6 +39,12 @@ func FormatDeltaDays(delta int) string {
 	return FormatDeltaSeconds(delta * 60 * 60 * 24)
 }
 
+var (
+	colonSpaceBytes = []byte{':', ' '}
+	crlfBytes       = []byte{'\r', '\n'}
+	dashdashBytes   = []byte("--")
+)
+
 // Octet tyeps from RFC 2616
 var (
 	isText  [256]bool
@@ -178,89 +184,6 @@ func StatusText(status int) string {
 	return s
 }
 
-// Canonical header name constants.
-const (
-	HeaderAccept               = "Accept"
-	HeaderAcceptCharset        = "Accept-Charset"
-	HeaderAcceptEncoding       = "Accept-Encoding"
-	HeaderAcceptLanguage       = "Accept-Language"
-	HeaderAcceptRanges         = "Accept-Ranges"
-	HeaderAge                  = "Age"
-	HeaderAllow                = "Allow"
-	HeaderAuthorization        = "Authorization"
-	HeaderCacheControl         = "Cache-Control"
-	HeaderConnection           = "Connection"
-	HeaderContentEncoding      = "Content-Encoding"
-	HeaderContentLanguage      = "Content-Language"
-	HeaderContentLength        = "Content-Length"
-	HeaderContentLocation      = "Content-Location"
-	HeaderContentMD5           = "Content-Md5"
-	HeaderContentRange         = "Content-Range"
-	HeaderContentType          = "Content-Type"
-	HeaderCookie               = "Cookie"
-	HeaderDate                 = "Date"
-	HeaderETag                 = "Etag"
-	HeaderEtag                 = "Etag"
-	HeaderExpect               = "Expect"
-	HeaderExpires              = "Expires"
-	HeaderFrom                 = "From"
-	HeaderHost                 = "Host"
-	HeaderIfMatch              = "If-Match"
-	HeaderIfModifiedSince      = "If-Modified-Since"
-	HeaderIfNoneMatch          = "If-None-Match"
-	HeaderIfRange              = "If-Range"
-	HeaderIfUnmodifiedSince    = "If-Unmodified-Since"
-	HeaderLastModified         = "Last-Modified"
-	HeaderLocation             = "Location"
-	HeaderMaxForwards          = "Max-Forwards"
-	HeaderOrigin               = "Origin"
-	HeaderPragma               = "Pragma"
-	HeaderProxyAuthenticate    = "Proxy-Authenticate"
-	HeaderProxyAuthorization   = "Proxy-Authorization"
-	HeaderRange                = "Range"
-	HeaderReferer              = "Referer"
-	HeaderRetryAfter           = "Retry-After"
-	HeaderSecWebSocketKey1     = "Sec-Websocket-Key1"
-	HeaderSecWebSocketKey2     = "Sec-Websocket-Key2"
-	HeaderSecWebSocketProtocol = "Sec-Websocket-Protocol"
-	HeaderServer               = "Server"
-	HeaderSetCookie            = "Set-Cookie"
-	HeaderTE                   = "Te"
-	HeaderTrailer              = "Trailer"
-	HeaderTransferEncoding     = "Transfer-Encoding"
-	HeaderUpgrade              = "Upgrade"
-	HeaderUserAgent            = "User-Agent"
-	HeaderVary                 = "Vary"
-	HeaderVia                  = "Via"
-	HeaderWWWAuthenticate      = "Www-Authenticate"
-	HeaderWarning              = "Warning"
-)
-
-// HeaderName returns the canonical format of the header name s. 
-func HeaderName(name string) string {
-	p := []byte(name)
-	return HeaderNameBytes(p)
-}
-
-// HeaderNameBytes returns the canonical format for the header name specified
-// by the bytes in p. This function modifies the contents p.
-func HeaderNameBytes(p []byte) string {
-	upper := true
-	for i, c := range p {
-		if upper {
-			if 'a' <= c && c <= 'z' {
-				p[i] = c + 'A' - 'a'
-			}
-		} else {
-			if 'A' <= c && c <= 'Z' {
-				p[i] = c + 'a' - 'A'
-			}
-		}
-		upper = c == '-'
-	}
-	return string(p)
-}
-
 // ProtocolVersion combines HTTP major and minor protocol numbers into a single
 // integer for easy comparision.
 func ProtocolVersion(major int, minor int) int {
@@ -275,64 +198,6 @@ const (
 	ProtocolVersion11 = 1001 // HTTP/1.1
 	ContentTypeHTML   = "text/html; charset=\"utf-8\""
 )
-
-const notHex = 127
-
-func dehex(c byte) byte {
-	switch {
-	case '0' <= c && c <= '9':
-		return c - '0'
-	case 'a' <= c && c <= 'f':
-		return c - 'a' + 10
-	case 'A' <= c && c <= 'F':
-		return c - 'A' + 10
-	}
-	return notHex
-}
-
-// ParseUrlEncodedFormBytes parses the URL-encoded form and appends the values to
-// the supplied map. This function modifies the contents of p.
-func ParseUrlEncodedFormBytes(p []byte, m StringsMap) os.Error {
-	key := ""
-	j := 0
-	for i := 0; i < len(p); {
-		switch p[i] {
-		case '=':
-			key = string(p[0:j])
-			j = 0
-			i += 1
-		case '&':
-			m.Append(key, string(p[0:j]))
-			key = ""
-			j = 0
-			i += 1
-		case '%':
-			if i+2 >= len(p) {
-				return ErrBadFormat
-			}
-			a := dehex(p[i+1])
-			b := dehex(p[i+2])
-			if a == notHex || b == notHex {
-				return ErrBadFormat
-			}
-			p[j] = a<<4 | b
-			j += 1
-			i += 3
-		case '+':
-			p[j] = ' '
-			j += 1
-			i += 1
-		default:
-			p[j] = p[i]
-			j += 1
-			i += 1
-		}
-	}
-	if key != "" {
-		m.Append(key, string(p[0:j]))
-	}
-	return nil
-}
 
 func parseCookieValues(values []string, m StringsMap) os.Error {
 	for _, s := range values {

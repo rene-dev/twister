@@ -31,10 +31,6 @@ import (
 
 var (
 	ErrBadRequestLine = os.NewError("could not parse request line")
-	ErrLineTooLong    = os.NewError("request line or header line too long")
-	ErrBadHeaderLine  = os.NewError("could not parse header line")
-	ErrHeaderTooLong  = os.NewError("header value too long")
-	ErrHeadersTooLong = os.NewError("too many headers")
 )
 
 type conn struct {
@@ -55,30 +51,6 @@ type conn struct {
 	write100Continue   bool
 }
 
-func skipBytes(p []byte, f func(byte) bool) int {
-	i := 0
-	for ; i < len(p); i++ {
-		if !f(byte(p[i])) {
-			break
-		}
-	}
-	return i
-}
-
-func trimWSLeft(p []byte) []byte {
-	return p[skipBytes(p, web.IsSpaceByte):]
-}
-
-func trimWSRight(p []byte) []byte {
-	var i int
-	for i = len(p); i > 0; i-- {
-		if !web.IsSpaceByte(p[i-1]) {
-			break
-		}
-	}
-	return p[0:i]
-}
-
 var requestLineRegexp = regexp.MustCompile("^([_A-Za-z0-9]+) ([^ ]+) HTTP/([0-9]+)\\.([0-9]+)[\r\n ]+$")
 
 func readRequestLine(b *bufio.Reader) (method string, url string, version int, err os.Error) {
@@ -86,7 +58,7 @@ func readRequestLine(b *bufio.Reader) (method string, url string, version int, e
 	p, err := b.ReadSlice('\n')
 	if err != nil {
 		if err == bufio.ErrBufferFull {
-			err = ErrLineTooLong
+			err = web.ErrLineTooLong
 		}
 		return
 	}
@@ -116,110 +88,14 @@ func readRequestLine(b *bufio.Reader) (method string, url string, version int, e
 	return
 }
 
-func readHeader(b *bufio.Reader) (header web.StringsMap, err os.Error) {
-
-	const (
-		// Max size for header line
-		maxLineSize = 4096
-		// Max size for header value
-		maxValueSize = 4096
-		// Maximum number of headers 
-		maxHeaderCount = 256
-	)
-
-	header = make(web.StringsMap)
-	lastKey := ""
-	headerCount := 0
-
-	for {
-		p, err := b.ReadSlice('\n')
-		if err != nil {
-			if err == bufio.ErrBufferFull {
-				err = ErrLineTooLong
-			} else if err == os.EOF {
-				err = io.ErrUnexpectedEOF
-			}
-			return nil, err
-		}
-
-		// remove line terminator
-		if len(p) >= 2 && p[len(p)-2] == '\r' {
-			// \r\n
-			p = p[0 : len(p)-2]
-		} else {
-			// \n
-			p = p[0 : len(p)-1]
-		}
-
-		// End of headers?
-		if len(p) == 0 {
-			break
-		}
-
-		// Don't allow huge header lines.
-		if len(p) > maxLineSize {
-			return nil, ErrLineTooLong
-		}
-
-		if web.IsSpaceByte(p[0]) {
-
-			if lastKey == "" {
-				return nil, ErrBadHeaderLine
-			}
-
-			p = trimWSLeft(trimWSRight(p))
-
-			if len(p) > 0 {
-				values := header[lastKey]
-				value := values[len(values)-1]
-				value = value + " " + string(p)
-				if len(value) > maxValueSize {
-					return nil, ErrHeaderTooLong
-				}
-				values[len(values)-1] = value
-			}
-
-		} else {
-
-			// New header
-			headerCount = headerCount + 1
-			if headerCount > maxHeaderCount {
-				return nil, ErrHeadersTooLong
-			}
-
-			// Key
-			i := skipBytes(p, web.IsTokenByte)
-			if i < 1 {
-				return nil, ErrBadHeaderLine
-			}
-			key := web.HeaderNameBytes(p[0:i])
-			p = p[i:]
-			lastKey = key
-
-			p = trimWSLeft(p)
-
-			// Colon
-			if p[0] != ':' {
-				return nil, ErrBadHeaderLine
-			}
-			p = p[1:]
-
-			// Value 
-			p = trimWSLeft(p)
-			value := string(trimWSRight(p))
-			header.Append(key, value)
-		}
-	}
-	return header, nil
-}
-
 func (c *conn) prepare() (err os.Error) {
 	method, rawURL, version, err := readRequestLine(c.br)
 	if err != nil {
 		return err
 	}
 
-	header, err := readHeader(c.br)
+	header := web.StringsMap{}
+	err = header.ParseHttpHeader(c.br)
 	if err != nil {
 		return err
 	}
@@ -354,15 +230,7 @@ func (c *conn) Respond(status int, header web.StringsMap) (body web.ResponseBody
 	b.WriteString(" ")
 	b.WriteString(text)
 	b.WriteString("\r\n")
-	for key, values := range header {
-		for _, value := range values {
-			b.WriteString(key)
-			b.WriteString(": ")
-			b.WriteString(cleanHeaderValue(value))
-			b.WriteString("\r\n")
-		}
-	}
-	b.WriteString("\r\n")
+	header.WriteHttpHeader(&b)
 
 	if c.chunked {
 		c.bw = bufio.NewWriter(chunkedWriter{c})
@@ -373,30 +241,6 @@ func (c *conn) Respond(status int, header web.StringsMap) (body web.ResponseBody
 	}
 
 	return c.bw
-}
-
-// cleanHeaderValue replaces \r and \n with ' ' in header values to prevent
-// response splitting attacks.  
-func cleanHeaderValue(s string) string {
-	dirty := false
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c == '\r' || c == '\n' {
-			dirty = true
-			break
-		}
-	}
-	if !dirty {
-		return s
-	}
-	p := []byte(s)
-	for i := 0; i < len(p); i++ {
-		c := p[i]
-		if c == '\r' || c == '\n' {
-			p[i] = ' '
-		}
-	}
-	return string(p)
 }
 
 func (c *conn) Hijack() (conn net.Conn, buf []byte, err os.Error) {

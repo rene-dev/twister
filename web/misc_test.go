@@ -34,6 +34,7 @@ var ParseCookieValuesTests = []ParseCookieValuesTest{
 	{[]string{"a=b;c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
 	{[]string{" a=b;c=d "}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
 	{[]string{"a=b", "c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b", "c=x=y"}, StringsMap{"a": []string{"b"}, "c": []string{"x=y"}}},
 }
 
 func TestParseCookieValues(t *testing.T) {
@@ -44,30 +45,6 @@ func TestParseCookieValues(t *testing.T) {
 		}
 		if !reflect.DeepEqual(pt.m, m) {
 			t.Errorf("values=%s,\nexpected %q\nactual   %q", pt.values, pt.m, m)
-		}
-	}
-}
-
-type ParseUrlEncodedFormTest struct {
-	s string
-	m StringsMap
-}
-
-var ParseUrlEncodedFormTests = []ParseUrlEncodedFormTest{
-	{"a=", StringsMap{"a": []string{""}}},
-	{"a=b", StringsMap{"a": []string{"b"}}},
-	{"a=b&c=d", StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{"a=b&a=c", StringsMap{"a": []string{"b", "c"}}},
-	{"a=Hello%20World", StringsMap{"a": []string{"Hello World"}}},
-}
-
-func TestParseUrlEncodedForm(t *testing.T) {
-	for _, pt := range ParseUrlEncodedFormTests {
-		p := []byte(pt.s)
-		m := make(StringsMap)
-		ParseUrlEncodedFormBytes(p, m)
-		if !reflect.DeepEqual(pt.m, m) {
-			t.Errorf("form=%s,\nexpected %q\nactual   %q", pt.s, pt.m, m)
 		}
 	}
 }

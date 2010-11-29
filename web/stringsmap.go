@@ -12,13 +12,21 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// The web package defines the application programming interface to a web
-// server and implements functionality common to many web applications.
 package web
 
 import (
 	"bytes"
 	"http"
+	"os"
+	"io"
+	"bufio"
+)
+
+var (
+	ErrLineTooLong    = os.NewError("header line too long")
+	ErrBadHeaderLine  = os.NewError("could not parse header line")
+	ErrHeaderTooLong  = os.NewError("header value too long")
+	ErrHeadersTooLong = os.NewError("too many headers")
 )
 
 // StringsMap maps strings to slices of strings.
@@ -97,4 +105,296 @@ func (m StringsMap) FormEncode() []byte {
 // FormEncode returns a string containing the URL form encoding of the map.
 func (m StringsMap) FormEncodeString() string {
 	return string(m.FormEncode())
+}
+
+// WriteHttpHeader writes the map in HTTP header format.
+func (m StringsMap) WriteHttpHeader(w io.Writer) os.Error {
+	for key, values := range m {
+		keyBytes := []byte(key)
+		for _, value := range values {
+			if _, err := w.Write(keyBytes); err != nil {
+				return err
+			}
+			if _, err := w.Write(colonSpaceBytes); err != nil {
+				return err
+			}
+			valueBytes := []byte(value)
+			// convert \r and \n to space to prevent response splitting attacks.
+			for i, c := range valueBytes {
+				if c == '\r' || c == '\n' {
+					valueBytes[i] = ' '
+				}
+			}
+            if _, err := w.Write(valueBytes); err != nil {
+                return err
+            }
+			if _, err := w.Write(crlfBytes); err != nil {
+				return err
+			}
+		}
+	}
+	_, err := w.Write(crlfBytes)
+	return err
+}
+
+const notHex = 127
+
+func dehex(c byte) byte {
+	switch {
+	case '0' <= c && c <= '9':
+		return c - '0'
+	case 'a' <= c && c <= 'f':
+		return c - 'a' + 10
+	case 'A' <= c && c <= 'F':
+		return c - 'A' + 10
+	}
+	return notHex
+}
+
+// ParseUrlEncodedFormBytes parses the URL-encoded form and appends the values to
+// the supplied map. This function modifies the contents of p.
+func (m StringsMap) ParseUrlEncodedFormBytes(p []byte) os.Error {
+	key := ""
+	j := 0
+	for i := 0; i < len(p); {
+		switch p[i] {
+		case '=':
+			key = string(p[0:j])
+			j = 0
+			i += 1
+		case '&':
+			m.Append(key, string(p[0:j]))
+			key = ""
+			j = 0
+			i += 1
+		case '%':
+			if i+2 >= len(p) {
+				return ErrBadFormat
+			}
+			a := dehex(p[i+1])
+			b := dehex(p[i+2])
+			if a == notHex || b == notHex {
+				return ErrBadFormat
+			}
+			p[j] = a<<4 | b
+			j += 1
+			i += 3
+		case '+':
+			p[j] = ' '
+			j += 1
+			i += 1
+		default:
+			p[j] = p[i]
+			j += 1
+			i += 1
+		}
+	}
+	if key != "" {
+		m.Append(key, string(p[0:j]))
+	}
+	return nil
+}
+
+// ParseHttpHeader parses the HTTP headers and appends the values to the
+// supplied map. Header names are converted to canonical format.
+func (m StringsMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
+
+	const (
+		// Max size for header line
+		maxLineSize = 4096
+		// Max size for header value
+		maxValueSize = 4096
+		// Maximum number of headers 
+		maxHeaderCount = 256
+	)
+
+	lastKey := ""
+	headerCount := 0
+
+	for {
+		p, err := b.ReadSlice('\n')
+		if err != nil {
+			if err == bufio.ErrBufferFull {
+				err = ErrLineTooLong
+			} else if err == os.EOF {
+				err = io.ErrUnexpectedEOF
+			}
+			return err
+		}
+
+		// remove line terminator
+		if len(p) >= 2 && p[len(p)-2] == '\r' {
+			// \r\n
+			p = p[0 : len(p)-2]
+		} else {
+			// \n
+			p = p[0 : len(p)-1]
+		}
+
+		// End of headers?
+		if len(p) == 0 {
+			break
+		}
+
+		// Don't allow huge header lines.
+		if len(p) > maxLineSize {
+			return ErrLineTooLong
+		}
+
+		if IsSpaceByte(p[0]) {
+
+			if lastKey == "" {
+				return ErrBadHeaderLine
+			}
+
+			p = trimWSLeft(trimWSRight(p))
+
+			if len(p) > 0 {
+				values := m[lastKey]
+				value := values[len(values)-1]
+				value = value + " " + string(p)
+				if len(value) > maxValueSize {
+					return ErrHeaderTooLong
+				}
+				values[len(values)-1] = value
+			}
+
+		} else {
+
+			// New header
+			headerCount = headerCount + 1
+			if headerCount > maxHeaderCount {
+				return ErrHeadersTooLong
+			}
+
+			// Key
+			i := skipBytes(p, IsTokenByte)
+			if i < 1 {
+				return ErrBadHeaderLine
+			}
+			key := HeaderNameBytes(p[0:i])
+			p = p[i:]
+			lastKey = key
+
+			p = trimWSLeft(p)
+
+			// Colon
+			if p[0] != ':' {
+				return ErrBadHeaderLine
+			}
+			p = p[1:]
+
+			// Value 
+			p = trimWSLeft(p)
+			value := string(trimWSRight(p))
+			m.Append(key, value)
+		}
+	}
+	return nil
+}
+
+func skipBytes(p []byte, f func(byte) bool) int {
+	i := 0
+	for ; i < len(p); i++ {
+		if !f(byte(p[i])) {
+			break
+		}
+	}
+	return i
+}
+
+func trimWSLeft(p []byte) []byte {
+	return p[skipBytes(p, IsSpaceByte):]
+}
+
+func trimWSRight(p []byte) []byte {
+	var i int
+	for i = len(p); i > 0; i-- {
+		if !IsSpaceByte(p[i-1]) {
+			break
+		}
+	}
+	return p[0:i]
+}
+
+// Canonical header name constants.
+const (
+	HeaderAccept               = "Accept"
+	HeaderAcceptCharset        = "Accept-Charset"
+	HeaderAcceptEncoding       = "Accept-Encoding"
+	HeaderAcceptLanguage       = "Accept-Language"
+	HeaderAcceptRanges         = "Accept-Ranges"
+	HeaderAge                  = "Age"
+	HeaderAllow                = "Allow"
+	HeaderAuthorization        = "Authorization"
+	HeaderCacheControl         = "Cache-Control"
+	HeaderConnection           = "Connection"
+	HeaderContentEncoding      = "Content-Encoding"
+	HeaderContentLanguage      = "Content-Language"
+	HeaderContentLength        = "Content-Length"
+	HeaderContentLocation      = "Content-Location"
+	HeaderContentMD5           = "Content-Md5"
+	HeaderContentRange         = "Content-Range"
+	HeaderContentType          = "Content-Type"
+	HeaderCookie               = "Cookie"
+	HeaderDate                 = "Date"
+	HeaderETag                 = "Etag"
+	HeaderEtag                 = "Etag"
+	HeaderExpect               = "Expect"
+	HeaderExpires              = "Expires"
+	HeaderFrom                 = "From"
+	HeaderHost                 = "Host"
+	HeaderIfMatch              = "If-Match"
+	HeaderIfModifiedSince      = "If-Modified-Since"
+	HeaderIfNoneMatch          = "If-None-Match"
+	HeaderIfRange              = "If-Range"
+	HeaderIfUnmodifiedSince    = "If-Unmodified-Since"
+	HeaderLastModified         = "Last-Modified"
+	HeaderLocation             = "Location"
+	HeaderMaxForwards          = "Max-Forwards"
+	HeaderOrigin               = "Origin"
+	HeaderPragma               = "Pragma"
+	HeaderProxyAuthenticate    = "Proxy-Authenticate"
+	HeaderProxyAuthorization   = "Proxy-Authorization"
+	HeaderRange                = "Range"
+	HeaderReferer              = "Referer"
+	HeaderRetryAfter           = "Retry-After"
+	HeaderSecWebSocketKey1     = "Sec-Websocket-Key1"
+	HeaderSecWebSocketKey2     = "Sec-Websocket-Key2"
+	HeaderSecWebSocketProtocol = "Sec-Websocket-Protocol"
+	HeaderServer               = "Server"
+	HeaderSetCookie            = "Set-Cookie"
+	HeaderTE                   = "Te"
+	HeaderTrailer              = "Trailer"
+	HeaderTransferEncoding     = "Transfer-Encoding"
+	HeaderUpgrade              = "Upgrade"
+	HeaderUserAgent            = "User-Agent"
+	HeaderVary                 = "Vary"
+	HeaderVia                  = "Via"
+	HeaderWWWAuthenticate      = "Www-Authenticate"
+	HeaderWarning              = "Warning"
+)
+
+// HeaderName returns the canonical format of the header name. 
+func HeaderName(name string) string {
+	return HeaderNameBytes([]byte(name))
+}
+
+// HeaderNameBytes returns the canonical format for the header name specified
+// by the bytes in p. This function modifies the contents p.
+func HeaderNameBytes(p []byte) string {
+	upper := true
+	for i, c := range p {
+		if upper {
+			if 'a' <= c && c <= 'z' {
+				p[i] = c + 'A' - 'a'
+			}
+		} else {
+			if 'A' <= c && c <= 'Z' {
+				p[i] = c + 'a' - 'A'
+			}
+		}
+		upper = c == '-'
+	}
+	return string(p)
 }

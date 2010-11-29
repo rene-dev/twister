@@ -21,10 +21,8 @@ import (
 )
 
 var (
-	errMpFraming  = os.NewError("twister: bad framing in multipart/form-data")
-	errMpHeader   = os.NewError("twsiter: bad multipart/form-data header")
-	dashdashBytes = []byte("--")
-	crlfBytes     = []byte("\r\n")
+	errMpFraming = os.NewError("twister: bad framing in multipart/form-data")
+	errMpHeader  = os.NewError("twsiter: bad multipart/form-data header")
 )
 
 type Part struct {

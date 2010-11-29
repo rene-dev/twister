@@ -134,7 +134,7 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 		Cookie:          make(StringsMap),
 	}
 
-	err = ParseUrlEncodedFormBytes([]byte(req.URL.RawQuery), req.Param)
+	err = req.Param.ParseUrlEncodedFormBytes([]byte(req.URL.RawQuery))
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (req *Request) ParseForm(maxRequestBodyLen int) os.Error {
 	if err != nil {
 		return err
 	}
-	if err := ParseUrlEncodedFormBytes(p, req.Param); err != nil {
+	if err := req.Param.ParseUrlEncodedFormBytes(p); err != nil {
 		return err
 	}
 	return nil
