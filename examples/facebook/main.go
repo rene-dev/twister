@@ -34,7 +34,7 @@ import (
 // getUrlEncodedForm fetches a URL and decodes the response body as a URL encoded form.
 func getUrlEncodedForm(url string, param web.StringsMap) (web.StringsMap, os.Error) {
 	if param != nil {
-		url = url + "?" + string(param.FormEncode())
+		url = url + "?" + param.FormEncodeString()
 	}
 	r, _, err := http.Get(url)
 	if err != nil {
@@ -59,7 +59,7 @@ func getUrlEncodedForm(url string, param web.StringsMap) (web.StringsMap, os.Err
 // getJSON fetches a URL and decodes the response body as JSON.
 func getJSON(url string, param web.StringsMap) (interface{}, os.Error) {
 	if param != nil {
-		url = url + "?" + string(param.FormEncode())
+		url = url + "?" + param.FormEncodeString()
 	}
 	r, _, err := http.Get(url)
 	if err != nil {
@@ -96,7 +96,7 @@ func loginHandler(req *web.Request) {
 	m := web.NewStringsMap(
 		"client_id", appID, // defined in settings.go
 		"redirect_uri", req.URL.Scheme+"://"+req.URL.Host+"/callback")
-	req.Redirect("https://graph.facebook.com/oauth/authorize?"+string(m.FormEncode()), false)
+	req.Redirect("https://graph.facebook.com/oauth/authorize?"+m.FormEncodeString(), false)
 }
 
 // logoutHandler logs the user out by clearing the access token cookie.

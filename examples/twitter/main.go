@@ -117,7 +117,7 @@ func home(req *web.Request) {
 	param := make(web.StringsMap)
 	url := "http://api.twitter.com/1/statuses/home_timeline.json"
 	oauthClient.SignParam(token, "GET", url, param)
-	url = url + "?" + string(param.FormEncode())
+	url = url + "?" + param.FormEncodeString()
 	resp, _, err := http.Get(url)
 	if err != nil {
 		req.Error(web.StatusInternalServerError, err)
