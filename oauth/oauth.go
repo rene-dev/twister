@@ -238,7 +238,7 @@ func (c *Client) request(credentials *Credentials, url string, param web.Strings
 		return nil, nil, os.NewError(fmt.Sprintf("OAuth server status %d, %s", resp.StatusCode, string(p)))
 	}
 	m := make(web.StringsMap)
-	err = web.ParseUrlEncodedFormBytes(p, m)
+	err = m.ParseUrlEncodedFormBytes(p)
 	if err != nil {
 		return nil, nil, err
 	}
