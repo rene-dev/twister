@@ -26,6 +26,9 @@ import (
 	"encoding/hex"
 )
 
+// ContentTypeHTML is short cut for utf-8 encoded html.
+const ContentTypeHTML = "text/html; charset=\"utf-8\""
+
 // TimeLayout is the time layout used for HTTP headers and other values.
 const TimeLayout = "Mon, 02 Jan 2006 15:04:05 GMT"
 
@@ -193,10 +196,10 @@ func ProtocolVersion(major int, minor int) int {
 	return major*1000 + minor
 }
 
+// Commonly used protocol versions in format returned by ProtocolVersion.
 const (
 	ProtocolVersion10 = 1000 // HTTP/1.0
 	ProtocolVersion11 = 1001 // HTTP/1.1
-	ContentTypeHTML   = "text/html; charset=\"utf-8\""
 )
 
 func parseCookieValues(values []string, m StringsMap) os.Error {

@@ -32,7 +32,7 @@ import (
 //
 // A pattern is a string with embedded parameters. A parameter has the syntax:
 //
-// '<' name (':' regexp)? '>'
+//  '<' name (':' regexp)? '>'
 //
 // If the regexp is not specified, then the regexp is set to to [^/X]+ where
 // "X" is the character following the closing '>' or nothing if the closing

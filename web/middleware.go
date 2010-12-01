@@ -48,6 +48,7 @@ func SetErrorHandler(errorHandler ErrorHandler, handler Handler) Handler {
 	})
 }
 
+// Name of XSRF cookie and request paramter.
 const (
 	XSRFCookieName = "xsrf"
 	XSRFParamName  = "xsrf"

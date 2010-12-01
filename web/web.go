@@ -31,10 +31,9 @@ import (
 )
 
 var (
-	// Object not in valid state for call.
-	ErrInvalidState          = os.NewError("invalid state")
-	ErrBadFormat             = os.NewError("bad format")
-	ErrRequestEntityTooLarge = os.NewError("request entity too large")
+	ErrInvalidState          = os.NewError("object in invalid state")
+	ErrBadFormat             = os.NewError("bad data format")
+	ErrRequestEntityTooLarge = os.NewError("HTTP request entity too large")
 )
 
 // RequestBody represents the request body.
@@ -106,6 +105,7 @@ type Request struct {
 	formParsed bool
 }
 
+// ErrorHandler handles request errors.
 type ErrorHandler func(req *Request, status int, reason os.Error, header StringsMap)
 
 // Handler is the interface for web handlers.
@@ -121,7 +121,8 @@ type HandlerFunc func(*Request)
 // ServeWeb calls f(req).
 func (f HandlerFunc) ServeWeb(req *Request) { f(req) }
 
-// NewRequest allocates and initializes a request. 
+// NewRequest allocates and initializes a request. This function is provided
+// for the convenience of protocol adapters (fcgi, native http server, ...).
 func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion int, header StringsMap) (req *Request, err os.Error) {
 	req = &Request{
 		RemoteAddr:      remoteAddr,

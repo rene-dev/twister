@@ -66,7 +66,7 @@ var (
 	loggedOutTemplate = parseTemplate("loggedout.html")
 	otherItemTemplate = parseTemplate("item/other.html")
 	itemTemplates     = map[string]*Template{
-		"link": parseTemplate("item/link.html"),
+		"link":   parseTemplate("item/link.html"),
 		"status": parseTemplate("item/status.html"),
 	}
 )

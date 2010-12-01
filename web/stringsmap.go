@@ -23,13 +23,14 @@ import (
 )
 
 var (
-	ErrLineTooLong    = os.NewError("header line too long")
-	ErrBadHeaderLine  = os.NewError("could not parse header line")
-	ErrHeaderTooLong  = os.NewError("header value too long")
-	ErrHeadersTooLong = os.NewError("too many headers")
+	ErrLineTooLong    = os.NewError("HTTP header line too long")
+	ErrBadHeaderLine  = os.NewError("could not parse HTTP header line")
+	ErrHeaderTooLong  = os.NewError("HTTP header value too long")
+	ErrHeadersTooLong = os.NewError("too many HTTP headers")
 )
 
-// StringsMap maps strings to slices of strings.
+// StringsMap maps strings to slices of strings. StringsMaps are used to
+// represent HTTP request parameters and HTTP headers.
 type StringsMap map[string][]string
 
 // NewStringsMap returns a map initialized with the given key-value pairs.
@@ -125,9 +126,9 @@ func (m StringsMap) WriteHttpHeader(w io.Writer) os.Error {
 					valueBytes[i] = ' '
 				}
 			}
-            if _, err := w.Write(valueBytes); err != nil {
-                return err
-            }
+			if _, err := w.Write(valueBytes); err != nil {
+				return err
+			}
 			if _, err := w.Write(crlfBytes); err != nil {
 				return err
 			}
