@@ -83,8 +83,8 @@ func (m StringsMap) StringMap() map[string]string {
 	return result
 }
 
-// FormEncoding returns a buffer containing the URL form encoding of the map.
-func (m StringsMap) FormEncoding() []byte {
+// FormEncoded returns a buffer containing the URL form encoding of the map.
+func (m StringsMap) FormEncodedBytes() []byte {
 	var b bytes.Buffer
 	sep := false
 	for key, values := range m {
@@ -103,9 +103,9 @@ func (m StringsMap) FormEncoding() []byte {
 	return b.Bytes()
 }
 
-// FormEncoding returns a string containing the URL form encoding of the map.
-func (m StringsMap) FormEncodingString() string {
-	return string(m.FormEncoding())
+// FormEncoded returns a string containing the URL form encoding of the map.
+func (m StringsMap) FormEncodedString() string {
+	return string(m.FormEncodedBytes())
 }
 
 // WriteHttpHeader writes the map in HTTP header format.
