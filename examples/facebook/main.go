@@ -49,7 +49,7 @@ func getUrlEncodedForm(url string, param web.StringsMap) (web.StringsMap, os.Err
 		return nil, err
 	}
 	m := make(web.StringsMap)
-	err = web.ParseUrlEncodedFormBytes(p, m)
+	err = m.ParseUrlEncodedFormBytes(p)
 	if err != nil {
 		return nil, err
 	}

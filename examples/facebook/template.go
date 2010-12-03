@@ -25,13 +25,13 @@ import (
 
 // itemFormatter formats a Facebook feed item by invoking the appropriate child
 // template.
-func itemFormatter(w io.Writer, value interface{}, format string) {
-	itemType := value.(map[string]interface{})["type"].(string)
+func itemFormatter(w io.Writer, format string, values ...interface{}) {
+	itemType := values[0].(map[string]interface{})["type"].(string)
 	t, ok := itemTemplates[itemType]
 	if !ok {
 		t = otherItemTemplate
 	}
-	err := t.t.Execute(value, w)
+	err := t.t.Execute(values[0], w)
 	if err != nil {
 		log.Println("Error executing item formatter", itemType, err)
 	}
