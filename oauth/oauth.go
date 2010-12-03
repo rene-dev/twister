@@ -202,6 +202,7 @@ type Client struct {
 	TemporaryCredentialRequestURI string // Also known as request token URL
 	ResourceOwnerAuthorizationURI string // Also known as authorization URL
 	TokenRequestURI               string // Alos known as request token URL
+	Scope                         string // Required for Google services.
 }
 
 // Credentials represents client, temporary and token credentials.
@@ -217,6 +218,9 @@ func (c *Client) SignParam(credentials *Credentials, method, url string, param w
 	param.Set("oauth_timestamp", strconv.Itoa64(time.Seconds()))
 	param.Set("oauth_nonce", nonce())
 	param.Set("oauth_version", "1.0")
+	if c.Scope != "" {
+		param.Set("scope", c.Scope)
+	}
 	if credentials != nil {
 		param.Set("oauth_token", credentials.Token)
 	}
