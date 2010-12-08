@@ -2,7 +2,7 @@
 
 Twister is an HTTP server for the [Go](http://golang.org/) programming language.
 
-Twister is a work in progress. 
+Twister is a work in progress. It works for me.  It might work for you.
 
 ## Packages
 
