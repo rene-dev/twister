@@ -363,3 +363,39 @@ func (c *Cookie) String() string {
 
 	return buf.String()
 }
+
+// HTMLEscapeString returns s with special HTML characters escaped. 
+func HTMLEscapeString(s string) string {
+	escape := false
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; c == '"' || c == '\'' || c == '/' || c == '&' || c == '<' || c == '>' {
+			escape = true
+			break
+		}
+	}
+	if !escape {
+		return s
+	}
+	var b bytes.Buffer
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; c {
+		case '"':
+			b.WriteString("&quot;")
+		case '\'':
+			// &apos; is not defined in the HTML standard
+			b.WriteString("&#x27;")
+		case '/':
+			// forward slash is included as it helps end an HTML entity
+			b.WriteString("&#x2F;")
+		case '&':
+			b.WriteString("&amp;")
+		case '<':
+			b.WriteString("&lt;")
+		case '>':
+			b.WriteString("&gt;")
+		default:
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
+}

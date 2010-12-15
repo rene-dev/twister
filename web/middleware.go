@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"log"
+	"time"
 )
 
 type filterResponder struct {
@@ -149,5 +150,19 @@ func DebugLogger(enabled bool, handler Handler) Handler {
 			return status, header
 		})
 		handler.ServeWeb(req)
+	})
+}
+
+// Logger returns a handler that logs the request
+func Logger(log func(req *Request, status int, time int64), handler Handler) Handler {
+	return HandlerFunc(func(req *Request) {
+		var savedStatus int
+		t := time.Nanoseconds()
+		FilterRespond(req, func(status int, header StringsMap) (int, StringsMap) {
+			savedStatus = status
+			return status, header
+		})
+		handler.ServeWeb(req)
+		log(req, savedStatus, time.Nanoseconds()-t)
 	})
 }
