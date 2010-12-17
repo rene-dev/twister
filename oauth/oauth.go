@@ -199,16 +199,16 @@ func nonce() string {
 // Client represents an OAuth client.
 type Client struct {
 	Credentials                   Credentials
-	TemporaryCredentialRequestURI string // Also known as request token URL
-	ResourceOwnerAuthorizationURI string // Also known as authorization URL
-	TokenRequestURI               string // Alos known as request token URL
+	TemporaryCredentialRequestURI string // Also known as request token URL.
+	ResourceOwnerAuthorizationURI string // Also known as authorization URL.
+	TokenRequestURI               string // Also known as request token URL.
 	Scope                         string // Required for Google services.
 }
 
 // Credentials represents client, temporary and token credentials.
 type Credentials struct {
-	Token  string
-	Secret string
+	Token  string // Also known as consumer key or access token.
+	Secret string // Also known as consumer secret or access token secret.
 }
 
 // SignParam adds an OAuth signature to param.
