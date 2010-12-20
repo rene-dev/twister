@@ -152,9 +152,9 @@ func dehex(c byte) byte {
 	return notHex
 }
 
-// ParseUrlEncodedFormBytes parses the URL-encoded form and appends the values to
+// ParseFormEncodedBytes parses the URL-encoded form and appends the values to
 // the supplied map. This function modifies the contents of p.
-func (m StringsMap) ParseUrlEncodedFormBytes(p []byte) os.Error {
+func (m StringsMap) ParseFormEncodedBytes(p []byte) os.Error {
 	key := ""
 	j := 0
 	for i := 0; i < len(p); {

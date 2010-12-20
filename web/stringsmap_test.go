@@ -38,7 +38,7 @@ func TestParseUrlEncodedForm(t *testing.T) {
 	for _, pt := range ParseUrlEncodedFormTests {
 		p := []byte(pt.s)
 		m := make(StringsMap)
-		m.ParseUrlEncodedFormBytes(p)
+		m.ParseFormEncodedBytes(p)
 		if !reflect.DeepEqual(pt.m, m) {
 			t.Errorf("form=%s,\nexpected %q\nactual   %q", pt.s, pt.m, m)
 		}
