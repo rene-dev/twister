@@ -12,8 +12,6 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// Usefil
-
 package web
 
 import (
@@ -27,44 +25,7 @@ import (
 	"expvar"
 )
 
-// FileHandler returns a request handler that serves static files from root
-// using using the relative request parameter "path". The "path" parameter is
-// typically set using a Router pattern match:
-//
-//  r.Register("/static/<path:.*>", "GET", FileHandler(root))
-//
-// If the "v" paramter is supplied, then the cache control headers are set to expire
-// the file in 10 years. 
-func FileHandler(root string, extraHeader ...string) Handler {
-	if !path.IsAbs(root) {
-		wd, err := os.Getwd()
-		if err != nil {
-			panic("twister: FileHandler could not find cwd")
-		}
-		root = path.Join(wd, root)
-	}
-	root = path.Clean(root) + "/"
-	return &fileHandler{root, extraHeader}
-}
-
-// fileHandler serves static files.
-type fileHandler struct {
-	root   string
-	header []string
-}
-
-func (fh *fileHandler) ServeWeb(req *Request) {
-
-	fname, found := req.Param.Get("path")
-	if !found {
-		panic("twister: FileHandler expects path param")
-	}
-
-	fname = path.Clean(fh.root + fname)
-	if !strings.HasPrefix(fname, fh.root) {
-		req.Error(StatusNotFound, os.NewError("twister: FileHandler access outside of root"))
-		return
-	}
+func serveFile(req *Request, fname string, extraHeader []string) {
 
 	f, err := os.Open(fname, os.O_RDONLY, 0)
 	if err != nil {
@@ -81,7 +42,7 @@ func (fh *fileHandler) ServeWeb(req *Request) {
 
 	status := StatusOK
 	etag := strconv.Itob64(info.Mtime_ns, 36)
-	header := NewStringsMap(fh.header...)
+	header := NewStringsMap(extraHeader...)
 
 	if i := strings.Index(req.Header.GetDef(HeaderIfNoneMatch, ""), etag); i >= 0 {
 		status = StatusNotModified
@@ -92,8 +53,7 @@ func (fh *fileHandler) ServeWeb(req *Request) {
 		if contentType := mime.TypeByExtension(ext); contentType != "" {
 			header.Set(HeaderContentType, contentType)
 		}
-		_, found = req.Param.Get("v")
-		if found {
+		if _, found := req.Param.Get("v"); found {
 			header.Set(HeaderExpires, FormatDeltaDays(3650))
 			header.Set(HeaderCacheControl, "max-age=315360000")
 		} else {
@@ -105,6 +65,77 @@ func (fh *fileHandler) ServeWeb(req *Request) {
 	if req.Method != "HEAD" && status != StatusNotModified {
 		io.Copy(w, f)
 	}
+}
+
+// DirectoryHandler returns a request handler that serves static files from root
+// using using the relative request parameter "path". The "path" parameter is
+// typically set using a Router pattern match:
+//
+//  r.Register("/static/<path:.*>", "GET", DirectoryHandler(root))
+//
+// If the "v" request parameter is supplied, then the cache control headers are
+// set to expire the file in 10 years. 
+func DirectoryHandler(root string, extraHeader ...string) Handler {
+	if !path.IsAbs(root) {
+		wd, err := os.Getwd()
+		if err != nil {
+			panic("twister: DirectoryHandler could not find cwd")
+		}
+		root = path.Join(wd, root)
+	}
+	root = path.Clean(root) + "/"
+
+	info, err := os.Stat(root)
+	if err != nil || !info.IsDirectory() {
+		panic("twister: root directory not found for DirectoryHandler.")
+	}
+
+	return &directoryHandler{root, extraHeader}
+}
+
+// directoryHandler serves static files from a directory.
+type directoryHandler struct {
+	root   string
+	header []string
+}
+
+func (dh *directoryHandler) ServeWeb(req *Request) {
+
+	fname, found := req.Param.Get("path")
+	if !found {
+		panic("twister: DirectoryHandler expects path param")
+	}
+
+	fname = path.Clean(dh.root + fname)
+	if !strings.HasPrefix(fname, dh.root) {
+		req.Error(StatusNotFound, os.NewError("twister: DirectoryHandler access outside of root"))
+		return
+	}
+
+	serveFile(req, fname, dh.header)
+}
+
+// FileHandler returns a request handler that serves a static file specified by
+// fname. 
+//
+// If the "v" request parameter is supplied, then the cache control headers are
+// set to expire the file in 10 years. 
+func FileHandler(fname string, extraHeader ...string) Handler {
+	info, err := os.Stat(fname)
+	if err != nil || !info.IsRegular() {
+		panic("twister: file not found for FileHandler.")
+	}
+	return &fileHandler{fname, extraHeader}
+}
+
+// fileHandler servers static files.
+type fileHandler struct {
+	fname  string
+	header []string
+}
+
+func (fh *fileHandler) ServeWeb(req *Request) {
+	serveFile(req, fh.fname, fh.header)
 }
 
 type redirectHandler struct {

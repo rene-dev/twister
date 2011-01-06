@@ -38,7 +38,8 @@ const coreStr = `
 <hr>
 Status: {status} {message}
 <hr>
-<a href="/static/file.txt">/static/file.txt</a><br>
+<a href="/core/file">file handler</a><br>
+<a href="/static/file.txt">directory handler</a><br>
 <a href="/core">/core</a><br>
 <a href="/core/a/blorg">/core/a/blorg</a><br>
 <a href="/core/a/foo?b=bar&amp;c=quux">/core/a/foo?b=bar&amp;c=quux</a><br>

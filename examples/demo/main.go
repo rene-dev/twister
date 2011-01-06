@@ -19,7 +19,8 @@ func main() {
 		web.ProcessForm(10000, true, web.DebugLogger(true, web.NewHostRouter(nil).
 			Register("www.example.com", web.NewRouter().
 			Register("/", "GET", homeHandler).
-			Register("/static/<path:.*>", "GET", web.FileHandler("static/")).
+			Register("/core/file", "GET", web.FileHandler("static/file.txt")).
+			Register("/static/<path:.*>", "GET", web.DirectoryHandler("static/")).
 			Register("/chat", "GET", chatFrameHandler).
 			Register("/chat/ws", "GET", chatWsHandler).
 			Register("/mp", "GET", mpGetHandler, "POST", mpPostHandler).
