@@ -33,9 +33,20 @@ var (
 	ErrBadRequestLine = os.NewError("could not parse request line")
 )
 
+type Config struct {
+	// The server dispatches requests to this handler. Required.
+	Handler web.Handler
+
+	// If true, then set the request URL protocol to HTTPS.
+	Secure bool
+
+	// Set request URL host to this string if host is not specified in the
+	// request or headers.
+	DefaultHost string
+}
+
 type conn struct {
-	serverName         string
-	secure             bool
+	config             *Config
 	netConn            net.Conn
 	br                 *bufio.Reader
 	bw                 *bufio.Writer
@@ -108,11 +119,11 @@ func (c *conn) prepare() (err os.Error) {
 	if url.Host == "" {
 		url.Host = header.GetDef(web.HeaderHost, "")
 		if url.Host == "" {
-			url.Host = c.serverName
+			url.Host = c.config.DefaultHost
 		}
 	}
 
-	if c.secure {
+	if c.config.Secure {
 		url.Scheme = "https"
 	} else {
 		url.Scheme = "http"
@@ -323,21 +334,20 @@ func (c chunkedWriter) Write(p []byte) (int, os.Error) {
 	return n, c.responseErr
 }
 
-func serveConnection(serverName string, secure bool, handler web.Handler, netConn net.Conn) {
+func serveConnection(netConn net.Conn, config *Config) {
 	br := bufio.NewReader(netConn)
 	for {
 		c := conn{
-			serverName: serverName,
-			secure:     secure,
-			netConn:    netConn,
-			br:         br}
+			config:  config,
+			netConn: netConn,
+			br:      br}
 		if err := c.prepare(); err != nil {
 			if err != os.EOF {
 				log.Println("twister/server: prepare failed", err)
 			}
 			break
 		}
-		handler.ServeWeb(c.req)
+		config.Handler.ServeWeb(c.req)
 		if c.hijacked {
 			return
 		}
@@ -355,24 +365,24 @@ func serveConnection(serverName string, secure bool, handler web.Handler, netCon
 // Serve accepts incoming HTTP connections on the listener l, creating a new
 // goroutine for each. The goroutines read requests and then call handler to
 // reply to them.
-func Serve(serverName string, secure bool, handler web.Handler, l net.Listener) os.Error {
+func Serve(l net.Listener, config *Config) os.Error {
 	for {
 		netConn, e := l.Accept()
 		if e != nil {
 			return e
 		}
-		go serveConnection(serverName, secure, handler, netConn)
+		go serveConnection(netConn, config)
 	}
 	return nil
 }
 
 // ListenAndServe listens on the TCP network address addr and then calls Serve
 // with handler to handle requests on incoming connections.  
-func ListenAndServe(serverName string, addr string, handler web.Handler) os.Error {
+func ListenAndServe(addr string, config *Config) os.Error {
 	l, e := net.Listen("tcp", addr)
 	if e != nil {
 		return e
 	}
 	defer l.Close()
-	return Serve(serverName, false, handler, l)
+	return Serve(l, config)
 }

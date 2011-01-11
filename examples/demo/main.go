@@ -29,7 +29,7 @@ func main() {
 			Register("/core/b/<b>/c/<c>", "GET", coreHandler).
 			Register("/core/c", "POST", coreHandler)))))
 
-	err := server.ListenAndServe("localhost:8080", ":8080", h)
+	err := server.ListenAndServe(":8080", &server.Config{Handler: h, DefaultHost: "localhost:8080"})
 	if err != nil {
 		log.Exit("ListenAndServe:", err)
 	}

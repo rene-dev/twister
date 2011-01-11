@@ -166,7 +166,7 @@ func main() {
 		Register("/login", "GET", loginHandler).
 		Register("/callback", "GET", authCallbackHandler)))
 
-	err := server.ListenAndServe("localhost:8080", ":8080", h)
+	err := server.ListenAndServe(":8080", &server.Config{Handler: h, DefaultHost: "localhost:8080"})
 	if err != nil {
 		log.Exit("ListenAndServe:", err)
 	}

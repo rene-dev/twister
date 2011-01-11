@@ -102,6 +102,9 @@ type Request struct {
 	// The request body.
 	Body RequestBody
 
+	// Attributes attached to the request by middleware. 
+	Attributes map[string]interface{}
+
 	formParsed bool
 }
 
@@ -133,6 +136,7 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 		Param:           make(StringsMap),
 		Header:          header,
 		Cookie:          make(StringsMap),
+		Attributes:      make(map[string]interface{}),
 	}
 
 	err = req.Param.ParseFormEncodedBytes([]byte(req.URL.RawQuery))
@@ -162,10 +166,11 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 	return req, nil
 }
 
-// Respond is a convenience function that adds (key, value) pairs in kvs to a
-// StringsMap and calls through to the connection's Respond method.
-func (req *Request) Respond(status int, kvs ...string) ResponseBody {
-	return req.Responder.Respond(status, NewStringsMap(kvs...))
+// Respond is a convenience function that adds (key, value) pairs in
+// headerKeysAndValues to a StringsMap and calls through to the connection's
+// Respond method.
+func (req *Request) Respond(status int, headerKeysAndValues ...string) ResponseBody {
+	return req.Responder.Respond(status, NewStringsMap(headerKeysAndValues...))
 }
 
 func defaultErrorHandler(req *Request, status int, reason os.Error, header StringsMap) {
@@ -178,12 +183,12 @@ func defaultErrorHandler(req *Request, status int, reason os.Error, header Strin
 }
 
 // Error responds to the request with an error. 
-func (req *Request) Error(status int, reason os.Error, kvs ...string) {
-	req.ErrorHandler(req, status, reason, NewStringsMap(kvs...))
+func (req *Request) Error(status int, reason os.Error, headerKeysAndValues ...string) {
+	req.ErrorHandler(req, status, reason, NewStringsMap(headerKeysAndValues...))
 }
 
-// Redirect responds to the request with a redirect the specified URL.
-func (req *Request) Redirect(url string, perm bool, kvs ...string) {
+// Redirect responds to the request with a redirect to the specified URL.
+func (req *Request) Redirect(url string, perm bool, headerKeysAndValues ...string) {
 	status := StatusFound
 	if perm {
 		status = StatusMovedPermanently
@@ -196,7 +201,7 @@ func (req *Request) Redirect(url string, perm bool, kvs ...string) {
 		url = d + url
 	}
 
-	header := NewStringsMap(kvs...)
+	header := NewStringsMap(headerKeysAndValues...)
 	header.Set(HeaderLocation, url)
 	req.Responder.Respond(status, header)
 }
@@ -229,7 +234,9 @@ func (req *Request) BodyBytes(maxLen int) ([]byte, os.Error) {
 	return p, nil
 }
 
-// ParseForm parses url-encoded form bodies. ParseForm is idempotent.
+// ParseForm parses url-encoded form bodies. ParseForm is idempotent.  Most
+// applications should use the ParseForm middleware instead of calling this
+// method directly.
 func (req *Request) ParseForm(maxRequestBodyLen int) os.Error {
 	if req.formParsed ||
 		req.ContentType != "application/x-www-form-urlencoded" ||
