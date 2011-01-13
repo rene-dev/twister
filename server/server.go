@@ -49,7 +49,7 @@ type conn struct {
 	config             *Config
 	netConn            net.Conn
 	br                 *bufio.Reader
-	bw                 *bufio.Writer
+	responseBody       web.ResponseBody
 	chunked            bool
 	closeAfterResponse bool
 	hijacked           bool
@@ -223,6 +223,10 @@ func (c *conn) Respond(status int, header web.StringsMap) (body web.ResponseBody
 		c.chunked = false
 	}
 
+	if c.req.Method == "HEAD" {
+		c.chunked = false
+	}
+
 	if c.chunked {
 		header.Set(web.HeaderTransferEncoding, "chunked")
 	}
@@ -243,15 +247,18 @@ func (c *conn) Respond(status int, header web.StringsMap) (body web.ResponseBody
 	b.WriteString("\r\n")
 	header.WriteHttpHeader(&b)
 
-	if c.chunked {
-		c.bw = bufio.NewWriter(chunkedWriter{c})
+	if c.req.Method == "HEAD" {
+		c.responseBody = nullResponseBody{c}
+		_, c.responseErr = c.netConn.Write(b.Bytes())
+	} else if c.chunked {
+		c.responseBody = bufio.NewWriter(chunkedWriter{c})
 		_, c.responseErr = c.netConn.Write(b.Bytes())
 	} else {
-		c.bw = bufio.NewWriter(identityWriter{c})
-		c.bw.Write(b.Bytes())
+		c.responseBody = bufio.NewWriter(identityWriter{c})
+		c.responseBody.Write(b.Bytes())
 	}
 
-	return c.bw
+	return c.responseBody
 }
 
 func (c *conn) Hijack() (conn net.Conn, buf []byte, err os.Error) {
@@ -283,7 +290,7 @@ func (c *conn) finish() os.Error {
 	if c.responseAvail != 0 {
 		c.closeAfterResponse = true
 	}
-	c.bw.Flush()
+	c.responseBody.Flush()
 	if c.chunked {
 		_, c.responseErr = io.WriteString(c.netConn, "0\r\n\r\n")
 	}
@@ -292,8 +299,23 @@ func (c *conn) finish() os.Error {
 	}
 	c.netConn = nil
 	c.br = nil
-	c.bw = nil
+	c.responseBody = nil
 	return nil
+}
+
+type nullResponseBody struct {
+	*conn
+}
+
+func (c nullResponseBody) Write(p []byte) (int, os.Error) {
+	if c.responseErr != nil {
+		return 0, c.responseErr
+	}
+	return len(p), nil
+}
+
+func (c nullResponseBody) Flush() os.Error {
+	return c.responseErr
 }
 
 type identityWriter struct {
