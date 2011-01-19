@@ -120,7 +120,7 @@ func (m StringsMap) WriteHttpHeader(w io.Writer) os.Error {
 				return err
 			}
 			valueBytes := []byte(value)
-			// convert \r and \n to space to prevent response splitting attacks.
+			// Convert \r and \n to space to prevent response splitting attacks.
 			for i, c := range valueBytes {
 				if c == '\r' || c == '\n' {
 					valueBytes[i] = ' '
