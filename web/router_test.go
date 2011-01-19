@@ -1,4 +1,4 @@
-// Copyright 2010 Gary Burd
+// Copyright 2011 Gary Burd
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -16,58 +16,103 @@ package web
 
 import (
 	"testing"
+	"sort"
 )
 
-type rhandler string
+type routeTestHandler string
 
-func (rhandler) ServeWeb(req *Request) {}
+func (h routeTestHandler) ServeWeb(req *Request) {
+	w := req.Respond(200)
+	var keys []string
+	for key, _ := range req.Param {
+		keys = append(keys, key)
+	}
+	sort.SortStrings(keys)
+	w.Write([]byte(string(h)))
+	for _, key := range keys {
+		w.Write([]byte(" "))
+		w.Write([]byte(key))
+		w.Write([]byte(":"))
+		w.Write([]byte(req.Param.GetDef(key, "<nil>")))
+	}
+}
+
+var routeTests = []struct {
+	url    string
+	method string
+	status int
+	body   string
+}{
+	{url: "/Bogus/Path", method: "GET", status: 404, body: ""},
+	{url: "/Bogus/Path", method: "POST", status: 404, body: ""},
+	{url: "/", method: "GET", status: 200, body: "home-get"},
+	{url: "/", method: "HEAD", status: 200, body: "home-get"},
+	{url: "/", method: "POST", status: 405, body: ""},
+	{url: "/a", method: "GET", status: 200, body: "a-get"},
+	{url: "/a", method: "HEAD", status: 200, body: "a-get"},
+	{url: "/a", method: "POST", status: 200, body: "a-*"},
+	{url: "/a/", method: "GET", status: 404, body: ""},
+	{url: "/b", method: "GET", status: 200, body: "b-get"},
+	{url: "/b", method: "HEAD", status: 200, body: "b-get"},
+	{url: "/b", method: "POST", status: 200, body: "b-post"},
+	{url: "/b", method: "PUT", status: 405, body: ""},
+	{url: "/c", method: "GET", status: 200, body: "c-*"},
+	{url: "/c", method: "HEAD", status: 200, body: "c-*"},
+	{url: "/d", method: "GET", status: 301, body: ""},
+	{url: "/d/", method: "GET", status: 200, body: "d"},
+	{url: "/e/foo", method: "GET", status: 200, body: "e x:foo"},
+	{url: "/e/foo/", method: "GET", status: 404, body: ""},
+	{url: "/f/foo/bar", method: "GET", status: 301, body: ""},
+	{url: "/f/foo/bar/", method: "GET", status: 200, body: "f x:foo y:bar"},
+}
 
 func TestRouter(t *testing.T) {
 	r := NewRouter()
-	r.Register("/", "GET", rhandler("home-get"))
-	r.Register("/a", "GET", rhandler("a-get"), "*", rhandler("a-*"))
-	r.Register("/b", "GET", rhandler("b-get"), "POST", rhandler("b-post"))
-	r.Register("/c", "*", rhandler("c-*"))
+	r.Register("/", "GET", routeTestHandler("home-get"))
+	r.Register("/a", "GET", routeTestHandler("a-get"), "*", routeTestHandler("a-*"))
+	r.Register("/b", "GET", routeTestHandler("b-get"), "POST", routeTestHandler("b-post"))
+	r.Register("/c", "*", routeTestHandler("c-*"))
+	r.Register("/d/", "GET", routeTestHandler("d"))
+	r.Register("/e/<x>", "GET", routeTestHandler("e"))
+	r.Register("/f/<x>/<y>/", "GET", routeTestHandler("f"))
 
-	expectHandler := func(method string, path string, expectedName string, names []string, values []string) {
-		handler, names, values := r.find(path, method)
-		rhandler, ok := handler.(rhandler)
-		if !ok {
-			t.Errorf("Unexpected handler type for %s %s", method, path)
+	for _, rt := range routeTests {
+		status, _, body := RunHandler(rt.url, rt.method, nil, nil, r)
+		if status != rt.status {
+			t.Errorf("url=%s method=%s\n\texpected %d\n\tactual   %d", rt.url, rt.method, rt.status, status)
 		}
-		actualName := string(rhandler)
-		if actualName != expectedName {
-			t.Errorf("Unexpected handler for %s %s, actual %s expected %s", method, path, actualName, expectedName)
-		}
-	}
-
-	expectError := func(method string, path string, status int) {
-		handler, _, _ := r.find(path, method)
-		re, ok := handler.(*routerError)
-		if !ok {
-			t.Errorf("Unexpected handler type for %s %s", method, path)
-		}
-		if re.status != status {
-			t.Errorf("Unexpected status for %s %s, actual %d expected %d", method, path, re.status, status)
+		if status == 200 {
+			if string(body) != rt.body {
+				t.Errorf("url=%s method=%s\n\texpected %s\n\tactual   %s", rt.url, rt.method, rt.body, string(body))
+			}
 		}
 	}
+}
 
-	expectError("GET", "/Bogus/Path", 404)
-	expectError("POST", "/Bogus/Path", 404)
+var hostRouteTests = []struct {
+	url    string
+	status int
+	body   string
+}{
+	{url: "http://www.example.com/", status: 200, body: "www.example.com"},
+	{url: "http://foo.example.com/", status: 200, body: "*.example.com x:foo"},
+	{url: "http://example.com/", status: 200, body: "default"},
+}
 
-	expectHandler("GET", "/", "home-get", nil, nil)
-	expectHandler("HEAD", "/", "home-get", nil, nil)
-	expectError("POST", "/", 405)
+func TestHostRouter(t *testing.T) {
+	r := NewHostRouter(routeTestHandler("default"))
+	r.Register("www.example.com", routeTestHandler("www.example.com"))
+	r.Register("<x>.example.com", routeTestHandler("*.example.com"))
 
-	expectHandler("GET", "/a", "a-get", nil, nil)
-	expectHandler("HEAD", "/a", "a-get", nil, nil)
-	expectHandler("POST", "/a", "a-*", nil, nil)
-
-	expectHandler("GET", "/b", "b-get", nil, nil)
-	expectHandler("HEAD", "/b", "b-get", nil, nil)
-	expectHandler("POST", "/b", "b-post", nil, nil)
-	expectError("PUT", "/b", 405)
-
-	expectHandler("GET", "/c", "c-*", nil, nil)
-	expectHandler("HEAD", "/c", "c-*", nil, nil)
+	for _, rt := range hostRouteTests {
+		status, _, body := RunHandler(rt.url, "GET", nil, nil, r)
+		if status != rt.status {
+			t.Errorf("url=%sn\texpected %d\n\tactual   %d", rt.url, rt.status, status)
+		}
+		if status == 200 {
+			if string(body) != rt.body {
+				t.Errorf("url=%s\n\texpected %s\n\tactual   %s", rt.url, rt.body, string(body))
+			}
+		}
+	}
 }

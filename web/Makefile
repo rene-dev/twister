@@ -24,5 +24,6 @@ GOFILES=\
     middleware.go\
     websocket.go\
     multipart.go\
+    test.go\
 
 include $(GOROOT)/src/Make.pkg

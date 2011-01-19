@@ -20,7 +20,6 @@ import (
 	"http"
 	"regexp"
 	"strings"
-	"utf8"
 	"os"
 )
 
@@ -34,9 +33,7 @@ import (
 //
 //  '<' name (':' regexp)? '>'
 //
-// If the regexp is not specified, then the regexp is set to to [^/X]+ where
-// "X" is the character following the closing '>' or nothing if the closing
-// '>' is at the end of the pattern.
+// If the regexp is not specified, then the regexp is set to to [^/]+.
 //
 // The pattern must begin with the character '/'.
 //
@@ -66,7 +63,7 @@ type route struct {
 var parameterRegexp = regexp.MustCompile("<([A-Za-z0-9]+)(:[^>]*)?>")
 
 // compilePattern compiles the pattern to a regexp and array of paramter names.
-func compilePattern(pattern string, addSlash bool) (*regexp.Regexp, []string) {
+func compilePattern(pattern string, addSlash bool, sep string) (*regexp.Regexp, []string) {
 	var buf bytes.Buffer
 	names := make([]string, 8)
 	i := 0
@@ -85,14 +82,7 @@ func compilePattern(pattern string, addSlash bool) (*regexp.Regexp, []string) {
 				buf.WriteString(pattern[a[4]+1 : a[5]])
 				buf.WriteString(")")
 			} else {
-				buf.WriteString("([^")
-				if a[1] < len(pattern) {
-					rune, _ := utf8.DecodeRuneInString(pattern[a[1]:])
-					if rune != '/' {
-						buf.WriteRune(rune)
-					}
-				}
-				buf.WriteString("/]+)")
+				buf.WriteString("([^" + sep + "]+)")
 			}
 			pattern = pattern[a[1]:]
 		}
@@ -121,7 +111,7 @@ func (router *Router) Register(pattern string, handlers ...interface{}) *Router 
 	}
 	r := route{}
 	r.addSlash = pattern[len(pattern)-1] == '/'
-	r.regexp, r.names = compilePattern(pattern, r.addSlash)
+	r.regexp, r.names = compilePattern(pattern, r.addSlash, "/")
 	r.handlers = make(map[string]Handler)
 	for i := 0; i < len(handlers); i += 2 {
 		method, ok := handlers[i].(string)
@@ -214,16 +204,31 @@ func NewRouter() *Router {
 	return &Router{}
 }
 
-// HostRouter dispatches HTTP requests to a handler using the host header.
+// HostRouter dispatches HTTP requests to a handler using the host HTTP header.
 //
-// To enable debugging on localhost, the router overrides the request host with
-// the value of the hostOverride flag if set.
+// A host router maintains a list of routes where each route is a (pattern,
+// handler) pair.  The router dispatches requests by matching the host header
+// agains the patterns in the order that the routes were registed.  If a
+// matching route is found, the request is dispatched to the route's handler.
 //
-// If a registered handler is not found, then the router dispatches to a
-// default handler. 
+// A pattern is a string with embedded parameters. A parameter has the syntax:
+//
+//  '<' name (':' regexp)? '>'
+//
+// If the regexp is not specified, then the regexp is set to to [^.]+.  The
+// host router adds the parameters to the request Param.
+// 
+// To facilitate debugging on localhost, the router overrides the request host
+// with the value of the hostOverride flag if set.
 type HostRouter struct {
 	defaultHandler Handler
-	handlers       map[string]Handler
+	routes         []hostRoute
+}
+
+type hostRoute struct {
+	regexp  *regexp.Regexp
+	names   []string
+	handler Handler
 }
 
 // NewHostRouter allocates and initializes a new HostRouter.
@@ -231,16 +236,29 @@ func NewHostRouter(defaultHandler Handler) *HostRouter {
 	if defaultHandler == nil {
 		defaultHandler = NotFoundHandler()
 	}
-	return &HostRouter{defaultHandler: defaultHandler, handlers: make(map[string]Handler)}
+	return &HostRouter{defaultHandler: defaultHandler}
 }
 
-// Register a handler for the given host.
-func (router *HostRouter) Register(host string, handler Handler) *HostRouter {
-	router.handlers[strings.ToLower(host)] = handler
+// Register a handler for the given pattern.
+func (router *HostRouter) Register(hostPattern string, handler Handler) *HostRouter {
+	regex, names := compilePattern(hostPattern, false, ".")
+	router.routes = append(router.routes, hostRoute{regexp: regex, names: names, handler: handler})
 	return router
 }
 
 var hostOverride = flag.String("hostOverride", "", "Override request host in HostRouter")
+
+func (router *HostRouter) find(host string) (Handler, []string, []string) {
+	for _, r := range router.routes {
+		values := r.regexp.FindStringSubmatch(host)
+		if len(values) == 0 {
+			continue
+		}
+		values = values[1:]
+		return r.handler, r.names, values
+	}
+	return router.defaultHandler, nil, nil
+}
 
 // ServeWeb dispatches the request to a registered handler.
 func (router *HostRouter) ServeWeb(req *Request) {
@@ -250,9 +268,9 @@ func (router *HostRouter) ServeWeb(req *Request) {
 	} else {
 		host = *hostOverride
 	}
-	if handler, found := router.handlers[host]; found {
-		handler.ServeWeb(req)
-	} else {
-		router.defaultHandler.ServeWeb(req)
+	handler, names, values := router.find(host)
+	for i := 0; i < len(names); i++ {
+		req.Param.Set(names[i], values[i])
 	}
+	handler.ServeWeb(req)
 }
