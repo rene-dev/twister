@@ -21,8 +21,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"fmt"
-	"expvar"
 )
 
 func serveFile(req *Request, fname string, extraHeader []string) {
@@ -157,22 +155,4 @@ var notFoundHandler = HandlerFunc(func(req *Request) { req.Error(StatusNotFound,
 // NotFoundHandler returns a request handler that responds with 404 not found.
 func NotFoundHandler() Handler {
 	return notFoundHandler
-}
-
-// ExpvarHandler returns a handler that responds with the JSON encoding of
-// variables exported with the expvar package.
-func ExpvarHandler() Handler {
-	return HandlerFunc(func(req *Request) {
-		w := req.Respond(StatusOK, HeaderContentType, "application/json; charset=utf-8")
-		fmt.Fprintf(w, "{\n")
-		first := true
-		for kv := range expvar.Iter() {
-			if !first {
-				fmt.Fprintf(w, ",\n")
-			}
-			first = false
-			fmt.Fprintf(w, "%q: %s", kv.Key, kv.Value)
-		}
-		fmt.Fprintf(w, "\n}\n")
-	})
 }
