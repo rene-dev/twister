@@ -72,7 +72,7 @@ var chatTempl *template.Template
 
 func init() {
 	chatTempl = template.New(template.FormatterMap{"": template.HTMLFormatter})
-	chatTempl.SetDelims("«", "»")
+	chatTempl.SetDelims("{{", "}}")
 	if err := chatTempl.Parse(chatStr); err != nil {
 		panic("template error: " + err.String())
 	}
@@ -112,7 +112,7 @@ const chatStr = `
     });
 
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://«@»/chat/ws");
+        conn = new WebSocket("ws://{{@}}/chat/ws");
         conn.onclose = function(evt) {
             appendLog($("<div><b>Connection closed.</b></div>"))
         }
