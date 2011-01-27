@@ -16,6 +16,7 @@ Twister is an HTTP server and framework for the [Go](http://golang.org/) program
 * twister/server - An HTTP server impelemented in Go.
 * twister/oauth - OAuth client.
 * twister/expvar - Exports variables as JSON over HTTP for monitoring.
+* twister/websocket - WebSocket server implementation.
 
 ## Examples
 
@@ -27,10 +28,9 @@ Twister is an HTTP server and framework for the [Go](http://golang.org/) program
 ## Installation
 
 1. [Install Go](http://golang.org/doc/install.html).
-2. `goinstall github.com/garyburd/twister/web`
 3. `goinstall github.com/garyburd/twister/server`
 
-The Go distribution is Twister's only depdendency.
+The Go distribution is Twister's only dependency.
 
 ## About
 

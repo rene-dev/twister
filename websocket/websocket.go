@@ -12,9 +12,10 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-package web
+package websocket
 
 import (
+	"github.com/garyburd/twister/web"
 	"bufio"
 	"bytes"
 	"crypto/md5"
@@ -25,17 +26,17 @@ import (
 	"strings"
 )
 
-type WebSocketConn struct {
+type Conn struct {
 	conn net.Conn
 	br   *bufio.Reader
 	bw   *bufio.Writer
 }
 
-func (conn *WebSocketConn) Close() os.Error {
+func (conn *Conn) Close() os.Error {
 	return conn.conn.Close()
 }
 
-func (conn *WebSocketConn) Receive() ([]byte, os.Error) {
+func (conn *Conn) Receive() ([]byte, os.Error) {
 	// Support text framing for now. Revisit after browsers support framing
 	// described in later specs.
 	c, err := conn.br.ReadByte()
@@ -52,7 +53,7 @@ func (conn *WebSocketConn) Receive() ([]byte, os.Error) {
 	return p[:len(p)-1], nil
 }
 
-func (conn *WebSocketConn) Send(p []byte) os.Error {
+func (conn *Conn) Send(p []byte) os.Error {
 	// Support text framing for now. Revisit after browsers support framing
 	// described in later specs.
 	conn.bw.WriteByte(0)
@@ -62,7 +63,7 @@ func (conn *WebSocketConn) Send(p []byte) os.Error {
 }
 
 // webSocketKey returns the key bytes from the specified websocket key header.
-func webSocketKey(req *Request, name string) (key []byte, err os.Error) {
+func webSocketKey(req *web.Request, name string) (key []byte, err os.Error) {
 	s, found := req.Header.Get(name)
 	if !found {
 		return key, os.NewError("twister.websocket: missing key")
@@ -85,9 +86,9 @@ func webSocketKey(req *Request, name string) (key []byte, err os.Error) {
 	return key, nil
 }
 
-// WebSocketUpgrade upgrades the HTTP connection to the WebSocket protocol. The 
+// Upgrade upgrades the HTTP connection to the WebSocket protocol. The 
 // caller is responsbile for closing the returned connection.
-func WebSocketUpgrade(req *Request) (conn *WebSocketConn, err os.Error) {
+func Upgrade(req *web.Request) (conn *Conn, err os.Error) {
 
 	netConn, buf, err := req.Responder.Hijack()
 	if err != nil {
@@ -114,27 +115,27 @@ func WebSocketUpgrade(req *Request) (conn *WebSocketConn, err os.Error) {
 		return nil, os.NewError("twister.websocket: bad request method")
 	}
 
-	origin, found := req.Header.Get(HeaderOrigin)
+	origin, found := req.Header.Get(web.HeaderOrigin)
 	if !found {
 		return nil, os.NewError("twister.websocket: origin missing")
 	}
 
-	connection := strings.ToLower(req.Header.GetDef(HeaderConnection, ""))
+	connection := strings.ToLower(req.Header.GetDef(web.HeaderConnection, ""))
 	if connection != "upgrade" {
 		return nil, os.NewError("twister.websocket: connection header missing or wrong value")
 	}
 
-	upgrade := strings.ToLower(req.Header.GetDef(HeaderUpgrade, ""))
+	upgrade := strings.ToLower(req.Header.GetDef(web.HeaderUpgrade, ""))
 	if upgrade != "websocket" {
 		return nil, os.NewError("twister.websocket: upgrade header missing or wrong value")
 	}
 
-	key1, err := webSocketKey(req, HeaderSecWebSocketKey1)
+	key1, err := webSocketKey(req, web.HeaderSecWebSocketKey1)
 	if err != nil {
 		return nil, err
 	}
 
-	key2, err := webSocketKey(req, HeaderSecWebSocketKey2)
+	key2, err := webSocketKey(req, web.HeaderSecWebSocketKey2)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +153,7 @@ func WebSocketUpgrade(req *Request) (conn *WebSocketConn, err os.Error) {
 
 	// TODO: handle tls
 	location := "ws://" + req.URL.Host + req.URL.RawPath
-	protocol := req.Header.GetDef(HeaderSecWebSocketProtocol, "")
+	protocol := req.Header.GetDef(web.HeaderSecWebSocketProtocol, "")
 
 	bw.WriteString("HTTP/1.1 101 WebSocket Protocol Handshake")
 	bw.WriteString("\r\nUpgrade: WebSocket")
@@ -172,7 +173,7 @@ func WebSocketUpgrade(req *Request) (conn *WebSocketConn, err os.Error) {
 		return nil, err
 	}
 
-	conn = &WebSocketConn{netConn, br, bw}
+	conn = &Conn{netConn, br, bw}
 	netConn = nil
 	return conn, nil
 }

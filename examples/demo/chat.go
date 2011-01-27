@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/garyburd/twister/web"
+	"github.com/garyburd/twister/websocket"
 	"template"
 	"sync"
 )
@@ -9,14 +10,14 @@ import (
 var messageChan = make(chan []byte)
 
 type subscription struct {
-	conn      *web.WebSocketConn
+	conn      *websocket.Conn
 	subscribe bool
 }
 
 var subscriptionChan = make(chan subscription)
 
 func hub() {
-	conns := make(map[*web.WebSocketConn]int)
+	conns := make(map[*websocket.Conn]int)
 	for {
 		select {
 		case subscription := <-subscriptionChan:
@@ -39,7 +40,7 @@ func startHub() {
 
 func chatWsHandler(req *web.Request) {
 	startHub()
-	conn, err := web.WebSocketUpgrade(req)
+	conn, err := websocket.Upgrade(req)
 	if err != nil {
 		return
 	}

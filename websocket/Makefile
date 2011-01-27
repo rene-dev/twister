@@ -14,15 +14,8 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=github.com/garyburd/twister/web
+TARG=github.com/garyburd/twister/websocket
 GOFILES=\
-    misc.go\
-    web.go\
-    stringsmap.go\
-    handlers.go\
-    router.go\
-    middleware.go\
-    multipart.go\
-    test.go\
+    websocket.go\
 
 include $(GOROOT)/src/Make.pkg

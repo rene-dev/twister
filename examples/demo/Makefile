@@ -4,7 +4,7 @@ run: clean example
 include $(GOROOT)/src/Make.inc
 
 TARG=example
-DEPS=../../server
+DEPS=../../server ../../websocket
 GOFILES=\
     main.go\
     core.go\
