@@ -177,7 +177,7 @@ func defaultErrorHandler(req *Request, status int, reason os.Error, header Strin
 	header.Set(HeaderContentType, "text/plain; charset=utf-8")
 	w := req.Responder.Respond(status, header)
 	io.WriteString(w, StatusText(status))
-	if status >= 500 {
+	if reason != nil || status >= 500 {
 		log.Println("ERROR", req.URL, status, reason)
 	}
 }

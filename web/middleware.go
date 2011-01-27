@@ -74,27 +74,32 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 
 		if checkXSRF {
 			const tokenLen = 8
-			token, found := req.Cookie.Get(XSRFCookieName)
+			expectedToken, found := req.Cookie.Get(XSRFCookieName)
 
 			// Create new XSRF token?
-			if !found || len(token) != tokenLen {
+			if !found || len(expectedToken) != tokenLen {
 				p := make([]byte, tokenLen/2)
 				_, err := rand.Reader.Read(p)
 				if err != nil {
 					panic("twister: rand read failed")
 				}
-				token = hex.EncodeToString(p)
-				c := fmt.Sprintf("%s=%s; Path=/; HttpOnly", XSRFCookieName, token)
+				expectedToken = hex.EncodeToString(p)
+				c := fmt.Sprintf("%s=%s; Path=/; HttpOnly", XSRFCookieName, expectedToken)
 				FilterRespond(req, func(status int, header StringsMap) (int, StringsMap) {
 					header.Append(HeaderSetCookie, c)
 					return status, header
 				})
 			}
 
-			if token != req.Param.GetDef(XSRFParamName, "") {
-				req.Param.Set(XSRFParamName, token)
+			actualToken := req.Param.GetDef(XSRFParamName, "")
+			if expectedToken != actualToken {
+				req.Param.Set(XSRFParamName, expectedToken)
 				if req.Method == "POST" || req.Method == "PUT" {
-					req.Error(StatusNotFound, os.NewError("twister: bad xsrf token"))
+					err := os.NewError("twister: bad xsrf token")
+					if actualToken == "" {
+						err = os.NewError("twister: missing xsrf token")
+					}
+					req.Error(StatusNotFound, err)
 					return
 				}
 			}
