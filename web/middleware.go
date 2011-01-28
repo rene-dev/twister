@@ -49,13 +49,13 @@ func SetErrorHandler(errorHandler ErrorHandler, handler Handler) Handler {
 	})
 }
 
-// Name of XSRF cookie and request paramter.
+// Name of XSRF cookie and request parameter.
 const (
 	XSRFCookieName = "xsrf"
 	XSRFParamName  = "xsrf"
 )
 
-// ProcessForm returns a handler that parses url encoded forms if smaller than the 
+// ProcessForm returns a handler that parses URL encoded forms if smaller than the 
 // specified size and optionally checks for XSRF.
 func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler {
 	return HandlerFunc(func(req *Request) {

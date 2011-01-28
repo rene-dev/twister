@@ -61,7 +61,7 @@ type route struct {
 
 var parameterRegexp = regexp.MustCompile("<([A-Za-z0-9_]+)(:[^>]*)?>")
 
-// compilePattern compiles the pattern to a regexp and array of paramter names.
+// compilePattern compiles the pattern to a regexp and array of parameter names.
 func compilePattern(pattern string, addSlash bool, sep string) (*regexp.Regexp, []string) {
 	var buf bytes.Buffer
 	names := make([]string, 8)
@@ -145,7 +145,7 @@ func addSlash(req *Request) {
 	req.Redirect(path, true)
 }
 
-// Given the path componennt of the request URL and the request method, find
+// Given the path component of the request URL and the request method, find
 // the handler and path parameters.
 func (router *Router) find(path string, method string) (Handler, []string, []string) {
 	for _, r := range router.routes {
@@ -198,7 +198,7 @@ func NewRouter() *Router {
 //
 // A host router maintains a list of routes where each route is a (pattern,
 // handler) pair.  The router dispatches requests by matching the host header
-// agains the patterns in the order that the routes were registed.  If a
+// against the patterns in the order that the routes were registered. If a
 // matching route is found, the request is dispatched to the route's handler.
 //
 // A pattern is a string with embedded parameters. A parameter has the syntax:

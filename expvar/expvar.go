@@ -21,8 +21,9 @@
 // server.
 //
 // This package differs from the standard library's expvar package in two ways:
-// This package does not have a dependency on the standard library's http
-// server. This package relies on JSON marshaling more directly.
+// This package does not have a dependency on the standard library's HTTP
+// server. This package uses the json.Marshaler interface for extensibility
+// instead of defining its own interface.
 package expvar
 
 import (
@@ -76,7 +77,7 @@ type Map struct {
 	m  map[string]interface{}
 }
 
-// NewMap allocatess a new Map and publishes it using name.
+// NewMap allocates a new Map and publishes it using name.
 func NewMap(name string) *Map {
 	m := &Map{}
 	m.Init()
@@ -122,7 +123,7 @@ func (m *Map) AddInt(key string, delta int64) {
 	}
 }
 
-// Int is a sychronized wrapper around a 64-bit integer. The Int type is useful
+// Int is a synchronized wrapper around a 64-bit integer. The Int type is useful
 // implementing counters that can be updated by by concurrent goroutines.
 type Int struct {
 	i  int64
@@ -140,14 +141,14 @@ func (i *Int) Add(delta int64) {
 	i.i += delta
 }
 
-// Set atomicaly sets the counter to value.
+// Set atomically sets the counter to value.
 func (i *Int) Set(value int64) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.i = value
 }
 
-// NewInt allocatess a new counter and publishes it using name.
+// NewInt allocates a new counter and publishes it using name.
 func NewInt(name string) *Int {
 	v := &Int{}
 	Publish(name, v)

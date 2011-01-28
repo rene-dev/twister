@@ -110,7 +110,7 @@ func (p keyValueArray) Less(i, j int) bool {
 }
 
 // writeBaseString writes method, url, and param to w using the OAuth signature
-// base string compuation described in section 3.4.1 of the RFC.
+// base string computation described in section 3.4.1 of the RFC.
 func writeBaseString(w io.Writer, method string, url string, param web.StringsMap) {
 	// Method
 	w.Write(encode(strings.ToUpper(method), false))
@@ -124,7 +124,7 @@ func writeBaseString(w io.Writer, method string, url string, param web.StringsMa
 	w.Write(encode(parsedURL.Path, false))
 	w.Write([]byte{'&'})
 
-	// Create sorted array of encoded paramters. Parameter keys and values are
+	// Create sorted array of encoded parameters. Parameter keys and values are
 	// double encoded in a single step. This is safe to do because double
 	// encoding does not change the sort order.
 	n := 0

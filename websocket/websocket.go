@@ -87,7 +87,7 @@ func webSocketKey(req *web.Request, name string) (key []byte, err os.Error) {
 }
 
 // Upgrade upgrades the HTTP connection to the WebSocket protocol. The 
-// caller is responsbile for closing the returned connection.
+// caller is responsible for closing the returned connection.
 func Upgrade(req *web.Request) (conn *Conn, err os.Error) {
 
 	netConn, buf, err := req.Responder.Hijack()

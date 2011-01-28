@@ -45,8 +45,8 @@ func (b *testResponseBody) Flush() os.Error {
 	return nil
 }
 
-// RunHandler runs the a handler with a request created from the arguments and
-// returns the respponse. This function is intended to be used in tests.
+// RunHandler runs the handler with a request created from the arguments and
+// returns the response. This function is intended to be used in tests.
 func RunHandler(url string, method string, reqHeader StringsMap, reqBody []byte, handler Handler) (status int, header StringsMap, respBody []byte) {
 	remoteAddr := "1.2.3.4"
 	protocolVersion := ProtocolVersion11

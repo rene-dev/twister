@@ -26,7 +26,7 @@ import (
 	"encoding/hex"
 )
 
-// ContentTypeHTML is short cut for utf-8 encoded html.
+// ContentTypeHTML is short cut for UTF-8 encoded HTML.
 const ContentTypeHTML = "text/html; charset=\"utf-8\""
 
 // TimeLayout is the time layout used for HTTP headers and other values.
@@ -48,7 +48,7 @@ var (
 	dashdashBytes   = []byte("--")
 )
 
-// Octet tyeps from RFC 2616
+// Octet types from RFC 2616
 var (
 	isText  [256]bool
 	isToken [256]bool
@@ -82,12 +82,12 @@ func init() {
 	}
 }
 
-// IsTokenByte returns true if c is a token characeter as defined by RFC 2616
+// IsTokenByte returns true if c is a token character as defined by RFC 2616
 func IsTokenByte(c byte) bool {
 	return isToken[c]
 }
 
-// IsSpaceByte returns true if c is a space characeter as defined by RFC 2616
+// IsSpaceByte returns true if c is a space character as defined by RFC 2616
 func IsSpaceByte(c byte) bool {
 	return isSpace[c]
 }
@@ -188,7 +188,7 @@ func StatusText(status int) string {
 }
 
 // ProtocolVersion combines HTTP major and minor protocol numbers into a single
-// integer for easy comparision.
+// integer for easy comparison.
 func ProtocolVersion(major int, minor int) int {
 	if minor > 999 {
 		minor = 999
