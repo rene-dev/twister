@@ -22,7 +22,7 @@ import (
 type routeTestHandler string
 
 func (h routeTestHandler) ServeWeb(req *Request) {
-	w := req.Respond(200)
+	w := req.Respond(StatusOK)
 	var keys []string
 	for key, _ := range req.Param {
 		keys = append(keys, key)
@@ -43,27 +43,27 @@ var routeTests = []struct {
 	status int
 	body   string
 }{
-	{url: "/Bogus/Path", method: "GET", status: 404, body: ""},
-	{url: "/Bogus/Path", method: "POST", status: 404, body: ""},
-	{url: "/", method: "GET", status: 200, body: "home-get"},
-	{url: "/", method: "HEAD", status: 200, body: "home-get"},
-	{url: "/", method: "POST", status: 405, body: ""},
-	{url: "/a", method: "GET", status: 200, body: "a-get"},
-	{url: "/a", method: "HEAD", status: 200, body: "a-get"},
-	{url: "/a", method: "POST", status: 200, body: "a-*"},
-	{url: "/a/", method: "GET", status: 404, body: ""},
-	{url: "/b", method: "GET", status: 200, body: "b-get"},
-	{url: "/b", method: "HEAD", status: 200, body: "b-get"},
-	{url: "/b", method: "POST", status: 200, body: "b-post"},
-	{url: "/b", method: "PUT", status: 405, body: ""},
-	{url: "/c", method: "GET", status: 200, body: "c-*"},
-	{url: "/c", method: "HEAD", status: 200, body: "c-*"},
-	{url: "/d", method: "GET", status: 301, body: ""},
-	{url: "/d/", method: "GET", status: 200, body: "d"},
-	{url: "/e/foo", method: "GET", status: 200, body: "e x:foo"},
-	{url: "/e/foo/", method: "GET", status: 404, body: ""},
-	{url: "/f/foo/bar", method: "GET", status: 301, body: ""},
-	{url: "/f/foo/bar/", method: "GET", status: 200, body: "f x:foo y:bar"},
+	{url: "/Bogus/Path", method: "GET", status: StatusNotFound, body: ""},
+	{url: "/Bogus/Path", method: "POST", status: StatusNotFound, body: ""},
+	{url: "/", method: "GET", status: StatusOK, body: "home-get"},
+	{url: "/", method: "HEAD", status: StatusOK, body: "home-get"},
+	{url: "/", method: "POST", status: StatusMethodNotAllowed, body: ""},
+	{url: "/a", method: "GET", status: StatusOK, body: "a-get"},
+	{url: "/a", method: "HEAD", status: StatusOK, body: "a-get"},
+	{url: "/a", method: "POST", status: StatusOK, body: "a-*"},
+	{url: "/a/", method: "GET", status: StatusNotFound, body: ""},
+	{url: "/b", method: "GET", status: StatusOK, body: "b-get"},
+	{url: "/b", method: "HEAD", status: StatusOK, body: "b-get"},
+	{url: "/b", method: "POST", status: StatusOK, body: "b-post"},
+	{url: "/b", method: "PUT", status: StatusMethodNotAllowed, body: ""},
+	{url: "/c", method: "GET", status: StatusOK, body: "c-*"},
+	{url: "/c", method: "HEAD", status: StatusOK, body: "c-*"},
+	{url: "/d", method: "GET", status: StatusMovedPermanently, body: ""},
+	{url: "/d/", method: "GET", status: StatusOK, body: "d"},
+	{url: "/e/foo", method: "GET", status: StatusOK, body: "e x:foo"},
+	{url: "/e/foo/", method: "GET", status: StatusNotFound, body: ""},
+	{url: "/f/foo/bar", method: "GET", status: StatusMovedPermanently, body: ""},
+	{url: "/f/foo/bar/", method: "GET", status: StatusOK, body: "f x:foo y:bar"},
 }
 
 func TestRouter(t *testing.T) {
@@ -81,7 +81,7 @@ func TestRouter(t *testing.T) {
 		if status != rt.status {
 			t.Errorf("url=%s method=%s\n\texpected %d\n\tactual   %d", rt.url, rt.method, rt.status, status)
 		}
-		if status == 200 {
+		if status == StatusOK {
 			if string(body) != rt.body {
 				t.Errorf("url=%s method=%s\n\texpected %s\n\tactual   %s", rt.url, rt.method, rt.body, string(body))
 			}
@@ -94,9 +94,9 @@ var hostRouteTests = []struct {
 	status int
 	body   string
 }{
-	{url: "http://www.example.com/", status: 200, body: "www.example.com"},
-	{url: "http://foo.example.com/", status: 200, body: "*.example.com x:foo"},
-	{url: "http://example.com/", status: 200, body: "default"},
+	{url: "http://www.example.com/", status: StatusOK, body: "www.example.com"},
+	{url: "http://foo.example.com/", status: StatusOK, body: "*.example.com x:foo"},
+	{url: "http://example.com/", status: StatusOK, body: "default"},
 }
 
 func TestHostRouter(t *testing.T) {
@@ -109,7 +109,7 @@ func TestHostRouter(t *testing.T) {
 		if status != rt.status {
 			t.Errorf("url=%sn\texpected %d\n\tactual   %d", rt.url, rt.status, status)
 		}
-		if status == 200 {
+		if status == StatusOK {
 			if string(body) != rt.body {
 				t.Errorf("url=%s\n\texpected %s\n\tactual   %s", rt.url, rt.body, string(body))
 			}

@@ -20,7 +20,6 @@ import (
 	"http"
 	"regexp"
 	"strings"
-	"os"
 )
 
 // Router dispatches HTTP requests to a handler using the path component of the
@@ -60,7 +59,7 @@ type route struct {
 	handlers map[string]Handler
 }
 
-var parameterRegexp = regexp.MustCompile("<([A-Za-z0-9]+)(:[^>]*)?>")
+var parameterRegexp = regexp.MustCompile("<([A-Za-z0-9_]+)(:[^>]*)?>")
 
 // compilePattern compiles the pattern to a regexp and array of paramter names.
 func compilePattern(pattern string, addSlash bool, sep string) (*regexp.Regexp, []string) {
@@ -131,13 +130,10 @@ func (router *Router) Register(pattern string, handlers ...interface{}) *Router 
 	return router
 }
 
-type routerError struct {
-	status int
-	reason os.Error
-}
+type routerError int
 
-func (re *routerError) ServeWeb(req *Request) {
-	req.Error(re.status, re.reason)
+func (status routerError) ServeWeb(req *Request) {
+	req.Error(int(status), nil)
 }
 
 // addSlash redirects to the request URL with a trailing slash.
@@ -148,12 +144,6 @@ func addSlash(req *Request) {
 	}
 	req.Redirect(path, true)
 }
-
-var (
-	errBadPathCommponent  = &routerError{400, os.NewError("router: bad path component")}
-	errMethodNotSupported = &routerError{405, os.NewError("router: method not supported")}
-	errNotFound           = &routerError{404, os.NewError("router: not found")}
-)
 
 // Given the path componennt of the request URL and the request method, find
 // the handler and path parameters.
@@ -169,7 +159,7 @@ func (router *Router) find(path string, method string) (Handler, []string, []str
 		values = values[1:]
 		for j := 0; j < len(values); j++ {
 			if value, e := http.URLUnescape(values[j]); e != nil {
-				return errBadPathCommponent, nil, nil
+				return routerError(StatusNotFound), nil, nil
 			} else {
 				values[j] = value
 			}
@@ -185,9 +175,9 @@ func (router *Router) find(path string, method string) (Handler, []string, []str
 		if handler := r.handlers["*"]; handler != nil {
 			return handler, r.names, values
 		}
-		return errMethodNotSupported, nil, nil
+		return routerError(StatusMethodNotAllowed), nil, nil
 	}
-	return errNotFound, nil, nil
+	return routerError(StatusNotFound), nil, nil
 }
 
 // ServeWeb dispatches the request to a registered handler.
