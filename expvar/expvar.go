@@ -27,13 +27,14 @@
 package expvar
 
 import (
+	"github.com/garyburd/twister/web"
 	"json"
 	"log"
 	"os"
+    "runtime"
 	"strconv"
 	"sync"
 	"time"
-	"github.com/garyburd/twister/web"
 )
 
 var (
@@ -61,6 +62,24 @@ type MarshalJSONFunc func() ([]byte, os.Error)
 
 func (f MarshalJSONFunc) MarshalJSON() ([]byte, os.Error) {
 	return f()
+}
+
+type IntFunc func() int
+
+func (f IntFunc) MarshalJSON() ([]byte, os.Error) {
+	return []byte(strconv.Itoa(f())), nil
+}
+
+type Int32Func func() int32
+
+func (f Int32Func) MarshalJSON() ([]byte, os.Error) {
+	return []byte(strconv.Itoa(int(f()))), nil
+}
+
+type Int64Func func() int64
+
+func (f Int64Func) MarshalJSON() ([]byte, os.Error) {
+	return []byte(strconv.Itoa64(f())), nil
 }
 
 // ValueFunc wraps a func() interface{} with JSON marshalling of the returned
@@ -166,6 +185,12 @@ func ServeWeb(req *web.Request) {
 
 func init() {
 	start := time.Seconds()
+    Publish("runtime", map[string]interface{}{
+       "cgocalls": Int64Func(runtime.Cgocalls),
+       "goroutines": Int32Func(runtime.Goroutines),
+       "version": runtime.Version(),
+       "memstats": &runtime.MemStats,
+    })
 	Publish("uptimeSeconds", ValueFunc(func() interface{} { return time.Seconds() - start }))
-	Publish("cmdline", os.Args)
+	Publish("cmdline", &os.Args)
 }
