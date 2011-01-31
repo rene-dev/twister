@@ -21,18 +21,20 @@
 // server.
 //
 // This package differs from the standard library's expvar package in two ways:
-// This package does not have a dependency on the standard library's http
-// server. This package relies on JSON marshaling more directly.
+// This package does not have a dependency on the standard library's HTTP
+// server. This package uses the json.Marshaler interface for extensibility
+// instead of defining its own interface.
 package expvar
 
 import (
+	"github.com/garyburd/twister/web"
 	"json"
 	"log"
 	"os"
+    "runtime"
 	"strconv"
 	"sync"
 	"time"
-	"github.com/garyburd/twister/web"
 )
 
 var (
@@ -62,6 +64,24 @@ func (f MarshalJSONFunc) MarshalJSON() ([]byte, os.Error) {
 	return f()
 }
 
+type IntFunc func() int
+
+func (f IntFunc) MarshalJSON() ([]byte, os.Error) {
+	return []byte(strconv.Itoa(f())), nil
+}
+
+type Int32Func func() int32
+
+func (f Int32Func) MarshalJSON() ([]byte, os.Error) {
+	return []byte(strconv.Itoa(int(f()))), nil
+}
+
+type Int64Func func() int64
+
+func (f Int64Func) MarshalJSON() ([]byte, os.Error) {
+	return []byte(strconv.Itoa64(f())), nil
+}
+
 // ValueFunc wraps a func() interface{} with JSON marshalling of the returned
 // value. The function is called each time the object is marshaled.
 type ValueFunc func() interface{}
@@ -76,7 +96,7 @@ type Map struct {
 	m  map[string]interface{}
 }
 
-// NewMap allocatess a new Map and publishes it using name.
+// NewMap allocates a new Map and publishes it using name.
 func NewMap(name string) *Map {
 	m := &Map{}
 	m.Init()
@@ -122,7 +142,7 @@ func (m *Map) AddInt(key string, delta int64) {
 	}
 }
 
-// Int is a sychronized wrapper around a 64-bit integer. The Int type is useful
+// Int is a synchronized wrapper around a 64-bit integer. The Int type is useful
 // implementing counters that can be updated by by concurrent goroutines.
 type Int struct {
 	i  int64
@@ -140,14 +160,14 @@ func (i *Int) Add(delta int64) {
 	i.i += delta
 }
 
-// Set atomicaly sets the counter to value.
+// Set atomically sets the counter to value.
 func (i *Int) Set(value int64) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.i = value
 }
 
-// NewInt allocatess a new counter and publishes it using name.
+// NewInt allocates a new counter and publishes it using name.
 func NewInt(name string) *Int {
 	v := &Int{}
 	Publish(name, v)
@@ -165,6 +185,12 @@ func ServeWeb(req *web.Request) {
 
 func init() {
 	start := time.Seconds()
+    Publish("runtime", map[string]interface{}{
+       "cgocalls": Int64Func(runtime.Cgocalls),
+       "goroutines": Int32Func(runtime.Goroutines),
+       "version": runtime.Version(),
+       "memstats": &runtime.MemStats,
+    })
 	Publish("uptimeSeconds", ValueFunc(func() interface{} { return time.Seconds() - start }))
-	Publish("cmdline", os.Args)
+	Publish("cmdline", &os.Args)
 }

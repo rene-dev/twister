@@ -60,7 +60,7 @@ func (t *Template) respond(req *web.Request, status int, value interface{}, kvs 
 var (
 	formatterMap = template.FormatterMap{
 		"":     template.HTMLFormatter,
-		"item": template.HTMLFormatter, // temp value to break init cycle
+		"item": template.HTMLFormatter, // Temporary value to break initialization cycle.
 	}
 	homeTemplate      = parseTemplate("home.html")
 	loggedOutTemplate = parseTemplate("loggedout.html")

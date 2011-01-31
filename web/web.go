@@ -48,7 +48,7 @@ type ResponseBody interface {
 	Flush() os.Error
 }
 
-// Responder represents the the response.
+// Responder represents the response.
 type Responder interface {
 	// Respond commits the status and headers to the network and returns
 	// a writer for the response body.
@@ -206,7 +206,7 @@ func (req *Request) Redirect(url string, perm bool, headerKeysAndValues ...strin
 	req.Responder.Respond(status, header)
 }
 
-// BodyBytes returns the request body a slice of bytees. If maxLen is negative,
+// BodyBytes returns the request body a slice of bytes. If maxLen is negative,
 // then no limit is imposed on the length of the body. If the body is longer
 // than maxLen, then ErrRequestEntityTooLarge is returned.
 func (req *Request) BodyBytes(maxLen int) ([]byte, os.Error) {
