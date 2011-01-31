@@ -24,10 +24,10 @@ Run [godoc](http://golang.org/cmd/godoc/) to read the documentation.
 
 ## Examples
 
-* [examples/wiki](twister/tree/master/examples/wiki] - The [Go web application example](http://golang.org/doc/codelab/wiki/) converted to use Twister instead of the Go http package.
-* [examples/demo](twister/tree/master/examples/demo] - Illustrates basic features of Twister.
-* [examples/twitter](twister/tree/master/examples/twitter] - Login to Twitter with OAuth and display home timeline.
-* [examples/facebook](twister/tree/master/examples/facebook] - Login to Facebook with OAuth2 and display news feed.
+* [examples/wiki](twister/tree/master/examples/wiki) - The [Go web application example](http://golang.org/doc/codelab/wiki/) converted to use Twister instead of the Go http package.
+* [examples/demo](twister/tree/master/examples/demo) - Illustrates basic features of Twister.
+* [examples/twitter](twister/tree/master/examples/twitter) - Login to Twitter with OAuth and display home timeline.
+* [examples/facebook](twister/tree/master/examples/facebook) - Login to Facebook with OAuth2 and display news feed.
 
 ## Installation
 
