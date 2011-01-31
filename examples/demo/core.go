@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func coreErrorHandler(req *web.Request, status int, reason os.Error, header web.StringsMap) {
+func coreErrorHandler(req *web.Request, status int, reason os.Error, header web.HeaderMap) {
 
 	coreTempl.Execute(map[string]interface{}{
 		"req":     req,

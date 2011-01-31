@@ -105,7 +105,7 @@ func (c *conn) prepare() (err os.Error) {
 		return err
 	}
 
-	header := web.StringsMap{}
+	header := web.HeaderMap{}
 	err = header.ParseHttpHeader(c.br)
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (c requestReader) Read(p []byte) (int, os.Error) {
 	return n, c.requestErr
 }
 
-func (c *conn) Respond(status int, header web.StringsMap) (body web.ResponseBody) {
+func (c *conn) Respond(status int, header web.HeaderMap) (body web.ResponseBody) {
 	if c.hijacked {
 		log.Println("twister: Respond called on hijacked connection")
 		return nil

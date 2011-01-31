@@ -202,7 +202,7 @@ const (
 	ProtocolVersion11 = 1001 // HTTP/1.1
 )
 
-func parseCookieValues(values []string, m StringsMap) os.Error {
+func parseCookieValues(values []string, m ParamMap) os.Error {
 	for _, s := range values {
 		key := ""
 		begin := 0

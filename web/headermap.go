@@ -15,8 +15,6 @@
 package web
 
 import (
-	"bytes"
-	"http"
 	"os"
 	"io"
 	"bufio"
@@ -29,16 +27,17 @@ var (
 	ErrHeadersTooLong = os.NewError("too many HTTP headers")
 )
 
-// StringsMap maps strings to slices of strings. StringsMaps are used to
-// represent HTTP request parameters and HTTP headers.
-type StringsMap map[string][]string
+// HeaderMap maps canonical header names to slices of strings. Use the
+// functions HeaderName and HeaderNameBytes to convert names to canonical
+// format or use the Header* constants.
+type HeaderMap map[string][]string
 
-// NewStringsMap returns a map initialized with the given key-value pairs.
-func NewStringsMap(kvs ...string) StringsMap {
+// NewHeaderMap returns a map initialized with the given key-value pairs.
+func NewHeaderMap(kvs ...string) HeaderMap {
 	if len(kvs)%2 == 1 {
-		panic("twister: even number args required for NewStringsMap")
+		panic("twister: even number args required for NewHeaderMap")
 	}
-	m := make(StringsMap)
+	m := make(HeaderMap)
 	for i := 0; i < len(kvs); i += 2 {
 		m.Append(kvs[i], kvs[i+1])
 	}
@@ -46,7 +45,7 @@ func NewStringsMap(kvs ...string) StringsMap {
 }
 
 // Get returns the first value for given key or "" if the key is not found.
-func (m StringsMap) Get(key string) (value string, found bool) {
+func (m HeaderMap) Get(key string) (value string, found bool) {
 	values, found := m[key]
 	if !found || len(values) == 0 {
 		return "", false
@@ -55,7 +54,7 @@ func (m StringsMap) Get(key string) (value string, found bool) {
 }
 
 // GetDef returns first value for given key, or def if the key is not found.
-func (m StringsMap) GetDef(key string, def string) string {
+func (m HeaderMap) GetDef(key string, def string) string {
 	values, found := m[key]
 	if !found || len(values) == 0 {
 		return def
@@ -64,18 +63,18 @@ func (m StringsMap) GetDef(key string, def string) string {
 }
 
 // Append value to slice for given key.
-func (m StringsMap) Append(key string, value string) {
+func (m HeaderMap) Append(key string, value string) {
 	m[key] = append(m[key], value)
 }
 
 // Set value for given key, discarding previous values if any.
-func (m StringsMap) Set(key string, value string) {
+func (m HeaderMap) Set(key string, value string) {
 	m[key] = []string{value}
 }
 
 // StringMap returns a string to string map by discarding all but the first
 // value for a key.
-func (m StringsMap) StringMap() map[string]string {
+func (m HeaderMap) StringMap() map[string]string {
 	result := make(map[string]string)
 	for key, values := range m {
 		result[key] = values[0]
@@ -83,33 +82,8 @@ func (m StringsMap) StringMap() map[string]string {
 	return result
 }
 
-// FormEncoded returns a buffer containing the URL form encoding of the map.
-func (m StringsMap) FormEncodedBytes() []byte {
-	var b bytes.Buffer
-	sep := false
-	for key, values := range m {
-		escapedKey := http.URLEscape(key)
-		for _, value := range values {
-			if sep {
-				b.WriteByte('&')
-			} else {
-				sep = true
-			}
-			b.WriteString(escapedKey)
-			b.WriteByte('=')
-			b.WriteString(http.URLEscape(value))
-		}
-	}
-	return b.Bytes()
-}
-
-// FormEncoded returns a string containing the URL form encoding of the map.
-func (m StringsMap) FormEncodedString() string {
-	return string(m.FormEncodedBytes())
-}
-
 // WriteHttpHeader writes the map in HTTP header format.
-func (m StringsMap) WriteHttpHeader(w io.Writer) os.Error {
+func (m HeaderMap) WriteHttpHeader(w io.Writer) os.Error {
 	for key, values := range m {
 		keyBytes := []byte(key)
 		for _, value := range values {
@@ -138,67 +112,9 @@ func (m StringsMap) WriteHttpHeader(w io.Writer) os.Error {
 	return err
 }
 
-const notHex = 127
-
-func dehex(c byte) byte {
-	switch {
-	case '0' <= c && c <= '9':
-		return c - '0'
-	case 'a' <= c && c <= 'f':
-		return c - 'a' + 10
-	case 'A' <= c && c <= 'F':
-		return c - 'A' + 10
-	}
-	return notHex
-}
-
-// ParseFormEncodedBytes parses the URL-encoded form and appends the values to
-// the supplied map. This function modifies the contents of p.
-func (m StringsMap) ParseFormEncodedBytes(p []byte) os.Error {
-	key := ""
-	j := 0
-	for i := 0; i < len(p); {
-		switch p[i] {
-		case '=':
-			key = string(p[0:j])
-			j = 0
-			i += 1
-		case '&':
-			m.Append(key, string(p[0:j]))
-			key = ""
-			j = 0
-			i += 1
-		case '%':
-			if i+2 >= len(p) {
-				return ErrBadFormat
-			}
-			a := dehex(p[i+1])
-			b := dehex(p[i+2])
-			if a == notHex || b == notHex {
-				return ErrBadFormat
-			}
-			p[j] = a<<4 | b
-			j += 1
-			i += 3
-		case '+':
-			p[j] = ' '
-			j += 1
-			i += 1
-		default:
-			p[j] = p[i]
-			j += 1
-			i += 1
-		}
-	}
-	if key != "" {
-		m.Append(key, string(p[0:j]))
-	}
-	return nil
-}
-
 // ParseHttpHeader parses the HTTP headers and appends the values to the
 // supplied map. Header names are converted to canonical format.
-func (m StringsMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
+func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
 
 	const (
 		// Max size for header line

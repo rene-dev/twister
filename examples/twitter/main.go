@@ -114,7 +114,7 @@ func home(req *web.Request) {
 		homeLoggedOut(req)
 		return
 	}
-	param := make(web.StringsMap)
+	param := make(web.ParamMap)
 	url := "http://api.twitter.com/1/statuses/home_timeline.json"
 	oauthClient.SignParam(token, "GET", url, param)
 	url = url + "?" + param.FormEncodedString()

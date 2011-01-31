@@ -52,7 +52,7 @@ type ResponseBody interface {
 type Responder interface {
 	// Respond commits the status and headers to the network and returns
 	// a writer for the response body.
-	Respond(status int, header StringsMap) ResponseBody
+	Respond(status int, header HeaderMap) ResponseBody
 
 	// Hijack lets the caller take over the connection from the HTTP server.
 	// The caller is responsible for closing the connection. Returns connection
@@ -77,13 +77,13 @@ type Request struct {
 	RemoteAddr string
 
 	// Header maps canonical header names to slices of header values.
-	Header StringsMap
+	Header HeaderMap
 
 	// Request params from the query string, post body, routers and other.
-	Param StringsMap
+	Param ParamMap
 
 	// Cookies.
-	Cookie StringsMap
+	Cookie ParamMap
 
 	// Lowercase content type, not including params.
 	ContentType string
@@ -109,7 +109,7 @@ type Request struct {
 }
 
 // ErrorHandler handles request errors.
-type ErrorHandler func(req *Request, status int, reason os.Error, header StringsMap)
+type ErrorHandler func(req *Request, status int, reason os.Error, header HeaderMap)
 
 // Handler is the interface for web handlers.
 type Handler interface {
@@ -126,16 +126,16 @@ func (f HandlerFunc) ServeWeb(req *Request) { f(req) }
 
 // NewRequest allocates and initializes a request. This function is provided
 // for the convenience of protocol adapters (fcgi, native http server, ...).
-func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion int, header StringsMap) (req *Request, err os.Error) {
+func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion int, header HeaderMap) (req *Request, err os.Error) {
 	req = &Request{
 		RemoteAddr:      remoteAddr,
 		Method:          strings.ToUpper(method),
 		URL:             url,
 		ProtocolVersion: protocolVersion,
 		ErrorHandler:    defaultErrorHandler,
-		Param:           make(StringsMap),
+		Param:           make(ParamMap),
 		Header:          header,
-		Cookie:          make(StringsMap),
+		Cookie:          make(ParamMap),
 		Attributes:      make(map[string]interface{}),
 	}
 
@@ -170,10 +170,10 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 // headerKeysAndValues to a StringsMap and calls through to the connection's
 // Respond method.
 func (req *Request) Respond(status int, headerKeysAndValues ...string) ResponseBody {
-	return req.Responder.Respond(status, NewStringsMap(headerKeysAndValues...))
+	return req.Responder.Respond(status, NewHeaderMap(headerKeysAndValues...))
 }
 
-func defaultErrorHandler(req *Request, status int, reason os.Error, header StringsMap) {
+func defaultErrorHandler(req *Request, status int, reason os.Error, header HeaderMap) {
 	header.Set(HeaderContentType, "text/plain; charset=utf-8")
 	w := req.Responder.Respond(status, header)
 	io.WriteString(w, StatusText(status))
@@ -184,7 +184,7 @@ func defaultErrorHandler(req *Request, status int, reason os.Error, header Strin
 
 // Error responds to the request with an error. 
 func (req *Request) Error(status int, reason os.Error, headerKeysAndValues ...string) {
-	req.ErrorHandler(req, status, reason, NewStringsMap(headerKeysAndValues...))
+	req.ErrorHandler(req, status, reason, NewHeaderMap(headerKeysAndValues...))
 }
 
 // Redirect responds to the request with a redirect to the specified URL.
@@ -201,7 +201,7 @@ func (req *Request) Redirect(url string, perm bool, headerKeysAndValues ...strin
 		url = d + url
 	}
 
-	header := NewStringsMap(headerKeysAndValues...)
+	header := NewHeaderMap(headerKeysAndValues...)
 	header.Set(HeaderLocation, url)
 	req.Responder.Respond(status, header)
 }

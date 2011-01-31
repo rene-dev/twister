@@ -21,38 +21,14 @@ import (
 	"bytes"
 )
 
-type ParseUrlEncodedFormTest struct {
-	s string
-	m StringsMap
-}
-
-var ParseUrlEncodedFormTests = []ParseUrlEncodedFormTest{
-	{"a=", StringsMap{"a": []string{""}}},
-	{"a=b", StringsMap{"a": []string{"b"}}},
-	{"a=b&c=d", StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{"a=b&a=c", StringsMap{"a": []string{"b", "c"}}},
-	{"a=Hello%20World", StringsMap{"a": []string{"Hello World"}}},
-}
-
-func TestParseUrlEncodedForm(t *testing.T) {
-	for _, pt := range ParseUrlEncodedFormTests {
-		p := []byte(pt.s)
-		m := make(StringsMap)
-		m.ParseFormEncodedBytes(p)
-		if !reflect.DeepEqual(pt.m, m) {
-			t.Errorf("form=%s,\nexpected %q\nactual   %q", pt.s, pt.m, m)
-		}
-	}
-}
-
 type ParseHttpHeaderTest struct {
 	name   string
-	header StringsMap
+	header HeaderMap
 	s      string
 }
 
 var ParseHttpHeaderTests = []ParseHttpHeaderTest{
-	{"multihdr", NewStringsMap(
+	{"multihdr", NewHeaderMap(
 		HeaderContentType, "text/html",
 		HeaderCookie, "hello=world",
 		HeaderCookie, "foo=bar"),
@@ -61,7 +37,7 @@ CoOkie: hello=world
 Cookie: foo=bar
 
 `},
-	{"continuation", NewStringsMap(
+	{"continuation", NewHeaderMap(
 		HeaderContentType, "text/html",
 		HeaderCookie, "hello=world, foo=bar"),
 		`Cookie: hello=world,
@@ -74,7 +50,7 @@ Content-Type: text/html
 func TestParseHttpHeader(t *testing.T) {
 	for _, tt := range ParseHttpHeaderTests {
 		b := bufio.NewReader(bytes.NewBufferString(tt.s))
-		header := StringsMap{}
+		header := HeaderMap{}
 		err := header.ParseHttpHeader(b)
 		if err != nil {
 			t.Errorf("%s: expected error", tt.name)

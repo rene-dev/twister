@@ -28,10 +28,10 @@ type testResponseBody struct {
 type testResponder struct {
 	body   testResponseBody
 	status int
-	header StringsMap
+	header HeaderMap
 }
 
-func (r *testResponder) Respond(status int, header StringsMap) ResponseBody {
+func (r *testResponder) Respond(status int, header HeaderMap) ResponseBody {
 	r.status = status
 	r.header = header
 	return &r.body
@@ -47,11 +47,11 @@ func (b *testResponseBody) Flush() os.Error {
 
 // RunHandler runs the handler with a request created from the arguments and
 // returns the response. This function is intended to be used in tests.
-func RunHandler(url string, method string, reqHeader StringsMap, reqBody []byte, handler Handler) (status int, header StringsMap, respBody []byte) {
+func RunHandler(url string, method string, reqHeader HeaderMap, reqBody []byte, handler Handler) (status int, header HeaderMap, respBody []byte) {
 	remoteAddr := "1.2.3.4"
 	protocolVersion := ProtocolVersion11
 	if reqHeader == nil {
-		reqHeader = make(StringsMap)
+		reqHeader = make(HeaderMap)
 	}
 	parsedURL, err := http.ParseURL(url)
 	if err != nil {

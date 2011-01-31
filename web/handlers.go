@@ -40,7 +40,7 @@ func serveFile(req *Request, fname string, extraHeader []string) {
 
 	status := StatusOK
 	etag := strconv.Itob64(info.Mtime_ns, 36)
-	header := NewStringsMap(extraHeader...)
+	header := NewHeaderMap(extraHeader...)
 
 	if i := strings.Index(req.Header.GetDef(HeaderIfNoneMatch, ""), etag); i >= 0 {
 		status = StatusNotModified

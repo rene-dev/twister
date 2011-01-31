@@ -21,25 +21,25 @@ import (
 
 type ParseCookieValuesTest struct {
 	values []string
-	m      StringsMap
+	m      ParamMap
 }
 
 var ParseCookieValuesTests = []ParseCookieValuesTest{
-	{[]string{"a=b"}, StringsMap{"a": []string{"b"}}},
-	{[]string{"a=b; c"}, StringsMap{"a": []string{"b"}}},
-	{[]string{"a=b; =c"}, StringsMap{"a": []string{"b"}}},
-	{[]string{"a=b; ; "}, StringsMap{"a": []string{"b"}}},
-	{[]string{"a=b; c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b; c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b;c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{" a=b;c=d "}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b", "c=d"}, StringsMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b", "c=x=y"}, StringsMap{"a": []string{"b"}, "c": []string{"x=y"}}},
+	{[]string{"a=b"}, ParamMap{"a": []string{"b"}}},
+	{[]string{"a=b; c"}, ParamMap{"a": []string{"b"}}},
+	{[]string{"a=b; =c"}, ParamMap{"a": []string{"b"}}},
+	{[]string{"a=b; ; "}, ParamMap{"a": []string{"b"}}},
+	{[]string{"a=b; c=d"}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b; c=d"}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b;c=d"}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{" a=b;c=d "}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b", "c=d"}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b", "c=x=y"}, ParamMap{"a": []string{"b"}, "c": []string{"x=y"}}},
 }
 
 func TestParseCookieValues(t *testing.T) {
 	for _, pt := range ParseCookieValuesTests {
-		m := make(StringsMap)
+		m := make(ParamMap)
 		if err := parseCookieValues(pt.values, m); err != nil {
 			t.Errorf("error parsing values %s", err)
 		}

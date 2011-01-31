@@ -23,7 +23,7 @@ import (
 type SignatureTest struct {
 	method            string
 	url               string
-	param             web.StringsMap
+	param             web.ParamMap
 	base              string
 	clientCredentials Credentials
 	credentials       Credentials
@@ -34,7 +34,7 @@ var SignatureTests = []SignatureTest{
 	{
 		"GeT",
 		"hTtp://pHotos.example.net/photos",
-		web.NewStringsMap(
+		web.NewParamMap(
 			"oauth_consumer_key", "dpf43f3p2l4k3l03",
 			"oauth_token", "nnch734d00sl2jdk",
 			"oauth_nonce", "kllo9940pd9333jh",
@@ -50,7 +50,7 @@ var SignatureTests = []SignatureTest{
 	{
 		"GET",
 		"http://PHOTOS.example.net:8001/Photos",
-		web.NewStringsMap(
+		web.NewParamMap(
 			"oauth_consumer_key", "dpf43f3++p+#2l4k3l03",
 			"oauth_token", "nnch734d(0)0sl2jdk",
 			"oauth_nonce", "kllo~9940~pd9333jh",

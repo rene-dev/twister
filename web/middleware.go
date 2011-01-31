@@ -27,17 +27,17 @@ import (
 
 type filterResponder struct {
 	Responder
-	filter func(status int, header StringsMap) (int, StringsMap)
+	filter func(status int, header HeaderMap) (int, HeaderMap)
 }
 
-func (rf *filterResponder) Respond(status int, header StringsMap) ResponseBody {
+func (rf *filterResponder) Respond(status int, header HeaderMap) ResponseBody {
 	return rf.Responder.Respond(rf.filter(status, header))
 }
 
 // FilterRespond replaces the request's responder with one that filters the
 // arguments to Respond through the supplied filter. This function is intended
 // to be used by middleware.
-func FilterRespond(req *Request, filter func(status int, header StringsMap) (int, StringsMap)) {
+func FilterRespond(req *Request, filter func(status int, header HeaderMap) (int, HeaderMap)) {
 	req.Responder = &filterResponder{req.Responder, filter}
 }
 
@@ -85,7 +85,7 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 				}
 				expectedToken = hex.EncodeToString(p)
 				c := fmt.Sprintf("%s=%s; Path=/; HttpOnly", XSRFCookieName, expectedToken)
-				FilterRespond(req, func(status int, header StringsMap) (int, StringsMap) {
+				FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
 					header.Append(HeaderSetCookie, c)
 					return status, header
 				})
@@ -109,7 +109,7 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 	})
 }
 
-func writeStringMap(w io.Writer, title string, m StringsMap) {
+func writeStringMap(w io.Writer, title string, m map[string][]string) {
 	first := true
 	for key, values := range m {
 		if first {
@@ -129,13 +129,13 @@ func logRequest(req *Request) {
 	fmt.Fprintf(b, "  RemoteAddr:  %s\n", req.RemoteAddr)
 	fmt.Fprintf(b, "  ContentType:  %s\n", req.ContentType)
 	fmt.Fprintf(b, "  ContentLength:  %d\n", req.ContentLength)
-	writeStringMap(b, "Header", req.Header)
-	writeStringMap(b, "Param", req.Param)
-	writeStringMap(b, "Cookie", req.Cookie)
+	writeStringMap(b, "Header", map[string][]string(req.Header))
+	writeStringMap(b, "Param", map[string][]string(req.Param))
+	writeStringMap(b, "Cookie", map[string][]string(req.Cookie))
 	log.Print(b.String())
 }
 
-func logResponse(status int, header StringsMap) {
+func logResponse(status int, header HeaderMap) {
 	var b = &bytes.Buffer{}
 	fmt.Fprintf(b, "RESPONSE\n")
 	fmt.Fprintf(b, "  Status: %d\n", status)
@@ -150,7 +150,7 @@ func DebugLogger(enabled bool, handler Handler) Handler {
 	}
 	return HandlerFunc(func(req *Request) {
 		logRequest(req)
-		FilterRespond(req, func(status int, header StringsMap) (int, StringsMap) {
+		FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
 			logResponse(status, header)
 			return status, header
 		})
@@ -163,7 +163,7 @@ func Logger(log func(req *Request, status int, time int64), handler Handler) Han
 	return HandlerFunc(func(req *Request) {
 		var savedStatus int
 		t := time.Nanoseconds()
-		FilterRespond(req, func(status int, header StringsMap) (int, StringsMap) {
+		FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
 			savedStatus = status
 			return status, header
 		})

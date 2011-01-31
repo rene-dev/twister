@@ -49,7 +49,7 @@ func parseTemplate(filename string) *Template {
 }
 
 func (t *Template) respond(req *web.Request, status int, value interface{}, kvs ...string) {
-	header := web.NewStringsMap(kvs...)
+	header := web.NewHeaderMap(kvs...)
 	header.Set(web.HeaderContentType, t.mimeType)
 	err := t.t.Execute(value, req.Responder.Respond(status, header))
 	if err != nil {
