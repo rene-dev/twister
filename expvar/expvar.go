@@ -31,7 +31,7 @@ import (
 	"json"
 	"log"
 	"os"
-    "runtime"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -185,12 +185,12 @@ func ServeWeb(req *web.Request) {
 
 func init() {
 	start := time.Seconds()
-    Publish("runtime", map[string]interface{}{
-       "cgocalls": Int64Func(runtime.Cgocalls),
-       "goroutines": Int32Func(runtime.Goroutines),
-       "version": runtime.Version(),
-       "memstats": &runtime.MemStats,
-    })
+	Publish("runtime", map[string]interface{}{
+		"cgocalls":   Int64Func(runtime.Cgocalls),
+		"goroutines": Int32Func(runtime.Goroutines),
+		"version":    runtime.Version(),
+		"memstats":   &runtime.MemStats,
+	})
 	Publish("uptimeSeconds", ValueFunc(func() interface{} { return time.Seconds() - start }))
 	Publish("cmdline", &os.Args)
 }

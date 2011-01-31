@@ -48,50 +48,6 @@ var (
 	dashdashBytes   = []byte("--")
 )
 
-// Octet types from RFC 2616
-var (
-	isText  [256]bool
-	isToken [256]bool
-	isSpace [256]bool
-)
-
-func init() {
-	// OCTET      = <any 8-bit sequence of data>
-	// CHAR       = <any US-ASCII character (octets 0 - 127)>
-	// CTL        = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
-	// CR         = <US-ASCII CR, carriage return (13)>
-	// LF         = <US-ASCII LF, linefeed (10)>
-	// SP         = <US-ASCII SP, space (32)>
-	// HT         = <US-ASCII HT, horizontal-tab (9)>
-	// <">        = <US-ASCII double-quote mark (34)>
-	// CRLF       = CR LF
-	// LWS        = [CRLF] 1*( SP | HT )
-	// TEXT       = <any OCTET except CTLs, but including LWS>
-	// separators = "(" | ")" | "<" | ">" | "@" | "," | ";" | ":" | "\" | <"> 
-	//              | "/" | "[" | "]" | "?" | "=" | "{" | "}" | SP | HT
-	// token      = 1*<any CHAR except CTLs or separators>
-	// qdtext     = <any TEXT except <">>
-
-	for c := 0; c < 256; c++ {
-		isCtl := (0 <= c && c <= 31) || c == 127
-		isChar := 0 <= c && c <= 127
-		isSpace[c] = strings.IndexRune(" \t\r\n", c) >= 0
-		isSeparator := strings.IndexRune(" \t\"(),/:;<=>?@[]\\{}", c) >= 0
-		isText[c] = isSpace[c] || !isCtl
-		isToken[c] = isChar && !isCtl && !isSeparator
-	}
-}
-
-// IsTokenByte returns true if c is a token character as defined by RFC 2616
-func IsTokenByte(c byte) bool {
-	return isToken[c]
-}
-
-// IsSpaceByte returns true if c is a space character as defined by RFC 2616
-func IsSpaceByte(c byte) bool {
-	return isSpace[c]
-}
-
 // HTTP status codes from RFC 2606
 const (
 	StatusContinue                     = 100

@@ -18,7 +18,53 @@ import (
 	"os"
 	"io"
 	"bufio"
+	"strings"
+	"bytes"
 )
+
+// Octet types from RFC 2616
+var (
+	isText  [256]bool
+	isToken [256]bool
+	isSpace [256]bool
+)
+
+func init() {
+	// OCTET      = <any 8-bit sequence of data>
+	// CHAR       = <any US-ASCII character (octets 0 - 127)>
+	// CTL        = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
+	// CR         = <US-ASCII CR, carriage return (13)>
+	// LF         = <US-ASCII LF, linefeed (10)>
+	// SP         = <US-ASCII SP, space (32)>
+	// HT         = <US-ASCII HT, horizontal-tab (9)>
+	// <">        = <US-ASCII double-quote mark (34)>
+	// CRLF       = CR LF
+	// LWS        = [CRLF] 1*( SP | HT )
+	// TEXT       = <any OCTET except CTLs, but including LWS>
+	// separators = "(" | ")" | "<" | ">" | "@" | "," | ";" | ":" | "\" | <"> 
+	//              | "/" | "[" | "]" | "?" | "=" | "{" | "}" | SP | HT
+	// token      = 1*<any CHAR except CTLs or separators>
+	// qdtext     = <any TEXT except <">>
+
+	for c := 0; c < 256; c++ {
+		isCtl := (0 <= c && c <= 31) || c == 127
+		isChar := 0 <= c && c <= 127
+		isSpace[c] = strings.IndexRune(" \t\r\n", c) >= 0
+		isSeparator := strings.IndexRune(" \t\"(),/:;<=>?@[]\\{}", c) >= 0
+		isText[c] = isSpace[c] || !isCtl
+		isToken[c] = isChar && !isCtl && !isSeparator
+	}
+}
+
+// IsTokenByte returns true if c is a token character as defined by RFC 2616
+func IsTokenByte(c byte) bool {
+	return isToken[c]
+}
+
+// IsSpaceByte returns true if c is a space character as defined by RFC 2616
+func IsSpaceByte(c byte) bool {
+	return isSpace[c]
+}
 
 var (
 	ErrLineTooLong    = os.NewError("HTTP header line too long")
@@ -29,7 +75,7 @@ var (
 
 // HeaderMap maps canonical header names to slices of strings. Use the
 // functions HeaderName and HeaderNameBytes to convert names to canonical
-// format or use the Header* constants.
+// format.
 type HeaderMap map[string][]string
 
 // NewHeaderMap returns a map initialized with the given key-value pairs.
@@ -37,7 +83,7 @@ func NewHeaderMap(kvs ...string) HeaderMap {
 	if len(kvs)%2 == 1 {
 		panic("twister: even number args required for NewHeaderMap")
 	}
-	m := make(HeaderMap)
+	m := HeaderMap{}
 	for i := 0; i < len(kvs); i += 2 {
 		m.Append(kvs[i], kvs[i+1])
 	}
@@ -72,12 +118,49 @@ func (m HeaderMap) Set(key string, value string) {
 	m[key] = []string{value}
 }
 
-// StringMap returns a string to string map by discarding all but the first
-// value for a key.
-func (m HeaderMap) StringMap() map[string]string {
-	result := make(map[string]string)
-	for key, values := range m {
-		result[key] = values[0]
+// GetList returns list of comma separated values over multiple header values
+// for the given key. Commas are ignored in quoted strings. Quoted values are
+// not unescaped or unqoted. Whitespace is trimmmed.
+func (m HeaderMap) GetList(key string) []string {
+	var result []string
+	for _, s := range m[key] {
+		begin := 0
+		end := 0
+		escape := false
+		quote := false
+		for i := 0; i < len(s); i++ {
+			b := s[i]
+			switch {
+			case escape:
+				escape = false
+				end = i + 1
+			case quote:
+				switch b {
+				case '\\':
+					escape = true
+				case '"':
+					quote = false
+				}
+				end = i + 1
+			case b == '"':
+				quote = true
+				end = i + 1
+			case isSpace[b]:
+				if begin == end {
+					begin = i + 1
+					end = begin
+				}
+			case b == ',':
+				result = append(result, s[begin:end])
+				begin = i + 1
+				end = begin
+			default:
+				end = i + 1
+			}
+		}
+		if begin < end {
+			result = append(result, s[begin:end])
+		}
 	}
 	return result
 }
@@ -234,7 +317,7 @@ func trimWSRight(p []byte) []byte {
 	return p[0:i]
 }
 
-// Canonical header name constants.
+// Header names in canonical format.
 const (
 	HeaderAccept               = "Accept"
 	HeaderAcceptCharset        = "Accept-Charset"
@@ -314,4 +397,61 @@ func HeaderNameBytes(p []byte) string {
 		upper = c == '-'
 	}
 	return string(p)
+}
+
+// QuoteHeaderValue quotes s using quoted-string rules described in RFC 2616.
+func QuoteHeaderValue(s string) string {
+	var b bytes.Buffer
+	b.WriteByte('"')
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch c {
+		case '\\', '"':
+			b.WriteByte('\\')
+		}
+		b.WriteByte(c)
+	}
+	b.WriteByte('"')
+	return b.String()
+}
+
+// QuoteHeaderValueOrToken quotes s if s is not a valid token per RFC 2616.
+func QuoteHeaderValueOrToken(s string) string {
+	for i := 0; i < len(s); i++ {
+		if !isToken[s[i]] {
+			return QuoteHeaderValue(s)
+		}
+	}
+	return s
+}
+
+// UnquoteHeaderValue unquotes s if s is surrounded by quotes, otherwise s is
+// returned.
+func UnquoteHeaderValue(s string) string {
+	if len(s) < 2 || s[0] != '"' || s[len(s)-1] != '"' {
+		return s
+	}
+	s = s[1 : len(s)-1]
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' {
+			var buf bytes.Buffer
+			buf.WriteString(s[:i])
+			escape := true
+			for j := i + 1; j < len(s); j++ {
+				b := s[j]
+				switch {
+				case escape:
+					escape = false
+					buf.WriteByte(b)
+				case b == '\\':
+					escape = true
+				default:
+					buf.WriteByte(b)
+				}
+			}
+			s = buf.String()
+			break
+		}
+	}
+	return s
 }
