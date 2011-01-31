@@ -4,7 +4,7 @@ Twister is an HTTP server and framework for the [Go](http://golang.org/) program
 
 ## Packages
 
-* twister/web - Defines the application interface to a server and includes functionality used by most web applications.
+* [twister/web](tree/master/expvar) - Defines the application interface to a server and includes functionality used by most web applications.
   * Routing to handlers using regular expression match on host and path.
   * Protection against cross site request forgery.
   * Extensible model for middleware.
