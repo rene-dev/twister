@@ -4,7 +4,7 @@ Twister is an HTTP server and framework for the [Go](http://golang.org/) program
 
 ## Packages
 
-* [twister/web](twister/tree/master/web) - Defines the application interface to a server and includes functionality used by most web applications.
+* [web](twister/tree/master/web) - Defines the application interface to a server and includes functionality used by most web applications.
   * Routing to handlers using regular expression match on host and path.
   * Protection against cross site request forgery.
   * Extensible model for middleware.
@@ -13,17 +13,21 @@ Twister is an HTTP server and framework for the [Go](http://golang.org/) program
   * Static file handling.
   * Signed values for cookies and form parameters.
   * Multipart forms.
-* twister/server - An HTTP server impelemented in Go.
-* twister/oauth - OAuth client.
-* twister/expvar - Exports variables as JSON over HTTP for monitoring.
-* twister/websocket - WebSocket server implementation.
+* [server](twister/tree/master/server) - An HTTP server impelemented in Go.
+* [oauth](twister/tree/master/oauth) - OAuth client.
+* [expvar](twister/tree/master/expvar) - Exports variables as JSON over HTTP for monitoring.
+* [webskocket](twister/tree/master/websocket) - WebSocket server implementation.
+
+## Documentation
+
+Run [godoc](http://golang.org/cmd/godoc/) to read the documentation.
 
 ## Examples
 
-* twister/examples/wiki - The [Go web application example](http://golang.org/doc/codelab/wiki/) converted to use Twister instead of the Go http package.
-* twister/examples/demo - Illustrates basic features of Twister.
-* twister/examples/twitter - Login to Twitter with OAuth and display home timeline.
-* twister/examples/facebook - Login to Facebook with OAuth2 and display news feed.
+* [examples/wiki](twister/tree/master/examples/wiki] - The [Go web application example](http://golang.org/doc/codelab/wiki/) converted to use Twister instead of the Go http package.
+* [examples/demo](twister/tree/master/examples/demo] - Illustrates basic features of Twister.
+* [examples/twitter](twister/tree/master/examples/twitter] - Login to Twitter with OAuth and display home timeline.
+* [examples/facebook](twister/tree/master/examples/facebook] - Login to Facebook with OAuth2 and display news feed.
 
 ## Installation
 
