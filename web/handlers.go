@@ -42,10 +42,17 @@ func serveFile(req *Request, fname string, extraHeader []string) {
 	etag := strconv.Itob64(info.Mtime_ns, 36)
 	header := NewHeaderMap(extraHeader...)
 
-	if i := strings.Index(req.Header.GetDef(HeaderIfNoneMatch, ""), etag); i >= 0 {
+    match := false
+    for _, qetag := range req.Header.GetList(HeaderIfNoneMatch) {
+        if etag == UnquoteHeaderValue(qetag) {
+            match = true
+            break
+        }
+    }
+    if match {
 		status = StatusNotModified
 	} else {
-		header.Set(HeaderETag, etag)
+		header.Set(HeaderETag, QuoteHeaderValue(etag))
 		header.Set(HeaderContentLength, strconv.Itoa64(info.Size))
 		ext := path.Ext(fname)
 		if contentType := mime.TypeByExtension(ext); contentType != "" {
