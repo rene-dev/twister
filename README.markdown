@@ -2,6 +2,10 @@
 
 Twister is an HTTP server and framework for the [Go](http://golang.org/) programming language.
 
+## Documentation
+
+Run [godoc](http://golang.org/cmd/godoc/) to read the documentation.
+
 ## Packages
 
 * [web](twister/tree/master/web) - Defines the application interface to a server and includes functionality used by most web applications.
@@ -18,10 +22,6 @@ Twister is an HTTP server and framework for the [Go](http://golang.org/) program
 * [expvar](twister/tree/master/expvar) - Exports variables as JSON over HTTP for monitoring.
 * [webskocket](twister/tree/master/websocket) - WebSocket server implementation.
 
-## Documentation
-
-Run [godoc](http://golang.org/cmd/godoc/) to read the documentation.
-
 ## Examples
 
 * [examples/wiki](twister/tree/master/examples/wiki) - The [Go web application example](http://golang.org/doc/codelab/wiki/) converted to use Twister instead of the Go http package.
@@ -35,6 +35,12 @@ Run [godoc](http://golang.org/cmd/godoc/) to read the documentation.
 3. `goinstall github.com/garyburd/twister/server`
 
 The Go distribution is Twister's only dependency.
+
+## Feedback 
+
+Feedback, comments and quesions are welcome. Send the Gary Burd a message
+through [Github](https://github.com/inbox/new/garyburd) or
+[Google](http://www.google.com/profiles/100190655365702878730/contactme).
 
 ## About
 
