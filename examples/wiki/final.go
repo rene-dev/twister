@@ -88,6 +88,6 @@ func main() {
 			Register("/edit/"+titleParam, "GET", editHandler, "POST", saveHandler))
 	err := server.ListenAndServe(":8080", &server.Config{Handler: h})
 	if err != nil {
-		log.Exit("ListenAndServe:", err)
+		log.Panic("ListenAndServe:", err)
 	}
 }

@@ -1,6 +1,7 @@
 ## Overview
 
-Twister is an HTTP server and framework for the [Go](http://golang.org/) programming language.
+Twister is an HTTP server and framework for the [Go](http://golang.org/)
+programming language.
 
 ## Documentation
 
