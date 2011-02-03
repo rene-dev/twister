@@ -31,7 +31,7 @@ func main() {
 
 	err := server.ListenAndServe(":8080", &server.Config{Handler: h, DefaultHost: "localhost:8080"})
 	if err != nil {
-		log.Panic("ListenAndServe:", err)
+		log.Fatal("ListenAndServe:", err)
 	}
 }
 
