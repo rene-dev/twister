@@ -33,8 +33,14 @@ var (
 	ErrBadRequestLine = os.NewError("could not parse request line")
 )
 
-type Config struct {
-	// The server dispatches requests to this handler. Required.
+// Server defines parameters for running an HTTP server.
+type Server struct {
+	// The server accepts incoming connections on this listener. The
+	// application is required to set this field.
+	Listener net.Listener
+
+	// The server dispatches requests to this handler. The application is
+	// required to set this field.
 	Handler web.Handler
 
 	// If true, then set the request URL protocol to HTTPS.
@@ -46,7 +52,7 @@ type Config struct {
 }
 
 type conn struct {
-	config             *Config
+	server             *Server
 	netConn            net.Conn
 	br                 *bufio.Reader
 	responseBody       web.ResponseBody
@@ -119,11 +125,11 @@ func (c *conn) prepare() (err os.Error) {
 	if url.Host == "" {
 		url.Host = header.GetDef(web.HeaderHost, "")
 		if url.Host == "" {
-			url.Host = c.config.DefaultHost
+			url.Host = c.server.DefaultHost
 		}
 	}
 
-	if c.config.Secure {
+	if c.server.Secure {
 		url.Scheme = "https"
 	} else {
 		url.Scheme = "http"
@@ -356,11 +362,11 @@ func (c chunkedWriter) Write(p []byte) (int, os.Error) {
 	return n, c.responseErr
 }
 
-func serveConnection(netConn net.Conn, config *Config) {
+func (s *Server) serveConnection(netConn net.Conn) {
 	br := bufio.NewReader(netConn)
 	for {
 		c := conn{
-			config:  config,
+			server:  s,
 			netConn: netConn,
 			br:      br}
 		if err := c.prepare(); err != nil {
@@ -369,7 +375,7 @@ func serveConnection(netConn net.Conn, config *Config) {
 			}
 			break
 		}
-		config.Handler.ServeWeb(c.req)
+		s.Handler.ServeWeb(c.req)
 		if c.hijacked {
 			return
 		}
@@ -384,27 +390,38 @@ func serveConnection(netConn net.Conn, config *Config) {
 	netConn.Close()
 }
 
-// Serve accepts incoming HTTP connections on the listener l, creating a new
-// goroutine for each. The goroutines read requests and then call handler to
-// reply to them.
-func Serve(l net.Listener, config *Config) os.Error {
+// Serve accepts incoming HTTP connections on s.Listener, creating a new
+// goroutine for each. The goroutines read requests and then call s.Handler to
+// respond to the request.
+func (s *Server) Serve() os.Error {
 	for {
-		netConn, e := l.Accept()
+		netConn, e := s.Listener.Accept()
 		if e != nil {
 			return e
 		}
-		go serveConnection(netConn, config)
+		go s.serveConnection(netConn)
 	}
 	return nil
 }
 
-// ListenAndServe listens on the TCP network address addr and then calls Serve
-// with handler to handle requests on incoming connections.  
-func ListenAndServe(addr string, config *Config) os.Error {
-	l, e := net.Listen("tcp", addr)
-	if e != nil {
-		return e
+// Run is a convenience function for running an HTTP server. Run listens on the
+// TCP address addr, initializes a server object and calls the server's Serve()
+// method to handle HTTP requests. Run logs a fatal error if it encounters an
+// error.
+//
+// The Server object is initialized with the handler argument and listener. If
+// the application needs to set any other Server fields or if the application
+// needs to create the listener, then the application should directly create
+// the Server object and call the Serve() method.
+func Run(addr string, handler web.Handler) {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatal("Listen", err)
+		return
 	}
-	defer l.Close()
-	return Serve(l, config)
+	defer listener.Close()
+	err = (&Server{Listener: listener, Handler: handler}).Serve()
+	if err != nil {
+		log.Fatal("Server", err)
+	}
 }

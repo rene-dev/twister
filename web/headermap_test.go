@@ -45,7 +45,7 @@ func TestQuoteHeaderValue(t *testing.T) {
 }
 
 var UnquoteHeaderValueTests = []struct {
-	s string
+	s       string
 	unquote string
 }{
 	{s: "a", unquote: "a"},

@@ -86,8 +86,5 @@ func main() {
 		web.NewRouter().
 			Register("/view/"+titleParam, "GET", viewHandler).
 			Register("/edit/"+titleParam, "GET", editHandler, "POST", saveHandler))
-	err := server.ListenAndServe(":8080", &server.Config{Handler: h})
-	if err != nil {
-		log.Fatal("ListenAndServe:", err)
-	}
+	server.Run(":8080", h)
 }

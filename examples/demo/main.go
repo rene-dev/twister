@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"flag"
 	"github.com/garyburd/twister/web"
 	"github.com/garyburd/twister/server"
@@ -29,10 +28,7 @@ func main() {
 			Register("/core/b/<b>/c/<c>", "GET", coreHandler).
 			Register("/core/c", "POST", coreHandler)))))
 
-	err := server.ListenAndServe(":8080", &server.Config{Handler: h, DefaultHost: "localhost:8080"})
-	if err != nil {
-		log.Fatal("ListenAndServe:", err)
-	}
+	server.Run(":8080", h)
 }
 
 var homeTempl = template.MustParse(homeStr, template.FormatterMap{"": template.HTMLFormatter})

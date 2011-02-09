@@ -22,7 +22,6 @@ import (
 	"github.com/garyburd/twister/web"
 	"http"
 	"json"
-	"log"
 	"os"
 	"strings"
 	"template"
@@ -144,10 +143,7 @@ func main() {
 		Register("/login", "GET", login).
 		Register("/callback", "GET", authCallback)))
 
-	err := server.ListenAndServe(":8080", &server.Config{Handler: h, DefaultHost: "localhost:8080"})
-	if err != nil {
-		log.Fatal("ListenAndServe:", err)
-	}
+	server.Run(":8080", h)
 }
 
 var fmap = template.FormatterMap{"": template.HTMLFormatter}

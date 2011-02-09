@@ -26,7 +26,6 @@ import (
 	"http"
 	"io/ioutil"
 	"json"
-	"log"
 	"os"
 	"strconv"
 )
@@ -166,8 +165,5 @@ func main() {
 		Register("/login", "GET", loginHandler).
 		Register("/callback", "GET", authCallbackHandler)))
 
-	err := server.ListenAndServe(":8080", &server.Config{Handler: h, DefaultHost: "localhost:8080"})
-	if err != nil {
-		log.Fatal("ListenAndServe:", err)
-	}
+	server.Run(":8080", h)
 }

@@ -42,14 +42,14 @@ func serveFile(req *Request, fname string, extraHeader []string) {
 	etag := strconv.Itob64(info.Mtime_ns, 36)
 	header := NewHeaderMap(extraHeader...)
 
-    match := false
-    for _, qetag := range req.Header.GetList(HeaderIfNoneMatch) {
-        if etag == UnquoteHeaderValue(qetag) {
-            match = true
-            break
-        }
-    }
-    if match {
+	match := false
+	for _, qetag := range req.Header.GetList(HeaderIfNoneMatch) {
+		if etag == UnquoteHeaderValue(qetag) {
+			match = true
+			break
+		}
+	}
+	if match {
 		status = StatusNotModified
 	} else {
 		header.Set(HeaderETag, QuoteHeaderValue(etag))
