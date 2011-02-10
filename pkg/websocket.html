@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Twister: websocket</title>
+<link rel="stylesheet" href="../static/base.css" type="text/css"/> 
+</head>
+<body>
+<div id="content"> 
+<h1><a href="..">Twister</a>: websocket</h1>
+
+<h4>Table Of Contents</h4>
+<ul>
+<li><a href="#package">Package</a>
+<li><a href="#Conn">type Conn</a>
+        <ul>
+    <li><a href="#Upgrade">func Upgrade</a>
+    <li><a href="#Conn.Close">func (*Conn) Close</a>
+    <li><a href="#Conn.Receive">func (*Conn) Receive</a>
+    <li><a href="#Conn.Send">func (*Conn) Send</a>
+        </ul>
+</ul>
+
+<h2 id="package">Package</h2>
+
+<p><code>import "github.com/garyburd/twister/websocket"</code></p>
+
+
+
+
+
+
+<h2 id="Conn">type Conn</h2>
+
+<pre>type Conn struct {
+ // contains unexported fields
+}</pre>
+
+
+
+    <h3 id="Upgrade">func Upgrade</h3>
+    <p><code>func Upgrade(req *web.Request) (conn *Conn, err os.Error)</code></p>
+    <p>
+Upgrade upgrades the HTTP connection to the WebSocket protocol. The
+caller is responsible for closing the returned connection.
+</p>
+
+
+    <h3 id="Conn.Close">func (*Conn) Close</h3>
+    <p><code>func (conn *Conn) Close() os.Error</code></p>
+    
+    <h3 id="Conn.Receive">func (*Conn) Receive</h3>
+    <p><code>func (conn *Conn) Receive() ([]byte, os.Error)</code></p>
+    
+    <h3 id="Conn.Send">func (*Conn) Send</h3>
+    <p><code>func (conn *Conn) Send(p []byte) os.Error</code></p>
+    
+
+<hr>
+This page was generated automatically from the source code. If you installed
+Twister using <a href="http://golang.org/cmd/goinstall/">goinstall</a>, then
+you can also view the source documentation with <a
+href="http://golang.org/cmd/godoc/">godoc</a>.  
+</div>
+</body>
+</html>

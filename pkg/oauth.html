@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Twister: oauth</title>
+<link rel="stylesheet" href="../static/base.css" type="text/css"/> 
+</head>
+<body>
+<div id="content"> 
+<h1><a href="..">Twister</a>: oauth</h1>
+
+<h4>Table Of Contents</h4>
+<ul>
+<li><a href="#package">Package</a>
+<li><a href="#Client">type Client</a>
+            <ul>
+    <li><a href="#Client.AuthorizationURL">func (*Client) AuthorizationURL</a>
+    <li><a href="#Client.RequestTemporaryCredentials">func (*Client) RequestTemporaryCredentials</a>
+    <li><a href="#Client.RequestToken">func (*Client) RequestToken</a>
+    <li><a href="#Client.SignParam">func (*Client) SignParam</a>
+            </ul>
+<li><a href="#Credentials">type Credentials</a>
+</ul>
+
+<h2 id="package">Package</h2>
+
+<p><code>import "github.com/garyburd/twister/oauth"</code></p>
+
+<p>
+The oauth package implements a subset of the client interface to OAuth as
+defined in RFC 5849.
+</p>
+
+
+
+
+
+<h2 id="Client">type Client</h2>
+<p>
+Client represents an OAuth client.
+</p>
+
+<pre>type Client struct {
+ Credentials                   Credentials
+ TemporaryCredentialRequestURI string // Also known as request token URL.
+ ResourceOwnerAuthorizationURI string // Also known as authorization URL.
+ TokenRequestURI               string // Also known as request token URL.
+ Scope                         string // Required for Google services.
+}</pre>
+
+
+
+
+    <h3 id="Client.AuthorizationURL">func (*Client) AuthorizationURL</h3>
+    <p><code>func (c *Client) AuthorizationURL(temporaryCredentials *Credentials) string</code></p>
+    <p>
+AuthorizationURL returns the full authorization URL.
+</p>
+
+    <h3 id="Client.RequestTemporaryCredentials">func (*Client) RequestTemporaryCredentials</h3>
+    <p><code>func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, os.Error)</code></p>
+    <p>
+RequestTemporaryCredentials requests temporary credentials from the server.
+</p>
+
+    <h3 id="Client.RequestToken">func (*Client) RequestToken</h3>
+    <p><code>func (c *Client) RequestToken(temporaryCredentials *Credentials, verifier string) (*Credentials, map[string]string, os.Error)</code></p>
+    <p>
+RequestToken requests token credentials from the server.
+</p>
+
+    <h3 id="Client.SignParam">func (*Client) SignParam</h3>
+    <p><code>func (c *Client) SignParam(credentials *Credentials, method, url string, param web.ParamMap)</code></p>
+    <p>
+SignParam adds an OAuth signature to param.
+</p>
+
+
+<h2 id="Credentials">type Credentials</h2>
+<p>
+Credentials represents client, temporary and token credentials.
+</p>
+
+<pre>type Credentials struct {
+ Token  string // Also known as consumer key or access token.
+ Secret string // Also known as consumer secret or access token secret.
+}</pre>
+
+
+
+
+
+<hr>
+This page was generated automatically from the source code. If you installed
+Twister using <a href="http://golang.org/cmd/goinstall/">goinstall</a>, then
+you can also view the source documentation with <a
+href="http://golang.org/cmd/godoc/">godoc</a>.  
+</div>
+</body>
+</html>

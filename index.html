@@ -1,87 +1,91 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!DOCTYPE html> 
+<html  xml:lang="en" lang="en">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-
-	<title>garyburd/twister @ GitHub</title>
-	
-	<style type="text/css">
-		body {
-  		margin-top: 1.0em;
-  		background-color: #2101c2;
-		  font-family: "Helvetica,Arial,FreeSans";
-  		color: #ffffff;
-    }
-    #container {
-      margin: 0 auto;
-      width: 700px;
-    }
-		h1 { font-size: 3.8em; color: #defe3d; margin-bottom: 3px; }
-		h1 .small { font-size: 0.4em; }
-		h1 a { text-decoration: none }
-		h2 { font-size: 1.5em; color: #defe3d; }
-    h3 { text-align: center; color: #defe3d; }
-    a { color: #defe3d; }
-    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
-    .download { float: right; }
-		pre { background: #000; color: #fff; padding: 15px;}
-    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
-    .footer { text-align:center; padding-top:30px; font-style: italic; }
-	</style>
-	
+<title>Twister</title>
+<link rel="stylesheet" href="static/base.css" type="text/css"/> 
 </head>
-
 <body>
-  <a href="http://github.com/garyburd/twister"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+<div id="content">
+<h1>Twister</h1>
 
-  <div id="container">
+<p>Twister is an HTTP server and framework for the <a href="http://golang.org/">Go</a> 
+programming language. 
+ 
+<h2>Installation</h2> 
 
-    <div class="download">
-      <a href="http://github.com/garyburd/twister/zipball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
-      <a href="http://github.com/garyburd/twister/tarball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
-    </div>
+<ol> 
+<li><a href="http://golang.org/doc/install.html">Install Go</a>. 
+<li><code>goinstall github.com/garyburd/twister/server</code> 
+</ol>
 
-    <h1><a href="http://github.com/garyburd/twister">twister</a>
-      <span class="small">by <a href="http://github.com/garyburd">garyburd</a></span></h1>
-
-    <div class="description">
-      An HTTP server for the Go programming language.
-    </div>
-
-    <p>Main text.</p><h2>Dependencies</h2>
-<p>None</p>
-<h2>Install</h2>
-<p>goinstall github.com/garyburd/twister/server
-goinstall github.com/garyburd/twister/web</p>
-<h2>License</h2>
-<p>Apache 2.0</p>
-<h2>Authors</h2>
-<p>Gary Burd (gary@beagledreams.com)<br/><br/>      </p>
-<h2>Contact</h2>
-<p>Gary Burd (gary@beagledreams.com)<br/>      </p>
-
-
-    <h2>Download</h2>
-    <p>
-      You can download this project in either
-      <a href="http://github.com/garyburd/twister/zipball/master">zip</a> or
-      <a href="http://github.com/garyburd/twister/tarball/master">tar</a> formats.
-    </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/garyburd/twister</pre>
-    </p>
-
-    <div class="footer">
-      get the source code on GitHub : <a href="http://github.com/garyburd/twister">garyburd/twister</a>
-    </div>
-
-  </div>
-
+<p>The Go distribution is Twister's only dependency. 
   
-</body>
+<h2>Packages</h2> 
+ 
+<ul> 
+<li><a href="pkg/web.html">web</a> - Defines the application interface to a server and includes functionality used by most web applications.
+    <ul> 
+        <li>Routing to handlers using regular expression match on host and path. 
+        <li>Protection against cross site request forgery. 
+        <li>Extensible model for middleware. 
+        <li>Cookie parsing. 
+        <li>WebSockets. 
+        <li>Static file handling. 
+        <li>Signed values for cookies and form parameters. 
+        <li>Multipart forms. 
+    </ul> 
+ 
+<li><a href="pkg/server.html">server</a> - An HTTP server impelemented in Go. 
+<li><a href="pkg/oauth.html">oauth</a> - OAuth client. 
+<li><a href="pkg/expvar.html">expvar</a> - Exports variables as JSON over HTTP for monitoring. 
+<li><a href="pkg/websocket.html">websocket</a> - WebSocket server implementation. 
+</ul>
+
+<h2>Documentation</h2> 
+
+API Reference: <a href="pkg/web.html">web</a>,
+<a href="pkg/server.html">server</a>,
+<a href="pkg/oauth.html">oauth</a>,
+<a href="pkg/expvar.html">expvar</a>,
+<a href="pkg/websocket.html">websocket</a>.
+
+<h2>Examples</h2> 
+ 
+<ul> 
+    <li><a href="http://github.com/garyburd/twister/tree/master/examples/wiki">examples/wiki</a> - 
+    The <a href="http://golang.org/doc/codelab/wiki/">Go web application example</a>
+    converted to use Twister instead of the Go http package. 
+
+    <li><a href="http://github.com/garyburd/twister/tree/master/examples/demo">examples/demo</a> - 
+    Illustrates basic features of Twister. 
+
+    <li><a href="http://github.com/garyburd/twister/tree/master/examples/twitter">examples/twitter</a> -
+    Login to Twitter with OAuth and display home timeline. 
+
+    <li><a href="http://github.com/garyburd/twister/tree/master/examples/facebook">examples/facebook</a> -
+    Login to Facebook with OAuth2 and display news feed. 
+</ul>
+
+<h2>License</h2> 
+
+Twister is available under the <a
+href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache Licence, Version
+2.0</a>.
+
+<h2>Development</h2>
+
+Follow the development of Twister on <a href="http://github.com/garyburd/twister">Github</a>.
+
+<h2>Feedback</h2> 
+ 
+<p>Feedback, comments and quesions are welcome. Send the Gary Burd a message
+through <a href="https://github.com/inbox/new/garyburd">Github</a> or
+<a href="http://www.google.com/profiles/100190655365702878730/contactme">Google</a>. 
+ 
+<h2>About</h2> 
+ 
+<p>Twister was written by <a href="http://gary.beagledreams.com/">Gary Burd</a>. The name
+"Twister" was inspired by <a href="http://tornadoweb.org/" title="">Tornado</a>.
+
+</div>
 </html>

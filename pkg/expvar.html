@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Twister: expvar</title>
+<link rel="stylesheet" href="../static/base.css" type="text/css"/> 
+</head>
+<body>
+<div id="content"> 
+<h1><a href="..">Twister</a>: expvar</h1>
+
+<h4>Table Of Contents</h4>
+<ul>
+<li><a href="#package">Package</a>
+<li><a href="#Publish">func Publish</a>
+<li><a href="#ServeWeb">func ServeWeb</a>
+<li><a href="#Int">type Int</a>
+        <ul>
+    <li><a href="#NewInt">func NewInt</a>
+    <li><a href="#Int.Add">func (*Int) Add</a>
+    <li><a href="#Int.MarshalJSON">func (*Int) MarshalJSON</a>
+    <li><a href="#Int.Set">func (*Int) Set</a>
+        </ul>
+<li><a href="#Int32Func">type Int32Func</a>
+            <ul>
+    <li><a href="#Int32Func.MarshalJSON">func (Int32Func) MarshalJSON</a>
+            </ul>
+<li><a href="#Int64Func">type Int64Func</a>
+            <ul>
+    <li><a href="#Int64Func.MarshalJSON">func (Int64Func) MarshalJSON</a>
+            </ul>
+<li><a href="#IntFunc">type IntFunc</a>
+            <ul>
+    <li><a href="#IntFunc.MarshalJSON">func (IntFunc) MarshalJSON</a>
+            </ul>
+<li><a href="#Map">type Map</a>
+        <ul>
+    <li><a href="#NewMap">func NewMap</a>
+    <li><a href="#Map.AddInt">func (*Map) AddInt</a>
+    <li><a href="#Map.Get">func (*Map) Get</a>
+    <li><a href="#Map.Init">func (*Map) Init</a>
+    <li><a href="#Map.MarshalJSON">func (*Map) MarshalJSON</a>
+    <li><a href="#Map.Set">func (*Map) Set</a>
+        </ul>
+<li><a href="#MarshalJSONFunc">type MarshalJSONFunc</a>
+            <ul>
+    <li><a href="#MarshalJSONFunc.MarshalJSON">func (MarshalJSONFunc) MarshalJSON</a>
+            </ul>
+<li><a href="#ValueFunc">type ValueFunc</a>
+            <ul>
+    <li><a href="#ValueFunc.MarshalJSON">func (ValueFunc) MarshalJSON</a>
+            </ul>
+</ul>
+
+<h2 id="package">Package</h2>
+
+<p><code>import "github.com/garyburd/twister/expvar"</code></p>
+
+<p>
+The expvar package provides an interface for registering and publishing
+objects as JSON over HTTP. This is useful for publishing counters and other
+operational data to monitoring tools.
+</p>
+<p>
+The application should wrap the ServeWeb function in this package with
+appropriate access control and register the resulting handler with a web
+server.
+</p>
+<p>
+This package differs from the standard library&#39;s expvar package in two ways:
+This package does not have a dependency on the standard library&#39;s HTTP
+server. This package uses the json.Marshaler interface for extensibility
+instead of defining its own interface.
+</p>
+
+
+
+
+<h2 id="Publish">func Publish</h2>
+<p><code>func Publish(name string, v interface{})</code></p>
+<p>
+Publish adds v to the root level JSON object published by this package. The
+value v is any type that can be encoded by calling json.Marshal. If a name
+is already registered, then the function will panic. This function is
+typically called from a package&#39;s init() funtion.
+</p>
+
+<h2 id="ServeWeb">func ServeWeb</h2>
+<p><code>func ServeWeb(req *web.Request)</code></p>
+
+
+<h2 id="Int">type Int</h2>
+<p>
+Int is a synchronized wrapper around a 64-bit integer. The Int type is useful
+implementing counters that can be updated by by concurrent goroutines.
+</p>
+
+<pre>type Int struct {
+ // contains unexported fields
+}</pre>
+
+
+
+    <h3 id="NewInt">func NewInt</h3>
+    <p><code>func NewInt(name string) *Int</code></p>
+    <p>
+NewInt allocates a new counter and publishes it using name.
+</p>
+
+
+    <h3 id="Int.Add">func (*Int) Add</h3>
+    <p><code>func (i *Int) Add(delta int64)</code></p>
+    <p>
+Add atomically adds delta to the counter.
+</p>
+
+    <h3 id="Int.MarshalJSON">func (*Int) MarshalJSON</h3>
+    <p><code>func (i *Int) MarshalJSON() ([]byte, os.Error)</code></p>
+    
+    <h3 id="Int.Set">func (*Int) Set</h3>
+    <p><code>func (i *Int) Set(value int64)</code></p>
+    <p>
+Set atomically sets the counter to value.
+</p>
+
+
+<h2 id="Int32Func">type Int32Func</h2>
+
+<pre>type Int32Func func() int32</pre>
+
+
+
+
+    <h3 id="Int32Func.MarshalJSON">func (Int32Func) MarshalJSON</h3>
+    <p><code>func (f Int32Func) MarshalJSON() ([]byte, os.Error)</code></p>
+    
+
+<h2 id="Int64Func">type Int64Func</h2>
+
+<pre>type Int64Func func() int64</pre>
+
+
+
+
+    <h3 id="Int64Func.MarshalJSON">func (Int64Func) MarshalJSON</h3>
+    <p><code>func (f Int64Func) MarshalJSON() ([]byte, os.Error)</code></p>
+    
+
+<h2 id="IntFunc">type IntFunc</h2>
+
+<pre>type IntFunc func() int</pre>
+
+
+
+
+    <h3 id="IntFunc.MarshalJSON">func (IntFunc) MarshalJSON</h3>
+    <p><code>func (f IntFunc) MarshalJSON() ([]byte, os.Error)</code></p>
+    
+
+<h2 id="Map">type Map</h2>
+<p>
+Map is a synchronized wrapper around a string-to-value map.
+</p>
+
+<pre>type Map struct {
+ // contains unexported fields
+}</pre>
+
+
+
+    <h3 id="NewMap">func NewMap</h3>
+    <p><code>func NewMap(name string) *Map</code></p>
+    <p>
+NewMap allocates a new Map and publishes it using name.
+</p>
+
+
+    <h3 id="Map.AddInt">func (*Map) AddInt</h3>
+    <p><code>func (m *Map) AddInt(key string, delta int64)</code></p>
+    <p>
+AddInt adds delta to the *Int value stored for the given map key.
+</p>
+
+    <h3 id="Map.Get">func (*Map) Get</h3>
+    <p><code>func (m *Map) Get(key string) interface{}</code></p>
+    
+    <h3 id="Map.Init">func (*Map) Init</h3>
+    <p><code>func (m *Map) Init() *Map</code></p>
+    
+    <h3 id="Map.MarshalJSON">func (*Map) MarshalJSON</h3>
+    <p><code>func (m *Map) MarshalJSON() ([]byte, os.Error)</code></p>
+    
+    <h3 id="Map.Set">func (*Map) Set</h3>
+    <p><code>func (m *Map) Set(key string, v interface{})</code></p>
+    
+
+<h2 id="MarshalJSONFunc">type MarshalJSONFunc</h2>
+<p>
+The MarshalJSONFunc type is an adapter to allow the use of ordinary
+functions as JSON marshallers. The function is called each time the object
+is marshaled.
+</p>
+
+<pre>type MarshalJSONFunc func() ([]byte, os.Error)</pre>
+
+
+
+
+    <h3 id="MarshalJSONFunc.MarshalJSON">func (MarshalJSONFunc) MarshalJSON</h3>
+    <p><code>func (f MarshalJSONFunc) MarshalJSON() ([]byte, os.Error)</code></p>
+    
+
+<h2 id="ValueFunc">type ValueFunc</h2>
+<p>
+ValueFunc wraps a func() interface{} with JSON marshalling of the returned
+value. The function is called each time the object is marshaled.
+</p>
+
+<pre>type ValueFunc func() interface{}</pre>
+
+
+
+
+    <h3 id="ValueFunc.MarshalJSON">func (ValueFunc) MarshalJSON</h3>
+    <p><code>func (f ValueFunc) MarshalJSON() ([]byte, os.Error)</code></p>
+    
+
+<hr>
+This page was generated automatically from the source code. If you installed
+Twister using <a href="http://golang.org/cmd/goinstall/">goinstall</a>, then
+you can also view the source documentation with <a
+href="http://golang.org/cmd/godoc/">godoc</a>.  
+</div>
+</body>
+</html>

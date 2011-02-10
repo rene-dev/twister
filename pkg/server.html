@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Twister: server</title>
+<link rel="stylesheet" href="../static/base.css" type="text/css"/> 
+</head>
+<body>
+<div id="content"> 
+<h1><a href="..">Twister</a>: server</h1>
+
+<h4>Table Of Contents</h4>
+<ul>
+<li><a href="#package">Package</a>
+<li><a href="#variables">Variables</a>
+<li><a href="#Run">func Run</a>
+<li><a href="#Server">type Server</a>
+            <ul>
+    <li><a href="#Server.Serve">func (*Server) Serve</a>
+            </ul>
+</ul>
+
+<h2 id="package">Package</h2>
+
+<p><code>import "github.com/garyburd/twister/server"</code></p>
+
+<p>
+The server package implements the HTTP protocol for a web server.
+</p>
+
+
+
+<h2 id="variables">Variables</h2>
+
+<pre>
+var (
+ ErrBadRequestLine = os.NewError(&#34;could not parse request line&#34;)
+)
+</pre>
+
+<h2 id="Run">func Run</h2>
+<p><code>func Run(addr string, handler web.Handler)</code></p>
+<p>
+Run is a convenience function for running an HTTP server. Run listens on the
+TCP address addr, initializes a server object and calls the server&#39;s Serve()
+method to handle HTTP requests. Run logs a fatal error if it encounters an
+error.
+</p>
+<p>
+The Server object is initialized with the handler argument and listener. If
+the application needs to set any other Server fields or if the application
+needs to create the listener, then the application should directly create
+the Server object and call the Serve() method.
+</p>
+
+
+<h2 id="Server">type Server</h2>
+<p>
+Server defines parameters for running an HTTP server.
+</p>
+
+<pre>type Server struct {
+ // The server accepts incoming connections on this listener. The
+ // application is required to set this field.
+ Listener net.Listener
+
+ // The server dispatches requests to this handler. The application is
+ // required to set this field.
+ Handler web.Handler
+
+ // If true, then set the request URL protocol to HTTPS.
+ Secure bool
+
+ // Set request URL host to this string if host is not specified in the
+ // request or headers.
+ DefaultHost string
+}</pre>
+
+
+
+
+    <h3 id="Server.Serve">func (*Server) Serve</h3>
+    <p><code>func (s *Server) Serve() os.Error</code></p>
+    <p>
+Serve accepts incoming HTTP connections on s.Listener, creating a new
+goroutine for each. The goroutines read requests and then call s.Handler to
+respond to the request.
+</p>
+
+
+<hr>
+This page was generated automatically from the source code. If you installed
+Twister using <a href="http://golang.org/cmd/goinstall/">goinstall</a>, then
+you can also view the source documentation with <a
+href="http://golang.org/cmd/godoc/">godoc</a>.  
+</div>
+</body>
+</html>
