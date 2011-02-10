@@ -21,7 +21,7 @@ Run [godoc](http://golang.org/cmd/godoc/) to read the documentation.
 * [server](twister/tree/master/server) - An HTTP server impelemented in Go.
 * [oauth](twister/tree/master/oauth) - OAuth client.
 * [expvar](twister/tree/master/expvar) - Exports variables as JSON over HTTP for monitoring.
-* [webskocket](twister/tree/master/websocket) - WebSocket server implementation.
+* [websocket](twister/tree/master/websocket) - WebSocket server implementation.
 
 ## Examples
 
