@@ -8,46 +8,46 @@
 <div id="content">
 <h1>Twister</h1>
 
-<p>Twister is an HTTP server and framework for the <a href="http://golang.org/">Go</a> 
-programming language. 
- 
-<h2>Installation</h2> 
+<p>Twister is a lightweight and modular framework for building web applications
+in the <a href="http://golang.org/">Go</a> programming language. Twister
+includes the following features:
 
-<ol> 
-<li><a href="http://golang.org/doc/install.html">Install Go</a>. 
-<li><code>goinstall github.com/garyburd/twister/server</code> 
-</ol>
+<ul> 
+<li>Routing to handlers using regular expression match on host and path. 
+<li>Cross site request forgery protection.
+<li>Cookie parsing. 
+<li>Static file handling. 
+<li>Signed values for cookies and form parameters. 
+<li>WebSockets. 
+<li>Multipart forms. 
+<li>Built-in HTTP server.
+<li>OAuth 1.0 client
+<li>... and more.
+</ul> 
+
+Twister works great with templating engines and database drivers written for
+Go. 
+
+<h2 id="install">Installation</h2> 
+
+<p>Twister requires a working Go development environment. The <a
+href="http://golang.org/doc/install.html">Getting Started</a> document
+describes how to install the development environment. Once you have Go up and
+running, you can install Twister with a single command:
+
+<pre>goinstall github.com/garyburd/twister/server</pre> 
 
 <p>The Go distribution is Twister's only dependency. 
   
-<h2>Packages</h2> 
+<h2>Documentation</h2> 
  
 <ul> 
 <li><a href="pkg/web.html">web</a> - Defines the application interface to a server and includes functionality used by most web applications.
-    <ul> 
-        <li>Routing to handlers using regular expression match on host and path. 
-        <li>Protection against cross site request forgery. 
-        <li>Extensible model for middleware. 
-        <li>Cookie parsing. 
-        <li>WebSockets. 
-        <li>Static file handling. 
-        <li>Signed values for cookies and form parameters. 
-        <li>Multipart forms. 
-    </ul> 
- 
 <li><a href="pkg/server.html">server</a> - An HTTP server impelemented in Go. 
 <li><a href="pkg/oauth.html">oauth</a> - OAuth client. 
 <li><a href="pkg/expvar.html">expvar</a> - Exports variables as JSON over HTTP for monitoring. 
 <li><a href="pkg/websocket.html">websocket</a> - WebSocket server implementation. 
 </ul>
-
-<h2>Documentation</h2> 
-
-API Reference: <a href="pkg/web.html">web</a>,
-<a href="pkg/server.html">server</a>,
-<a href="pkg/oauth.html">oauth</a>,
-<a href="pkg/expvar.html">expvar</a>,
-<a href="pkg/websocket.html">websocket</a>.
 
 <h2>Examples</h2> 
  
@@ -69,7 +69,7 @@ API Reference: <a href="pkg/web.html">web</a>,
 <h2>License</h2> 
 
 Twister is available under the <a
-href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache Licence, Version
+href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache License, Version
 2.0</a>.
 
 <h2>Development</h2>

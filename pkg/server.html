@@ -51,6 +51,26 @@ the application needs to set any other Server fields or if the application
 needs to create the listener, then the application should directly create
 the Server object and call the Serve() method.
 </p>
+<p>
+The &#34;Hello World&#34; server using Run() is:
+</p>
+<pre>package main
+
+import (
+    &#34;github.com/garyburd/twister/web&#34;
+    &#34;github.com/garyburd/twister/server&#34;
+    &#34;io&#34;
+)
+
+func helloHandler(req *web.Request) {
+    w := req.Respond(web.StatusOK, web.HeaderContentType, &#34;text/plain&#34;)
+    io.WriteString(w, &#34;Hello, World!\n&#34;)
+}
+
+func main() {
+    server.Run(&#34;:8080&#34;, web.NewRouter().Register(&#34;/&#34;, &#34;GET&#34;, helloHandler))
+}
+</pre>
 
 
 <h2 id="Server">type Server</h2>
@@ -73,6 +93,12 @@ Server defines parameters for running an HTTP server.
  // Set request URL host to this string if host is not specified in the
  // request or headers.
  DefaultHost string
+
+ // The net.Conn.SetReadTimeout value for new connections.
+ ReadTimeout int64
+
+ // The net.Conn.SetWriteTimeout value for new connections.
+ WriteTimeout int64
 }</pre>
 
 
@@ -85,6 +111,37 @@ Serve accepts incoming HTTP connections on s.Listener, creating a new
 goroutine for each. The goroutines read requests and then call s.Handler to
 respond to the request.
 </p>
+<p>
+The &#34;Hello World&#34; server using Serve() is:
+</p>
+<pre>package main
+
+import (
+    &#34;github.com/garyburd/twister/web&#34;
+    &#34;github.com/garyburd/twister/server&#34;
+    &#34;io&#34;
+    &#34;log&#34;
+    &#34;net&#34;
+)
+
+func helloHandler(req *web.Request) {
+    w := req.Respond(web.StatusOK, web.HeaderContentType, &#34;text/plain&#34;)
+    io.WriteString(w, &#34;Hello, World!\n&#34;)
+}
+
+func main() {
+    handler := web.NewRouter().Register(&#34;/&#34;, &#34;GET&#34;, helloHandler)
+    listener, err := net.Listen(&#34;tcp&#34;, &#34;:8080&#34;)
+    if err != nil {
+        log.Fatal(&#34;Listen&#34;, err)
+    }
+    defer listener.Close()
+    err = (&amp;server.Server{Listener: listener, Handler: handler}).Serve()
+    if err != nil {
+        log.Fatal(&#34;Server&#34;, err)
+    }
+}
+</pre>
 
 
 <hr>
