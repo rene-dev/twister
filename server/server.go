@@ -49,6 +49,12 @@ type Server struct {
 	// Set request URL host to this string if host is not specified in the
 	// request or headers.
 	DefaultHost string
+
+	// The net.Conn.SetReadTimeout value for new connections.
+	ReadTimeout int64
+
+	// The net.Conn.SetWriteTimeout value for new connections.
+	WriteTimeout int64
 }
 
 type conn struct {
@@ -363,6 +369,12 @@ func (c chunkedWriter) Write(p []byte) (int, os.Error) {
 }
 
 func (s *Server) serveConnection(netConn net.Conn) {
+	if s.ReadTimeout != 0 {
+		netConn.SetReadTimeout(s.ReadTimeout)
+	}
+	if s.WriteTimeout != 0 {
+		netConn.SetWriteTimeout(s.WriteTimeout)
+	}
 	br := bufio.NewReader(netConn)
 	for {
 		c := conn{
@@ -393,6 +405,36 @@ func (s *Server) serveConnection(netConn net.Conn) {
 // Serve accepts incoming HTTP connections on s.Listener, creating a new
 // goroutine for each. The goroutines read requests and then call s.Handler to
 // respond to the request.
+//
+// The "Hello World" server using Serve() is:
+//
+//  package main
+//  
+//  import (
+//      "github.com/garyburd/twister/web"
+//      "github.com/garyburd/twister/server"
+//      "io"
+//      "log"
+//      "net"
+//  )
+//
+//  func helloHandler(req *web.Request) {
+//      w := req.Respond(web.StatusOK, web.HeaderContentType, "text/plain")
+//      io.WriteString(w, "Hello, World!\n")
+//  }
+//  
+//  func main() {
+//      handler := web.NewRouter().Register("/", "GET", helloHandler)
+//      listener, err := net.Listen("tcp", ":8080")
+//      if err != nil {
+//          log.Fatal("Listen", err)
+//      }
+//      defer listener.Close()
+//      err = (&server.Server{Listener: listener, Handler: handler}).Serve()
+//      if err != nil {
+//          log.Fatal("Server", err)
+//      }
+//  }
 func (s *Server) Serve() os.Error {
 	for {
 		netConn, e := s.Listener.Accept()
@@ -413,6 +455,26 @@ func (s *Server) Serve() os.Error {
 // the application needs to set any other Server fields or if the application
 // needs to create the listener, then the application should directly create
 // the Server object and call the Serve() method.
+//
+// The "Hello World" server using Run() is:
+//
+//  package main
+//  
+//  import (
+//      "github.com/garyburd/twister/web"
+//      "github.com/garyburd/twister/server"
+//      "io"
+//  )
+//  
+//  func helloHandler(req *web.Request) {
+//      w := req.Respond(web.StatusOK, web.HeaderContentType, "text/plain")
+//      io.WriteString(w, "Hello, World!\n")
+//  }
+//  
+//  func main() {
+//      server.Run(":8080", web.NewRouter().Register("/", "GET", helloHandler))
+//  }
+//
 func Run(addr string, handler web.Handler) {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
