@@ -71,10 +71,11 @@ func init() {
 
 func renderTemplate(req *web.Request, tmpl string, p *page) {
 	err := templates[tmpl].Execute(
+		req.Respond(web.StatusOK),
 		map[string]interface{}{
 			"page": p,
-			"xsrf": req.Param.GetDef("xsrf", "")},
-		req.Respond(web.StatusOK))
+			"xsrf": req.Param.GetDef("xsrf", ""),
+		})
 	if err != nil {
 		log.Println("error rendering", tmpl, err)
 	}

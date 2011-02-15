@@ -102,8 +102,9 @@ func authCallback(req *web.Request) {
 
 // homeLoggedOut handles request to the home page for logged out users.
 func homeLoggedOut(req *web.Request) {
-	homeLoggedOutTempl.Execute(req,
-		req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML))
+	homeLoggedOutTempl.Execute(
+		req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML),
+		req)
 }
 
 // home handles requests to the home page.
@@ -133,7 +134,7 @@ func home(req *web.Request) {
 		req.Error(web.StatusInternalServerError, err)
 		return
 	}
-	homeTempl.Execute(d, req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML))
+	homeTempl.Execute(req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML), d)
 }
 
 func main() {

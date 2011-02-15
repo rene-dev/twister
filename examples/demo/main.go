@@ -8,8 +8,9 @@ import (
 )
 
 func homeHandler(req *web.Request) {
-	homeTempl.Execute(req,
-		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"))
+	homeTempl.Execute(
+		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"),
+		req)
 }
 
 func main() {

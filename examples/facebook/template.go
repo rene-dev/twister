@@ -31,7 +31,7 @@ func itemFormatter(w io.Writer, format string, values ...interface{}) {
 	if !ok {
 		t = otherItemTemplate
 	}
-	err := t.t.Execute(values[0], w)
+	err := t.t.Execute(w, values[0])
 	if err != nil {
 		log.Println("Error executing item formatter", itemType, err)
 	}
@@ -51,7 +51,7 @@ func parseTemplate(filename string) *Template {
 func (t *Template) respond(req *web.Request, status int, value interface{}, kvs ...string) {
 	header := web.NewHeaderMap(kvs...)
 	header.Set(web.HeaderContentType, t.mimeType)
-	err := t.t.Execute(value, req.Responder.Respond(status, header))
+	err := t.t.Execute(req.Responder.Respond(status, header), value)
 	if err != nil {
 		log.Println("Error executing template", err)
 	}

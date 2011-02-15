@@ -8,23 +8,25 @@ import (
 
 func coreErrorHandler(req *web.Request, status int, reason os.Error, header web.HeaderMap) {
 
-	coreTempl.Execute(map[string]interface{}{
-		"req":     req,
-		"status":  status,
-		"message": reason,
-		"xsrf":    req.Param.GetDef(web.XSRFParamName, ""),
-	},
-		req.Responder.Respond(status, header))
+	coreTempl.Execute(
+		req.Responder.Respond(status, header),
+		map[string]interface{}{
+			"req":     req,
+			"status":  status,
+			"message": reason,
+			"xsrf":    req.Param.GetDef(web.XSRFParamName, ""),
+		})
 }
 
 func coreHandler(req *web.Request) {
-	coreTempl.Execute(map[string]interface{}{
-		"req":     req,
-		"status":  web.StatusOK,
-		"message": "ok",
-		"xsrf":    req.Param.GetDef(web.XSRFParamName, ""),
-	},
-		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"))
+	coreTempl.Execute(
+		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"),
+		map[string]interface{}{
+			"req":     req,
+			"status":  web.StatusOK,
+			"message": "ok",
+			"xsrf":    req.Param.GetDef(web.XSRFParamName, ""),
+		})
 }
 
 var coreTempl = template.MustParse(coreStr, template.FormatterMap{"": template.HTMLFormatter})

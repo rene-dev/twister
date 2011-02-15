@@ -6,10 +6,11 @@ import (
 )
 
 func mpGetHandler(req *web.Request) {
-	mpTempl.Execute(map[string]interface{}{
-		"xsrf": req.Param.GetDef(web.XSRFParamName, ""),
-	},
-		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"))
+	mpTempl.Execute(
+		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"),
+		map[string]interface{}{
+			"xsrf": req.Param.GetDef(web.XSRFParamName, ""),
+		})
 }
 
 func mpPostHandler(req *web.Request) {
@@ -25,19 +26,20 @@ func mpPostHandler(req *web.Request) {
 		contentParam = parts[0].ContentParam
 		size = len(parts[0].Data)
 	}
-	mpTempl.Execute(map[string]interface{}{
-		"xsrf": req.Param.GetDef(web.XSRFParamName, ""),
-		"result": map[string]interface{}{
-			"err":          err,
-			"hello":        req.Param.GetDef("hello", ""),
-			"foo":          req.Param.GetDef("foo", ""),
-			"filename":     filename,
-			"contentType":  contentType,
-			"contentParam": contentParam,
-			"size":         size,
-		},
-	},
-		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"))
+	mpTempl.Execute(
+		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"),
+		map[string]interface{}{
+			"xsrf": req.Param.GetDef(web.XSRFParamName, ""),
+			"result": map[string]interface{}{
+				"err":          err,
+				"hello":        req.Param.GetDef("hello", ""),
+				"foo":          req.Param.GetDef("foo", ""),
+				"filename":     filename,
+				"contentType":  contentType,
+				"contentParam": contentParam,
+				"size":         size,
+			},
+		})
 }
 
 var mpTempl = template.MustParse(mpStr, template.FormatterMap{"": template.HTMLFormatter})
