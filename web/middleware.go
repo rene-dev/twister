@@ -56,7 +56,21 @@ const (
 )
 
 // ProcessForm returns a handler that parses URL encoded forms if smaller than the 
-// specified size and optionally checks for XSRF.
+// specified size.
+//
+// If xsrfCheck is true, then cross-site request forgery protection is enabled.
+// The handler rejects POST, PUT, and DELETE requests if the handler does not
+// find a matching value for the "xsrf" cookie in the "xsrf" request parameter
+// or the X-XSRFToken header. 
+//
+// The handler ensures that the "xsrf" cookie and the "xsrf" request parameter
+// are set before passing the the request to the downstream handler or the
+// error handler. The application must include the value fo the "xsrf" request
+// parameter in POSTed forms or pass the value to AJAX code so that the
+// X-XSRFToken header can be set.
+//
+// See http://en.wikipedia.org/wiki/Cross-site_request_forgery for information
+// on cross-site request forgery.
 func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler {
 	return HandlerFunc(func(req *Request) {
 
@@ -74,27 +88,33 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 
 		if checkXSRF {
 			const tokenLen = 8
-			expectedToken, found := req.Cookie.Get(XSRFCookieName)
+			expectedToken, _ := req.Cookie.Get(XSRFCookieName)
 
 			// Create new XSRF token?
-			if !found || len(expectedToken) != tokenLen {
+			if len(expectedToken) != tokenLen {
 				p := make([]byte, tokenLen/2)
 				_, err := rand.Reader.Read(p)
 				if err != nil {
 					panic("twister: rand read failed")
 				}
 				expectedToken = hex.EncodeToString(p)
-				c := fmt.Sprintf("%s=%s; Path=/; HttpOnly", XSRFCookieName, expectedToken)
+				c := NewCookie(XSRFCookieName, expectedToken).String()
 				FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
 					header.Append(HeaderSetCookie, c)
 					return status, header
 				})
 			}
 
-			actualToken := req.Param.GetDef(XSRFParamName, "")
+			actualToken, _ := req.Param.Get(XSRFParamName)
+			if actualToken == "" {
+				actualToken, _ = req.Header.Get(HeaderXXSRFToken)
+				req.Param.Set(XSRFParamName, expectedToken)
+			}
 			if expectedToken != actualToken {
 				req.Param.Set(XSRFParamName, expectedToken)
-				if req.Method == "POST" || req.Method == "PUT" {
+				if req.Method == "POST" ||
+					req.Method == "PUT" ||
+					req.Method == "DELETE" {
 					err := os.NewError("twister: bad xsrf token")
 					if actualToken == "" {
 						err = os.NewError("twister: missing xsrf token")

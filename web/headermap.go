@@ -373,6 +373,7 @@ const (
 	HeaderVia                  = "Via"
 	HeaderWWWAuthenticate      = "Www-Authenticate"
 	HeaderWarning              = "Warning"
+	HeaderXXSRFToken           = "X-Xsrftoken"
 )
 
 // HeaderName returns the canonical format of the header name. 
