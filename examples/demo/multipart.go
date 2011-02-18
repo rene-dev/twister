@@ -9,7 +9,7 @@ func mpGetHandler(req *web.Request) {
 	mpTempl.Execute(
 		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"),
 		map[string]interface{}{
-			"xsrf": req.Param.GetDef(web.XSRFParamName, ""),
+			"xsrf": req.Param.Get(web.XSRFParamName),
 		})
 }
 
@@ -29,11 +29,11 @@ func mpPostHandler(req *web.Request) {
 	mpTempl.Execute(
 		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"),
 		map[string]interface{}{
-			"xsrf": req.Param.GetDef(web.XSRFParamName, ""),
+			"xsrf": req.Param.Get(web.XSRFParamName),
 			"result": map[string]interface{}{
 				"err":          err,
-				"hello":        req.Param.GetDef("hello", ""),
-				"foo":          req.Param.GetDef("foo", ""),
+				"hello":        req.Param.Get("hello"),
+				"foo":          req.Param.Get("foo"),
 				"filename":     filename,
 				"contentType":  contentType,
 				"contentParam": contentParam,

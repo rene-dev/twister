@@ -136,7 +136,7 @@ func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error) 
 		}
 
 		if filename == "" {
-			req.Param.Append(name, string(part))
+			req.Param.Add(name, string(part))
 		} else {
 			result = append(result, Part{
 				ContentType:  contentType,

@@ -31,7 +31,7 @@ func loadPage(title string) (*page, os.Error) {
 }
 
 func viewHandler(req *web.Request) {
-	title := req.Param.GetDef("title", "")
+	title := req.Param.Get("title")
 	p, err := loadPage(title)
 	if err != nil {
 		req.Redirect("/edit/"+title, false)
@@ -41,17 +41,17 @@ func viewHandler(req *web.Request) {
 }
 
 func editHandler(req *web.Request) {
-	title := req.Param.GetDef("title", "")
+	title := req.Param.Get("title")
 	p, err := loadPage(title)
 	if err != nil {
-		p = &page{Title: req.Param.GetDef("title", "")}
+		p = &page{Title: req.Param.Get("title")}
 	}
 	renderTemplate(req, "edit", p)
 }
 
 func saveHandler(req *web.Request) {
-	body := req.Param.GetDef("body", "")
-	title := req.Param.GetDef("title", "")
+	body := req.Param.Get("body")
+	title := req.Param.Get("title")
 	p := &page{Title: title, Body: []byte(body)}
 	err := p.save()
 	if err != nil {
@@ -74,7 +74,7 @@ func renderTemplate(req *web.Request, tmpl string, p *page) {
 		req.Respond(web.StatusOK),
 		map[string]interface{}{
 			"page": p,
-			"xsrf": req.Param.GetDef("xsrf", ""),
+			"xsrf": req.Param.Get("xsrf"),
 		})
 	if err != nil {
 		log.Println("error rendering", tmpl, err)

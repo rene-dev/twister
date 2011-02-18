@@ -85,31 +85,22 @@ func NewHeaderMap(kvs ...string) HeaderMap {
 	}
 	m := HeaderMap{}
 	for i := 0; i < len(kvs); i += 2 {
-		m.Append(kvs[i], kvs[i+1])
+		m.Add(kvs[i], kvs[i+1])
 	}
 	return m
 }
 
 // Get returns the first value for given key or "" if the key is not found.
-func (m HeaderMap) Get(key string) (value string, found bool) {
+func (m HeaderMap) Get(key string) string {
 	values, found := m[key]
 	if !found || len(values) == 0 {
-		return "", false
-	}
-	return values[0], true
-}
-
-// GetDef returns first value for given key, or def if the key is not found.
-func (m HeaderMap) GetDef(key string, def string) string {
-	values, found := m[key]
-	if !found || len(values) == 0 {
-		return def
+		return ""
 	}
 	return values[0]
 }
 
-// Append value to slice for given key.
-func (m HeaderMap) Append(key string, value string) {
+// Add appends value to slice for given key.
+func (m HeaderMap) Add(key string, value string) {
 	m[key] = append(m[key], value)
 }
 
@@ -287,7 +278,7 @@ func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
 			// Value 
 			p = trimWSLeft(p)
 			value := string(trimWSRight(p))
-			m.Append(key, value)
+			m.Add(key, value)
 		}
 	}
 	return nil

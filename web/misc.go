@@ -182,7 +182,7 @@ func parseCookieValues(values []string, m ParamMap) os.Error {
 			case ';':
 				if len(key) > 0 && key[0] != '$' && begin < end {
 					value := s[begin:end]
-					m.Append(key, value)
+					m.Add(key, value)
 				}
 				key = ""
 				begin = i + 1
@@ -192,7 +192,7 @@ func parseCookieValues(values []string, m ParamMap) os.Error {
 			}
 		}
 		if len(key) > 0 && key[0] != '$' && begin < end {
-			m.Append(key, s[begin:end])
+			m.Add(key, s[begin:end])
 		}
 	}
 	return nil

@@ -78,7 +78,7 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 			status := StatusBadRequest
 			if err == ErrRequestEntityTooLarge {
 				status = StatusRequestEntityTooLarge
-				if _, found := req.Header.Get(HeaderExpect); found {
+				if e := req.Header.Get(HeaderExpect); e != "" {
 					status = StatusExpectationFailed
 				}
 			}
@@ -88,7 +88,7 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 
 		if checkXSRF {
 			const tokenLen = 8
-			expectedToken, _ := req.Cookie.Get(XSRFCookieName)
+			expectedToken := req.Cookie.Get(XSRFCookieName)
 
 			// Create new XSRF token?
 			if len(expectedToken) != tokenLen {
@@ -100,14 +100,14 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 				expectedToken = hex.EncodeToString(p)
 				c := NewCookie(XSRFCookieName, expectedToken).String()
 				FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
-					header.Append(HeaderSetCookie, c)
+					header.Add(HeaderSetCookie, c)
 					return status, header
 				})
 			}
 
-			actualToken, _ := req.Param.Get(XSRFParamName)
+			actualToken := req.Param.Get(XSRFParamName)
 			if actualToken == "" {
-				actualToken, _ = req.Header.Get(HeaderXXSRFToken)
+				actualToken = req.Header.Get(HeaderXXSRFToken)
 				req.Param.Set(XSRFParamName, expectedToken)
 			}
 			if expectedToken != actualToken {

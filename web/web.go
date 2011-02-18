@@ -149,7 +149,7 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 		return nil, err
 	}
 
-	if s, found := req.Header.Get(HeaderContentLength); found {
+	if s := req.Header.Get(HeaderContentLength); s != "" {
 		var err os.Error
 		req.ContentLength, err = strconv.Atoi(s)
 		if err != nil {
@@ -159,7 +159,7 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 		req.ContentLength = -1
 	}
 
-	if s, found := req.Header.Get(HeaderContentType); found {
+	if s := req.Header.Get(HeaderContentType); s != "" {
 		req.ContentType, req.ContentParam = mime.ParseMediaType(s)
 	}
 

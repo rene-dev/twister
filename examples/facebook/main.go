@@ -79,8 +79,8 @@ func getJSON(url string, param web.ParamMap) (interface{}, os.Error) {
 
 // acccessToken returns OAuth2 access token stored in a cookie.
 func accessToken(req *web.Request) (string, os.Error) {
-	s, found := req.Cookie.Get("fbtok")
-	if !found {
+	s := req.Cookie.Get("fbtok")
+	if s == "" {
 		return "", os.NewError("main: missing cookie")
 	}
 	token, err := http.URLUnescape(s)
@@ -106,8 +106,8 @@ func logoutHandler(req *web.Request) {
 
 // authCallbackHandler handles redirect from Facebook OAuth2 authorization page.
 func authCallbackHandler(req *web.Request) {
-	code, ok := req.Param.Get("code")
-	if !ok {
+	code := req.Param.Get("code")
+	if code == "" {
 		// should display error_reason
 		req.Redirect("/", false)
 		return
@@ -122,8 +122,11 @@ func authCallbackHandler(req *web.Request) {
 		req.Error(web.StatusInternalServerError, err)
 		return
 	}
-	token := f.GetDef("access_token", "")
-	expires := f.GetDef("expires", "3600")
+	token := f.Get("access_token")
+	expires := f.Get("expires")
+	if expires == "" {
+		expires = "3600"
+	}
 	maxAge, err := strconv.Atoi(expires)
 	if err != nil {
 		maxAge = 3600

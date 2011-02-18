@@ -33,7 +33,7 @@ func (h routeTestHandler) ServeWeb(req *Request) {
 		w.Write([]byte(" "))
 		w.Write([]byte(key))
 		w.Write([]byte(":"))
-		w.Write([]byte(req.Param.GetDef(key, "<nil>")))
+		w.Write([]byte(req.Param.Get(key)))
 	}
 }
 

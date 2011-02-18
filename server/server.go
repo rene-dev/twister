@@ -129,7 +129,7 @@ func (c *conn) prepare() (err os.Error) {
 	}
 
 	if url.Host == "" {
-		url.Host = header.GetDef(web.HeaderHost, "")
+		url.Host = header.Get(web.HeaderHost)
 		if url.Host == "" {
 			url.Host = c.server.DefaultHost
 		}
@@ -152,11 +152,11 @@ func (c *conn) prepare() (err os.Error) {
 		c.requestAvail = 0
 	}
 
-	if s, found := req.Header.Get(web.HeaderExpect); found {
+	if s := req.Header.Get(web.HeaderExpect); s != "" {
 		c.write100Continue = strings.ToLower(s) == "100-continue"
 	}
 
-	connection := strings.ToLower(req.Header.GetDef(web.HeaderConnection, ""))
+	connection := strings.ToLower(req.Header.Get(web.HeaderConnection))
 	if version >= web.ProtocolVersion(1, 1) {
 		c.closeAfterResponse = connection == "close"
 	} else if version == web.ProtocolVersion(1, 0) && req.ContentLength >= 0 {
@@ -207,7 +207,7 @@ func (c *conn) Respond(status int, header web.HeaderMap) (body web.ResponseBody)
 	c.respondCalled = true
 	c.requestErr = web.ErrInvalidState
 
-	if _, found := header.Get(web.HeaderTransferEncoding); found {
+	if te := header.Get(web.HeaderTransferEncoding); te != "" {
 		log.Println("twister: transfer encoding not allowed")
 		header[web.HeaderTransferEncoding] = nil, false
 	}
@@ -223,7 +223,7 @@ func (c *conn) Respond(status int, header web.HeaderMap) (body web.ResponseBody)
 		header[web.HeaderContentType] = nil, false
 		header[web.HeaderContentLength] = nil, false
 		c.chunked = false
-	} else if s, found := header.Get(web.HeaderContentLength); found {
+	} else if s := header.Get(web.HeaderContentLength); s != "" {
 		c.responseAvail, _ = strconv.Atoi(s)
 		c.chunked = false
 	} else if c.req.ProtocolVersion < web.ProtocolVersion(1, 1) {

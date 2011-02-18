@@ -246,7 +246,7 @@ func (c *Client) request(credentials *Credentials, url string, param web.ParamMa
 	if err != nil {
 		return nil, nil, err
 	}
-	credentials = &Credentials{Token: m.GetDef("oauth_token", ""), Secret: m.GetDef("oauth_token_secret", "")}
+	credentials = &Credentials{Token: m.Get("oauth_token"), Secret: m.Get("oauth_token_secret")}
 	if credentials.Token == "" {
 		return nil, nil, os.NewError("No OAuth token in server result")
 	}

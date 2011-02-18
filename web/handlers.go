@@ -58,7 +58,7 @@ func serveFile(req *Request, fname string, extraHeader []string) {
 		if contentType := mime.TypeByExtension(ext); contentType != "" {
 			header.Set(HeaderContentType, contentType)
 		}
-		if _, found := req.Param.Get("v"); found {
+		if v := req.Param.Get("v"); v != "" {
 			header.Set(HeaderExpires, FormatDeltaDays(3650))
 			header.Set(HeaderCacheControl, "max-age=315360000")
 		} else {
@@ -106,8 +106,8 @@ type directoryHandler struct {
 
 func (dh *directoryHandler) ServeWeb(req *Request) {
 
-	fname, found := req.Param.Get("path")
-	if !found {
+	fname := req.Param.Get("path")
+	if fname == "" {
 		panic("twister: DirectoryHandler expects path param")
 	}
 

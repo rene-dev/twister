@@ -14,7 +14,7 @@ func coreErrorHandler(req *web.Request, status int, reason os.Error, header web.
 			"req":     req,
 			"status":  status,
 			"message": reason,
-			"xsrf":    req.Param.GetDef(web.XSRFParamName, ""),
+			"xsrf":    req.Param.Get(web.XSRFParamName),
 		})
 }
 
@@ -25,7 +25,7 @@ func coreHandler(req *web.Request) {
 			"req":     req,
 			"status":  web.StatusOK,
 			"message": "ok",
-			"xsrf":    req.Param.GetDef(web.XSRFParamName, ""),
+			"xsrf":    req.Param.Get(web.XSRFParamName),
 		})
 }
 

@@ -64,8 +64,8 @@ func (conn *Conn) Send(p []byte) os.Error {
 
 // webSocketKey returns the key bytes from the specified websocket key header.
 func webSocketKey(req *web.Request, name string) (key []byte, err os.Error) {
-	s, found := req.Header.Get(name)
-	if !found {
+	s := req.Header.Get(name)
+	if s == "" {
 		return key, os.NewError("twister.websocket: missing key")
 	}
 	var n uint32 // number formed from decimal digits in key
@@ -115,17 +115,17 @@ func Upgrade(req *web.Request) (conn *Conn, err os.Error) {
 		return nil, os.NewError("twister.websocket: bad request method")
 	}
 
-	origin, found := req.Header.Get(web.HeaderOrigin)
-	if !found {
+	origin := req.Header.Get(web.HeaderOrigin)
+	if origin == "" {
 		return nil, os.NewError("twister.websocket: origin missing")
 	}
 
-	connection := strings.ToLower(req.Header.GetDef(web.HeaderConnection, ""))
+	connection := strings.ToLower(req.Header.Get(web.HeaderConnection))
 	if connection != "upgrade" {
 		return nil, os.NewError("twister.websocket: connection header missing or wrong value")
 	}
 
-	upgrade := strings.ToLower(req.Header.GetDef(web.HeaderUpgrade, ""))
+	upgrade := strings.ToLower(req.Header.Get(web.HeaderUpgrade))
 	if upgrade != "websocket" {
 		return nil, os.NewError("twister.websocket: upgrade header missing or wrong value")
 	}
@@ -153,7 +153,7 @@ func Upgrade(req *web.Request) (conn *Conn, err os.Error) {
 
 	// TODO: handle tls
 	location := "ws://" + req.URL.Host + req.URL.RawPath
-	protocol := req.Header.GetDef(web.HeaderSecWebSocketProtocol, "")
+	protocol := req.Header.Get(web.HeaderSecWebSocketProtocol)
 
 	bw.WriteString("HTTP/1.1 101 WebSocket Protocol Handshake")
 	bw.WriteString("\r\nUpgrade: WebSocket")

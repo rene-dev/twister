@@ -77,11 +77,11 @@ var xsrfTests = []struct {
 }
 
 func xsrfErrorHandler(req *Request, status int, reason os.Error, header HeaderMap) {
-	io.WriteString(req.Responder.Respond(status, header), req.Param.GetDef("xsrf", ""))
+	io.WriteString(req.Responder.Respond(status, header), req.Param.Get("xsrf"))
 }
 
 func xsrfHandler(req *Request) {
-	io.WriteString(req.Respond(StatusOK), req.Param.GetDef("xsrf", ""))
+	io.WriteString(req.Respond(StatusOK), req.Param.Get("xsrf"))
 }
 
 func TestXSRF(t *testing.T) {
@@ -93,7 +93,7 @@ func TestXSRF(t *testing.T) {
 			t.Errorf("test %d, exepected status %d, actual status %d", i, tt.status, status)
 		}
 		if tt.cookie {
-			c, _ := header.Get(HeaderSetCookie)
+			c := header.Get(HeaderSetCookie)
 			if c == "" {
 				t.Errorf("test %d, cookie not set", i)
 			} else if !strings.HasPrefix(c, "xsrf="+string(body)+";") {
@@ -103,7 +103,7 @@ func TestXSRF(t *testing.T) {
 			if string(body) != testToken {
 				t.Errorf("test %d, testToken != param", i)
 			}
-			c, _ := header.Get(HeaderSetCookie)
+			c := header.Get(HeaderSetCookie)
 			if c != "" {
 				t.Errorf("test %d, unepxected cookie", i)
 			}

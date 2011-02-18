@@ -43,8 +43,8 @@ func credentialsCookie(name string, c *oauth.Credentials, maxAgeDays int) string
 
 // credentials returns oauth credentials stored in cookie with name key.
 func credentials(req *web.Request, key string) (*oauth.Credentials, os.Error) {
-	s, found := req.Cookie.Get(key)
-	if !found {
+	s := req.Cookie.Get(key)
+	if s == "" {
 		return nil, os.NewError("main: missing cookie")
 	}
 	a := strings.Split(s, "/", -1)
@@ -81,8 +81,8 @@ func authCallback(req *web.Request) {
 		req.Error(web.StatusNotFound, err)
 		return
 	}
-	s, found := req.Param.Get("oauth_token")
-	if !found {
+	s := req.Param.Get("oauth_token")
+	if s == "" {
 		req.Error(web.StatusNotFound, os.NewError("main: no token"))
 		return
 	}
@@ -90,7 +90,7 @@ func authCallback(req *web.Request) {
 		req.Error(web.StatusNotFound, os.NewError("main: token mismatch"))
 		return
 	}
-	tokenCredentials, _, err := oauthClient.RequestToken(temporaryCredentials, req.Param.GetDef("oauth_verifier", ""))
+	tokenCredentials, _, err := oauthClient.RequestToken(temporaryCredentials, req.Param.Get("oauth_verifier"))
 	if err != nil {
 		req.Error(web.StatusNotFound, err)
 		return
