@@ -61,9 +61,8 @@
 <li><a href="#HeaderMap">type HeaderMap</a>
         <ul>
     <li><a href="#NewHeaderMap">func NewHeaderMap</a>
-    <li><a href="#HeaderMap.Append">func (HeaderMap) Append</a>
+    <li><a href="#HeaderMap.Add">func (HeaderMap) Add</a>
     <li><a href="#HeaderMap.Get">func (HeaderMap) Get</a>
-    <li><a href="#HeaderMap.GetDef">func (HeaderMap) GetDef</a>
     <li><a href="#HeaderMap.GetList">func (HeaderMap) GetList</a>
     <li><a href="#HeaderMap.ParseHttpHeader">func (HeaderMap) ParseHttpHeader</a>
     <li><a href="#HeaderMap.Set">func (HeaderMap) Set</a>
@@ -78,11 +77,10 @@
 <li><a href="#ParamMap">type ParamMap</a>
         <ul>
     <li><a href="#NewParamMap">func NewParamMap</a>
-    <li><a href="#ParamMap.Append">func (ParamMap) Append</a>
+    <li><a href="#ParamMap.Add">func (ParamMap) Add</a>
     <li><a href="#ParamMap.FormEncodedBytes">func (ParamMap) FormEncodedBytes</a>
     <li><a href="#ParamMap.FormEncodedString">func (ParamMap) FormEncodedString</a>
     <li><a href="#ParamMap.Get">func (ParamMap) Get</a>
-    <li><a href="#ParamMap.GetDef">func (ParamMap) GetDef</a>
     <li><a href="#ParamMap.ParseFormEncodedBytes">func (ParamMap) ParseFormEncodedBytes</a>
     <li><a href="#ParamMap.Set">func (ParamMap) Set</a>
     <li><a href="#ParamMap.StringMap">func (ParamMap) StringMap</a>
@@ -189,6 +187,7 @@ const (
  HeaderVia                  = &#34;Via&#34;
  HeaderWWWAuthenticate      = &#34;Www-Authenticate&#34;
  HeaderWarning              = &#34;Warning&#34;
+ HeaderXXSRFToken           = &#34;X-Xsrftoken&#34;
 )
 </pre>
 <p>
@@ -530,7 +529,24 @@ NotFoundHandler returns a request handler that responds with 404 not found.
     <p><code>func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler</code></p>
     <p>
 ProcessForm returns a handler that parses URL encoded forms if smaller than the
-specified size and optionally checks for XSRF.
+specified size.
+</p>
+<p>
+If xsrfCheck is true, then cross-site request forgery protection is enabled.
+The handler rejects POST, PUT, and DELETE requests if the handler does not
+find a matching value for the &#34;xsrf&#34; cookie in the &#34;xsrf&#34; request parameter
+or the X-XSRFToken header.
+</p>
+<p>
+The handler ensures that the &#34;xsrf&#34; cookie and the &#34;xsrf&#34; request parameter
+are set before passing the the request to the downstream handler or the
+error handler. The application must include the value fo the &#34;xsrf&#34; request
+parameter in POSTed forms or pass the value to AJAX code so that the
+X-XSRFToken header can be set.
+</p>
+<p>
+See <a href="http://en.wikipedia.org/wiki/Cross-site_request_forgery">http://en.wikipedia.org/wiki/Cross-site_request_forgery</a> for information
+on cross-site request forgery.
 </p>
 
     <h3 id="RedirectHandler">func RedirectHandler</h3>
@@ -584,22 +600,16 @@ NewHeaderMap returns a map initialized with the given key-value pairs.
 </p>
 
 
-    <h3 id="HeaderMap.Append">func (HeaderMap) Append</h3>
-    <p><code>func (m HeaderMap) Append(key string, value string)</code></p>
+    <h3 id="HeaderMap.Add">func (HeaderMap) Add</h3>
+    <p><code>func (m HeaderMap) Add(key string, value string)</code></p>
     <p>
-Append value to slice for given key.
+Add appends value to slice for given key.
 </p>
 
     <h3 id="HeaderMap.Get">func (HeaderMap) Get</h3>
-    <p><code>func (m HeaderMap) Get(key string) (value string, found bool)</code></p>
+    <p><code>func (m HeaderMap) Get(key string) string</code></p>
     <p>
 Get returns the first value for given key or &#34;&#34; if the key is not found.
-</p>
-
-    <h3 id="HeaderMap.GetDef">func (HeaderMap) GetDef</h3>
-    <p><code>func (m HeaderMap) GetDef(key string, def string) string</code></p>
-    <p>
-GetDef returns first value for given key, or def if the key is not found.
 </p>
 
     <h3 id="HeaderMap.GetList">func (HeaderMap) GetList</h3>
@@ -696,10 +706,10 @@ NewParamMap returns a map initialized with the given key-value pairs.
 </p>
 
 
-    <h3 id="ParamMap.Append">func (ParamMap) Append</h3>
-    <p><code>func (m ParamMap) Append(key string, value string)</code></p>
+    <h3 id="ParamMap.Add">func (ParamMap) Add</h3>
+    <p><code>func (m ParamMap) Add(key string, value string)</code></p>
     <p>
-Append value to slice for given key.
+Add appends value to slice for given key.
 </p>
 
     <h3 id="ParamMap.FormEncodedBytes">func (ParamMap) FormEncodedBytes</h3>
@@ -717,15 +727,9 @@ map.
 </p>
 
     <h3 id="ParamMap.Get">func (ParamMap) Get</h3>
-    <p><code>func (m ParamMap) Get(key string) (value string, found bool)</code></p>
+    <p><code>func (m ParamMap) Get(key string) string</code></p>
     <p>
 Get returns the first value for given key or &#34;&#34; if the key is not found.
-</p>
-
-    <h3 id="ParamMap.GetDef">func (ParamMap) GetDef</h3>
-    <p><code>func (m ParamMap) GetDef(key string, def string) string</code></p>
-    <p>
-GetDef returns first value for given key, or def if the key is not found.
 </p>
 
     <h3 id="ParamMap.ParseFormEncodedBytes">func (ParamMap) ParseFormEncodedBytes</h3>
