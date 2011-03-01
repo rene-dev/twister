@@ -79,11 +79,11 @@ func TestRouter(t *testing.T) {
 	for _, rt := range routeTests {
 		status, _, body := RunHandler(rt.url, rt.method, nil, nil, r)
 		if status != rt.status {
-			t.Errorf("url=%s method=%s\n\texpected %d\n\tactual   %d", rt.url, rt.method, rt.status, status)
+			t.Errorf("url=%s method=%s, status=%d, want %d", rt.url, rt.method, status, rt.status)
 		}
 		if status == StatusOK {
 			if string(body) != rt.body {
-				t.Errorf("url=%s method=%s\n\texpected %s\n\tactual   %s", rt.url, rt.method, rt.body, string(body))
+				t.Errorf("url=%s method=%s body=%q, want %q", rt.url, rt.method, string(body), rt.body)
 			}
 		}
 	}
@@ -107,11 +107,11 @@ func TestHostRouter(t *testing.T) {
 	for _, rt := range hostRouteTests {
 		status, _, body := RunHandler(rt.url, "GET", nil, nil, r)
 		if status != rt.status {
-			t.Errorf("url=%sn\texpected %d\n\tactual   %d", rt.url, rt.status, status)
+			t.Errorf("url=%s, status=%d, want %d", rt.url, status, rt.status)
 		}
 		if status == StatusOK {
 			if string(body) != rt.body {
-				t.Errorf("url=%s\n\texpected %s\n\tactual   %s", rt.url, rt.body, string(body))
+				t.Errorf("url=%s, body=%q, want %q", rt.url, string(body), rt.body)
 			}
 		}
 	}

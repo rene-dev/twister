@@ -19,12 +19,10 @@ import (
 	"reflect"
 )
 
-type ParseCookieValuesTest struct {
+var ParseCookieValuesTests = []struct {
 	values []string
 	m      ParamMap
-}
-
-var ParseCookieValuesTests = []ParseCookieValuesTest{
+}{
 	{[]string{"a=b"}, ParamMap{"a": []string{"b"}}},
 	{[]string{"a=b; c"}, ParamMap{"a": []string{"b"}}},
 	{[]string{"a=b; =c"}, ParamMap{"a": []string{"b"}}},
@@ -41,10 +39,10 @@ func TestParseCookieValues(t *testing.T) {
 	for _, pt := range ParseCookieValuesTests {
 		m := make(ParamMap)
 		if err := parseCookieValues(pt.values, m); err != nil {
-			t.Errorf("error parsing values %s", err)
+			t.Errorf("parseCookieValues(%q) error %q", pt.values, err)
 		}
 		if !reflect.DeepEqual(pt.m, m) {
-			t.Errorf("values=%s,\nexpected %q\nactual   %q", pt.values, pt.m, m)
+			t.Errorf("parseCookieValues(%q) = %q, want %q", pt.values, m, pt.m)
 		}
 	}
 }

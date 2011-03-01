@@ -38,7 +38,7 @@ func TestParseUrlEncodedForm(t *testing.T) {
 		m := make(ParamMap)
 		m.ParseFormEncodedBytes(p)
 		if !reflect.DeepEqual(pt.m, m) {
-			t.Errorf("form=%s,\nexpected %q\nactual   %q", pt.s, pt.m, m)
+			t.Errorf("ParseFormEncodedBytes(%q) = %q, want %q", pt.s, m, pt.m)
 		}
 	}
 }

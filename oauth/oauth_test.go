@@ -20,7 +20,7 @@ import (
 	"github.com/garyburd/twister/web"
 )
 
-type SignatureTest struct {
+var signatureTests = []struct {
 	method            string
 	url               string
 	param             web.ParamMap
@@ -28,10 +28,8 @@ type SignatureTest struct {
 	clientCredentials Credentials
 	credentials       Credentials
 	sig               string
-}
-
-var SignatureTests = []SignatureTest{
-	{
+}{
+    {
 		"GeT",
 		"hTtp://pHotos.example.net/photos",
 		web.NewParamMap(
@@ -66,16 +64,16 @@ var SignatureTests = []SignatureTest{
 }
 
 func TestSignature(t *testing.T) {
-	for _, st := range SignatureTests {
+	for _, st := range signatureTests {
 		var buf bytes.Buffer
 		writeBaseString(&buf, st.method, st.url, st.param)
 		base := buf.String()
 		if base != st.base {
-			t.Errorf("%s %s:\nexpected %q\nactual   %q", st.method, st.url, st.base, base)
+            t.Errorf("base string for %s %s = %q, want %q", st.method, st.url, st.base, base)
 		}
 		sig := signature(&st.clientCredentials, &st.credentials, st.method, st.url, st.param)
 		if sig != st.sig {
-			t.Errorf("%s %s:\nexpected %q\nactual   %q", st.method, st.url, st.sig, sig)
+            t.Errorf("signature for %s %s = %q, want %q", st.method, st.url, st.sig, sig)
 		}
 	}
 }

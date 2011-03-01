@@ -33,13 +33,11 @@ var quoteHeaderValueTests = []struct {
 
 func TestQuoteHeaderValue(t *testing.T) {
 	for _, tt := range quoteHeaderValueTests {
-		quote := QuoteHeaderValue(tt.s)
-		quoteOrToken := QuoteHeaderValueOrToken(tt.s)
-		if quote != tt.quote {
-			t.Errorf("quote %s \n\texpected: %q\n\tactual:   %q", tt.s, tt.quote, quote)
+		if quote := QuoteHeaderValue(tt.s); quote != tt.quote {
+			t.Errorf("QuoteHeaderValue(%q) = %q, want %q", tt.s, quote, tt.quote)
 		}
-		if quoteOrToken != tt.quoteOrToken {
-			t.Errorf("quoteOrToken %s \n\texpected: %q\n\tactual:   %q", tt.s, tt.quoteOrToken, quoteOrToken)
+		if quoteOrToken := QuoteHeaderValueOrToken(tt.s); quoteOrToken != tt.quoteOrToken {
+			t.Errorf("QuoteHeaderValueOrToken(%q) = %q, want %q", tt.s, quoteOrToken, tt.quoteOrToken)
 		}
 	}
 }
@@ -56,9 +54,8 @@ var UnquoteHeaderValueTests = []struct {
 
 func TestUnquoteHeaderValue(t *testing.T) {
 	for _, tt := range UnquoteHeaderValueTests {
-		unquote := UnquoteHeaderValue(tt.s)
-		if unquote != tt.unquote {
-			t.Errorf("unquote %s \n\texpected: %q\n\tactual:   %q", tt.s, tt.unquote, unquote)
+		if unquote := UnquoteHeaderValue(tt.s); unquote != tt.unquote {
+			t.Errorf("UnquoteHeaderValue(%q) = %q, want %q", tt.s, unquote, tt.unquote)
 		}
 	}
 }
@@ -78,9 +75,8 @@ var getHeaderListTests = []struct {
 func TestGetHeaderList(t *testing.T) {
 	for _, tt := range getHeaderListTests {
 		header := NewHeaderMap("foo", tt.s)
-		l := header.GetList("foo")
-		if !reflect.DeepEqual(tt.l, l) {
-			t.Errorf("%s\n\texpected: %q\n\tactual:   %q", tt.s, tt.l, l)
+		if l := header.GetList("foo"); !reflect.DeepEqual(tt.l, l) {
+			t.Errorf("GetList for %q = %q, want %q", tt.s, l, tt.l)
 		}
 	}
 }
@@ -115,10 +111,10 @@ func TestParseHttpHeader(t *testing.T) {
 		header := HeaderMap{}
 		err := header.ParseHttpHeader(b)
 		if err != nil {
-			t.Errorf("%s: expected error", tt.name)
+			t.Errorf("ParseHttpHeader error for %s = %v", tt.name, err)
 		}
 		if !reflect.DeepEqual(tt.header, header) {
-			t.Errorf("%s bad header\n\texpected: %q\n\tactual:   %q", tt.name, tt.header, header)
+			t.Errorf("ParseHttpHeader for %s = %q, want %q", tt.name, header, tt.header)
 		}
 	}
 }
