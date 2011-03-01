@@ -167,7 +167,7 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 }
 
 // Respond is a convenience function that adds (key, value) pairs in
-// headerKeysAndValues to a StringsMap and calls through to the connection's
+// headerKeysAndValues to a HeaderMap and calls through to the connection's
 // Respond method.
 func (req *Request) Respond(status int, headerKeysAndValues ...string) ResponseBody {
 	return req.Responder.Respond(status, NewHeaderMap(headerKeysAndValues...))

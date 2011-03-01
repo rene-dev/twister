@@ -25,7 +25,7 @@ var (
 	errMpHeader  = os.NewError("twsiter: bad multipart/form-data header")
 )
 
-// Part represents an element of a multipart request entity.
+// Part represents an element of a multi-part request entity.
 type Part struct {
 	Name         string
 	Filename     string

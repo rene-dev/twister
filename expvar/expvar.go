@@ -45,7 +45,7 @@ var (
 // Publish adds v to the root level JSON object published by this package. The
 // value v is any type that can be encoded by calling json.Marshal. If a name
 // is already registered, then the function will panic. This function is
-// typically called from a package's init() funtion. 
+// typically called from a package's init() function. 
 func Publish(name string, v interface{}) {
 	mutex.Lock()
 	defer mutex.Unlock()
