@@ -282,7 +282,7 @@ var (
 )
 </pre>
 
-<h2 id="FilterRespond">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/middleware.go#L40">FilterRespond</a></h2>
+<h2 id="FilterRespond">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/middleware.go#L40">FilterRespond</a></h2>
 <p><code>func FilterRespond(req *Request, filter func(status int, header HeaderMap) (int, HeaderMap))</code></p>
 <p>
 FilterRespond replaces the request&#39;s responder with one that filters the
@@ -290,50 +290,50 @@ arguments to Respond through the supplied filter. This function is intended
 to be used by middleware.
 </p>
 
-<h2 id="FormatDeltaDays">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L41">FormatDeltaDays</a></h2>
+<h2 id="FormatDeltaDays">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L41">FormatDeltaDays</a></h2>
 <p><code>func FormatDeltaDays(delta int) string</code></p>
 <p>
 FormatDeltaDays returns current time plus delta formatted per HTTP conventions.
 </p>
 
-<h2 id="FormatDeltaSeconds">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L36">FormatDeltaSeconds</a></h2>
+<h2 id="FormatDeltaSeconds">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L36">FormatDeltaSeconds</a></h2>
 <p><code>func FormatDeltaSeconds(delta int) string</code></p>
 <p>
 FormatDeltaSeconds returns current time plus delta formatted per HTTP conventions.
 </p>
 
-<h2 id="HTMLEscapeString">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L324">HTMLEscapeString</a></h2>
+<h2 id="HTMLEscapeString">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L324">HTMLEscapeString</a></h2>
 <p><code>func HTMLEscapeString(s string) string</code></p>
 <p>
 HTMLEscapeString returns s with special HTML characters escaped.
 </p>
 
-<h2 id="HeaderName">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L371">HeaderName</a></h2>
+<h2 id="HeaderName">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L371">HeaderName</a></h2>
 <p><code>func HeaderName(name string) string</code></p>
 <p>
 HeaderName returns the canonical format of the header name.
 </p>
 
-<h2 id="HeaderNameBytes">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L377">HeaderNameBytes</a></h2>
+<h2 id="HeaderNameBytes">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L377">HeaderNameBytes</a></h2>
 <p><code>func HeaderNameBytes(p []byte) string</code></p>
 <p>
 HeaderNameBytes returns the canonical format for the header name specified
 by the bytes in p. This function modifies the contents p.
 </p>
 
-<h2 id="IsSpaceByte">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L65">IsSpaceByte</a></h2>
+<h2 id="IsSpaceByte">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L65">IsSpaceByte</a></h2>
 <p><code>func IsSpaceByte(c byte) bool</code></p>
 <p>
 IsSpaceByte returns true if c is a space character as defined by RFC 2616
 </p>
 
-<h2 id="IsTokenByte">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L60">IsTokenByte</a></h2>
+<h2 id="IsTokenByte">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L60">IsTokenByte</a></h2>
 <p><code>func IsTokenByte(c byte) bool</code></p>
 <p>
 IsTokenByte returns true if c is a token character as defined by RFC 2616
 </p>
 
-<h2 id="ParseMultipartForm">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/multipart.go#L40">ParseMultipartForm</a></h2>
+<h2 id="ParseMultipartForm">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/multipart.go#L40">ParseMultipartForm</a></h2>
 <p><code>func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error)</code></p>
 <p>
 ParseMultipartForm parses a multipart/form-data body. Form fields are
@@ -341,49 +341,49 @@ added to the request Param. This function loads the entire request body in
 memory. This may not be appropriate in some scenarios.
 </p>
 
-<h2 id="ProtocolVersion">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L148">ProtocolVersion</a></h2>
+<h2 id="ProtocolVersion">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L148">ProtocolVersion</a></h2>
 <p><code>func ProtocolVersion(major int, minor int) int</code></p>
 <p>
 ProtocolVersion combines HTTP major and minor protocol numbers into a single
 integer for easy comparison.
 </p>
 
-<h2 id="QuoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L395">QuoteHeaderValue</a></h2>
+<h2 id="QuoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L395">QuoteHeaderValue</a></h2>
 <p><code>func QuoteHeaderValue(s string) string</code></p>
 <p>
 QuoteHeaderValue quotes s using quoted-string rules described in RFC 2616.
 </p>
 
-<h2 id="QuoteHeaderValueOrToken">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L411">QuoteHeaderValueOrToken</a></h2>
+<h2 id="QuoteHeaderValueOrToken">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L411">QuoteHeaderValueOrToken</a></h2>
 <p><code>func QuoteHeaderValueOrToken(s string) string</code></p>
 <p>
 QuoteHeaderValueOrToken quotes s if s is not a valid token per RFC 2616.
 </p>
 
-<h2 id="RunHandler">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/test.go#L50">RunHandler</a></h2>
+<h2 id="RunHandler">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/test.go#L50">RunHandler</a></h2>
 <p><code>func RunHandler(url string, method string, reqHeader HeaderMap, reqBody []byte, handler Handler) (status int, header HeaderMap, respBody []byte)</code></p>
 <p>
 RunHandler runs the handler with a request created from the arguments and
 returns the response. This function is intended to be used in tests.
 </p>
 
-<h2 id="SignValue">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L212">SignValue</a></h2>
+<h2 id="SignValue">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L212">SignValue</a></h2>
 <p><code>func SignValue(secret, context string, maxAgeSeconds int, value string) string</code></p>
 <p>
 SignValue timestamps and signs a string so that it cannot be forged.
 </p>
 
-<h2 id="StatusText">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L138">StatusText</a></h2>
+<h2 id="StatusText">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L138">StatusText</a></h2>
 <p><code>func StatusText(status int) string</code></p>
 
-<h2 id="UnquoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L422">UnquoteHeaderValue</a></h2>
+<h2 id="UnquoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L422">UnquoteHeaderValue</a></h2>
 <p><code>func UnquoteHeaderValue(s string) string</code></p>
 <p>
 UnquoteHeaderValue unquotes s if s is surrounded by quotes, otherwise s is
 returned.
 </p>
 
-<h2 id="VerifyValue">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L221">VerifyValue</a></h2>
+<h2 id="VerifyValue">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L221">VerifyValue</a></h2>
 <p><code>func VerifyValue(secret, context string, signedValue string) (string, os.Error)</code></p>
 <p>
 VerifyValue verifies a timestamped and signed value.
@@ -401,59 +401,59 @@ Cookie is an HTTP cookie.
 
 
 
-    <h3 id="NewCookie">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L258">NewCookie</a></h3>
+    <h3 id="NewCookie">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L258">NewCookie</a></h3>
     <p><code>func NewCookie(name, value string) *Cookie</code></p>
     <p>
 NewCookie returns a new cookie with parameters name=value; path=/; httponly.
 </p>
 
 
-    <h3 id="Cookie.Delete">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L276">Delete</a></h3>
+    <h3 id="Cookie.Delete">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L276">Delete</a></h3>
     <p><code>func (c *Cookie) Delete() *Cookie</code></p>
     <p>
 Delete sets the expiration date for the cookie in the past. This will cause
 clients to delete the cookie.
 </p>
 
-    <h3 id="Cookie.Domain">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L266">Domain</a></h3>
+    <h3 id="Cookie.Domain">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L266">Domain</a></h3>
     <p><code>func (c *Cookie) Domain(domain string) *Cookie</code></p>
     <p>
 Domain sets the domain for the cookie.
 </p>
 
-    <h3 id="Cookie.HTTPOnly">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L284">HTTPOnly</a></h3>
+    <h3 id="Cookie.HTTPOnly">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L284">HTTPOnly</a></h3>
     <p><code>func (c *Cookie) HTTPOnly(httpOnly bool) *Cookie</code></p>
     <p>
 Secure sets the httponly attribute on the cookie. The httponly attribute
 defaults to true.
 </p>
 
-    <h3 id="Cookie.MaxAge">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L269">MaxAge</a></h3>
+    <h3 id="Cookie.MaxAge">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L269">MaxAge</a></h3>
     <p><code>func (c *Cookie) MaxAge(seconds int) *Cookie</code></p>
     <p>
 MaxAge sets the maximum age for the cookie in seconds.
 </p>
 
-    <h3 id="Cookie.MaxAgeDays">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L272">MaxAgeDays</a></h3>
+    <h3 id="Cookie.MaxAgeDays">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L272">MaxAgeDays</a></h3>
     <p><code>func (c *Cookie) MaxAgeDays(days int) *Cookie</code></p>
     <p>
 MaxAgeDays sets the maximum age for the cookie in days.
 </p>
 
-    <h3 id="Cookie.Path">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L263">Path</a></h3>
+    <h3 id="Cookie.Path">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L263">Path</a></h3>
     <p><code>func (c *Cookie) Path(path string) *Cookie</code></p>
     <p>
 Path sets the path for the cookie. The path defaults to &#34;/&#34;
 </p>
 
-    <h3 id="Cookie.Secure">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L280">Secure</a></h3>
+    <h3 id="Cookie.Secure">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L280">Secure</a></h3>
     <p><code>func (c *Cookie) Secure(secure bool) *Cookie</code></p>
     <p>
 Secure sets the secure attribute on the cookie. The secure attribute
 defaults to false.
 </p>
 
-    <h3 id="Cookie.String">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/misc.go#L290">String</a></h3>
+    <h3 id="Cookie.String">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/misc.go#L290">String</a></h3>
     <p><code>func (c *Cookie) String() string</code></p>
     <p>
 String returns the Set-Cookie header value for the cookie.
@@ -482,13 +482,13 @@ Handler is the interface for web handlers.
 
 
 
-    <h3 id="DebugLogger">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/middleware.go#L167">DebugLogger</a></h3>
+    <h3 id="DebugLogger">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/middleware.go#L167">DebugLogger</a></h3>
     <p><code>func DebugLogger(enabled bool, handler Handler) Handler</code></p>
     <p>
 DebugLogger returns a handler that logs the request and response.
 </p>
 
-    <h3 id="DirectoryHandler">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/handlers.go#L83">DirectoryHandler</a></h3>
+    <h3 id="DirectoryHandler">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/handlers.go#L83">DirectoryHandler</a></h3>
     <p><code>func DirectoryHandler(root string, extraHeader ...string) Handler</code></p>
     <p>
 DirectoryHandler returns a request handler that serves static files from root
@@ -502,7 +502,7 @@ If the &#34;v&#34; request parameter is supplied, then the cache control headers
 set to expire the file in 10 years.
 </p>
 
-    <h3 id="FileHandler">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/handlers.go#L128">FileHandler</a></h3>
+    <h3 id="FileHandler">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/handlers.go#L128">FileHandler</a></h3>
     <p><code>func FileHandler(fname string, extraHeader ...string) Handler</code></p>
     <p>
 FileHandler returns a request handler that serves a static file specified by
@@ -513,19 +513,19 @@ If the &#34;v&#34; request parameter is supplied, then the cache control headers
 set to expire the file in 10 years.
 </p>
 
-    <h3 id="Logger">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/middleware.go#L182">Logger</a></h3>
+    <h3 id="Logger">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/middleware.go#L182">Logger</a></h3>
     <p><code>func Logger(log func(req *Request, status int, time int64), handler Handler) Handler</code></p>
     <p>
 Logger returns a handler that logs the request
 </p>
 
-    <h3 id="NotFoundHandler">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/handlers.go#L163">NotFoundHandler</a></h3>
+    <h3 id="NotFoundHandler">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/handlers.go#L163">NotFoundHandler</a></h3>
     <p><code>func NotFoundHandler() Handler</code></p>
     <p>
 NotFoundHandler returns a request handler that responds with 404 not found.
 </p>
 
-    <h3 id="ProcessForm">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/middleware.go#L74">ProcessForm</a></h3>
+    <h3 id="ProcessForm">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/middleware.go#L74">ProcessForm</a></h3>
     <p><code>func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler</code></p>
     <p>
 ProcessForm returns a handler that parses URL encoded forms if smaller than the
@@ -549,13 +549,13 @@ See <a href="http://en.wikipedia.org/wiki/Cross-site_request_forgery">http://en.
 on cross-site request forgery.
 </p>
 
-    <h3 id="RedirectHandler">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/handlers.go#L156">RedirectHandler</a></h3>
+    <h3 id="RedirectHandler">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/handlers.go#L156">RedirectHandler</a></h3>
     <p><code>func RedirectHandler(url string, permanent bool) Handler</code></p>
     <p>
 RedirectHandler returns a request handler that redirects to the given URL.
 </p>
 
-    <h3 id="SetErrorHandler">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/middleware.go#L45">SetErrorHandler</a></h3>
+    <h3 id="SetErrorHandler">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/middleware.go#L45">SetErrorHandler</a></h3>
     <p><code>func SetErrorHandler(errorHandler ErrorHandler, handler Handler) Handler</code></p>
     <p>
 SetErrorHandler returns a handler that sets the request&#39;s error handler to the supplied handler.
@@ -575,7 +575,7 @@ request with an error response.
 
 
 
-    <h3 id="HandlerFunc.ServeWeb">func (HandlerFunc) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/web.go#L125">ServeWeb</a></h3>
+    <h3 id="HandlerFunc.ServeWeb">func (HandlerFunc) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/web.go#L125">ServeWeb</a></h3>
     <p><code>func (f HandlerFunc) ServeWeb(req *Request)</code></p>
     <p>
 ServeWeb calls f(req).
@@ -593,26 +593,26 @@ format.
 
 
 
-    <h3 id="NewHeaderMap">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L82">NewHeaderMap</a></h3>
+    <h3 id="NewHeaderMap">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L82">NewHeaderMap</a></h3>
     <p><code>func NewHeaderMap(kvs ...string) HeaderMap</code></p>
     <p>
 NewHeaderMap returns a map initialized with the given key-value pairs.
 </p>
 
 
-    <h3 id="HeaderMap.Add">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L103">Add</a></h3>
+    <h3 id="HeaderMap.Add">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L103">Add</a></h3>
     <p><code>func (m HeaderMap) Add(key string, value string)</code></p>
     <p>
 Add appends value to slice for given key.
 </p>
 
-    <h3 id="HeaderMap.Get">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L94">Get</a></h3>
+    <h3 id="HeaderMap.Get">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L94">Get</a></h3>
     <p><code>func (m HeaderMap) Get(key string) string</code></p>
     <p>
 Get returns the first value for given key or &#34;&#34; if the key is not found.
 </p>
 
-    <h3 id="HeaderMap.GetList">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L115">GetList</a></h3>
+    <h3 id="HeaderMap.GetList">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L115">GetList</a></h3>
     <p><code>func (m HeaderMap) GetList(key string) []string</code></p>
     <p>
 GetList returns list of comma separated values over multiple header values
@@ -620,20 +620,20 @@ for the given key. Commas are ignored in quoted strings. Quoted values are
 not unescaped or unqoted. Whitespace is trimmmed.
 </p>
 
-    <h3 id="HeaderMap.ParseHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L191">ParseHttpHeader</a></h3>
+    <h3 id="HeaderMap.ParseHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L191">ParseHttpHeader</a></h3>
     <p><code>func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error)</code></p>
     <p>
 ParseHttpHeader parses the HTTP headers and appends the values to the
 supplied map. Header names are converted to canonical format.
 </p>
 
-    <h3 id="HeaderMap.Set">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L108">Set</a></h3>
+    <h3 id="HeaderMap.Set">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L108">Set</a></h3>
     <p><code>func (m HeaderMap) Set(key string, value string)</code></p>
     <p>
 Set value for given key, discarding previous values if any.
 </p>
 
-    <h3 id="HeaderMap.WriteHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/headermap.go#L160">WriteHttpHeader</a></h3>
+    <h3 id="HeaderMap.WriteHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/headermap.go#L160">WriteHttpHeader</a></h3>
     <p><code>func (m HeaderMap) WriteHttpHeader(w io.Writer) os.Error</code></p>
     <p>
 WriteHttpHeader writes the map in HTTP header format.
@@ -670,20 +670,20 @@ with the value of the hostOverride flag if set.
 
 
 
-    <h3 id="NewHostRouter">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/router.go#L225">NewHostRouter</a></h3>
+    <h3 id="NewHostRouter">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/router.go#L225">NewHostRouter</a></h3>
     <p><code>func NewHostRouter(defaultHandler Handler) *HostRouter</code></p>
     <p>
 NewHostRouter allocates and initializes a new HostRouter.
 </p>
 
 
-    <h3 id="HostRouter.Register">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/router.go#L233">Register</a></h3>
+    <h3 id="HostRouter.Register">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/router.go#L233">Register</a></h3>
     <p><code>func (router *HostRouter) Register(hostPattern string, handler Handler) *HostRouter</code></p>
     <p>
 Register a handler for the given pattern.
 </p>
 
-    <h3 id="HostRouter.ServeWeb">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/router.go#L254">ServeWeb</a></h3>
+    <h3 id="HostRouter.ServeWeb">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/router.go#L254">ServeWeb</a></h3>
     <p><code>func (router *HostRouter) ServeWeb(req *Request)</code></p>
     <p>
 ServeWeb dispatches the request to a registered handler.
@@ -699,53 +699,53 @@ ParamMap maps strings to slices of strings.
 
 
 
-    <h3 id="NewParamMap">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/parammap.go#L27">NewParamMap</a></h3>
+    <h3 id="NewParamMap">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/parammap.go#L27">NewParamMap</a></h3>
     <p><code>func NewParamMap(kvs ...string) ParamMap</code></p>
     <p>
 NewParamMap returns a map initialized with the given key-value pairs.
 </p>
 
 
-    <h3 id="ParamMap.Add">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/parammap.go#L48">Add</a></h3>
+    <h3 id="ParamMap.Add">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/parammap.go#L48">Add</a></h3>
     <p><code>func (m ParamMap) Add(key string, value string)</code></p>
     <p>
 Add appends value to slice for given key.
 </p>
 
-    <h3 id="ParamMap.FormEncodedBytes">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/parammap.go#L69">FormEncodedBytes</a></h3>
+    <h3 id="ParamMap.FormEncodedBytes">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/parammap.go#L69">FormEncodedBytes</a></h3>
     <p><code>func (m ParamMap) FormEncodedBytes() []byte</code></p>
     <p>
 FormEncodedBytes returns a buffer containing the URL form encoding of the
 map.
 </p>
 
-    <h3 id="ParamMap.FormEncodedString">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/parammap.go#L90">FormEncodedString</a></h3>
+    <h3 id="ParamMap.FormEncodedString">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/parammap.go#L90">FormEncodedString</a></h3>
     <p><code>func (m ParamMap) FormEncodedString() string</code></p>
     <p>
 FormEncodedString returns a string containing the URL form encoding of the
 map.
 </p>
 
-    <h3 id="ParamMap.Get">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/parammap.go#L39">Get</a></h3>
+    <h3 id="ParamMap.Get">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/parammap.go#L39">Get</a></h3>
     <p><code>func (m ParamMap) Get(key string) string</code></p>
     <p>
 Get returns the first value for given key or &#34;&#34; if the key is not found.
 </p>
 
-    <h3 id="ParamMap.ParseFormEncodedBytes">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/parammap.go#L110">ParseFormEncodedBytes</a></h3>
+    <h3 id="ParamMap.ParseFormEncodedBytes">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/parammap.go#L110">ParseFormEncodedBytes</a></h3>
     <p><code>func (m ParamMap) ParseFormEncodedBytes(p []byte) os.Error</code></p>
     <p>
 ParseFormEncodedBytes parses the URL-encoded form and appends the values to
 the supplied map. This function modifies the contents of p.
 </p>
 
-    <h3 id="ParamMap.Set">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/parammap.go#L53">Set</a></h3>
+    <h3 id="ParamMap.Set">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/parammap.go#L53">Set</a></h3>
     <p><code>func (m ParamMap) Set(key string, value string)</code></p>
     <p>
 Set value for given key, discarding previous values if any.
 </p>
 
-    <h3 id="ParamMap.StringMap">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/parammap.go#L59">StringMap</a></h3>
+    <h3 id="ParamMap.StringMap">func (ParamMap) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/parammap.go#L59">StringMap</a></h3>
     <p><code>func (m ParamMap) StringMap() map[string]string</code></p>
     <p>
 StringMap returns a string to string map by discarding all but the first
@@ -755,7 +755,7 @@ value for a key.
 
 <h2 id="Part">type Part</h2>
 <p>
-Part represents an element of a multipart request entity.
+Part represents an element of a multi-part request entity.
 </p>
 
 <pre>type Part struct {
@@ -824,7 +824,7 @@ Request represents an HTTP request.
 
 
 
-    <h3 id="NewRequest">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/web.go#L129">NewRequest</a></h3>
+    <h3 id="NewRequest">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/web.go#L129">NewRequest</a></h3>
     <p><code>func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion int, header HeaderMap) (req *Request, err os.Error)</code></p>
     <p>
 NewRequest allocates and initializes a request. This function is provided
@@ -832,7 +832,7 @@ for the convenience of protocol adapters (fcgi, native http server, ...).
 </p>
 
 
-    <h3 id="Request.BodyBytes">func (*Request) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/web.go#L212">BodyBytes</a></h3>
+    <h3 id="Request.BodyBytes">func (*Request) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/web.go#L212">BodyBytes</a></h3>
     <p><code>func (req *Request) BodyBytes(maxLen int) ([]byte, os.Error)</code></p>
     <p>
 BodyBytes returns the request body a slice of bytes. If maxLen is negative,
@@ -840,13 +840,13 @@ then no limit is imposed on the length of the body. If the body is longer
 than maxLen, then ErrRequestEntityTooLarge is returned.
 </p>
 
-    <h3 id="Request.Error">func (*Request) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/web.go#L186">Error</a></h3>
+    <h3 id="Request.Error">func (*Request) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/web.go#L186">Error</a></h3>
     <p><code>func (req *Request) Error(status int, reason os.Error, headerKeysAndValues ...string)</code></p>
     <p>
 Error responds to the request with an error.
 </p>
 
-    <h3 id="Request.ParseForm">func (*Request) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/web.go#L240">ParseForm</a></h3>
+    <h3 id="Request.ParseForm">func (*Request) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/web.go#L240">ParseForm</a></h3>
     <p><code>func (req *Request) ParseForm(maxRequestBodyLen int) os.Error</code></p>
     <p>
 ParseForm parses url-encoded form bodies. ParseForm is idempotent.  Most
@@ -854,17 +854,17 @@ applications should use the ParseForm middleware instead of calling this
 method directly.
 </p>
 
-    <h3 id="Request.Redirect">func (*Request) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/web.go#L191">Redirect</a></h3>
+    <h3 id="Request.Redirect">func (*Request) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/web.go#L191">Redirect</a></h3>
     <p><code>func (req *Request) Redirect(url string, perm bool, headerKeysAndValues ...string)</code></p>
     <p>
 Redirect responds to the request with a redirect to the specified URL.
 </p>
 
-    <h3 id="Request.Respond">func (*Request) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/web.go#L172">Respond</a></h3>
+    <h3 id="Request.Respond">func (*Request) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/web.go#L172">Respond</a></h3>
     <p><code>func (req *Request) Respond(status int, headerKeysAndValues ...string) ResponseBody</code></p>
     <p>
 Respond is a convenience function that adds (key, value) pairs in
-headerKeysAndValues to a StringsMap and calls through to the connection&#39;s
+headerKeysAndValues to a HeaderMap and calls through to the connection&#39;s
 Respond method.
 </p>
 
@@ -959,14 +959,14 @@ trailing slash to the URL with the trailing slash.
 
 
 
-    <h3 id="NewRouter">func <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/router.go#L193">NewRouter</a></h3>
+    <h3 id="NewRouter">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/router.go#L193">NewRouter</a></h3>
     <p><code>func NewRouter() *Router</code></p>
     <p>
 NewRouter allocates and initializes a new Router.
 </p>
 
 
-    <h3 id="Router.Register">func (*Router) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/router.go#L103">Register</a></h3>
+    <h3 id="Router.Register">func (*Router) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/router.go#L103">Register</a></h3>
     <p><code>func (router *Router) Register(pattern string, handlers ...interface{}) *Router</code></p>
     <p>
 Register the route with the given pattern and handlers. The structure of the
@@ -980,7 +980,7 @@ where method is a string and handler is a Handler or a
 func(*Request). Use &#34;*&#34; to match all methods.
 </p>
 
-    <h3 id="Router.ServeWeb">func (*Router) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/web/router.go#L184">ServeWeb</a></h3>
+    <h3 id="Router.ServeWeb">func (*Router) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/web/router.go#L184">ServeWeb</a></h3>
     <p><code>func (router *Router) ServeWeb(req *Request)</code></p>
     <p>
 ServeWeb dispatches the request to a registered handler.

@@ -50,25 +50,25 @@ Client represents an OAuth client.
 
 
 
-    <h3 id="Client.AuthorizationURL">func (*Client) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/oauth/oauth.go#L283">AuthorizationURL</a></h3>
+    <h3 id="Client.AuthorizationURL">func (*Client) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/oauth/oauth.go#L283">AuthorizationURL</a></h3>
     <p><code>func (c *Client) AuthorizationURL(temporaryCredentials *Credentials) string</code></p>
     <p>
 AuthorizationURL returns the full authorization URL.
 </p>
 
-    <h3 id="Client.RequestTemporaryCredentials">func (*Client) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/oauth/oauth.go#L260">RequestTemporaryCredentials</a></h3>
+    <h3 id="Client.RequestTemporaryCredentials">func (*Client) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/oauth/oauth.go#L260">RequestTemporaryCredentials</a></h3>
     <p><code>func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, os.Error)</code></p>
     <p>
 RequestTemporaryCredentials requests temporary credentials from the server.
 </p>
 
-    <h3 id="Client.RequestToken">func (*Client) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/oauth/oauth.go#L270">RequestToken</a></h3>
+    <h3 id="Client.RequestToken">func (*Client) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/oauth/oauth.go#L270">RequestToken</a></h3>
     <p><code>func (c *Client) RequestToken(temporaryCredentials *Credentials, verifier string) (*Credentials, map[string]string, os.Error)</code></p>
     <p>
 RequestToken requests token credentials from the server.
 </p>
 
-    <h3 id="Client.SignParam">func (*Client) <a href="http://github.com/garyburd/twister/blob/1013c2d4547a521490dceb59def9ffea422cef24/oauth/oauth.go#L215">SignParam</a></h3>
+    <h3 id="Client.SignParam">func (*Client) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/oauth/oauth.go#L215">SignParam</a></h3>
     <p><code>func (c *Client) SignParam(credentials *Credentials, method, url string, param web.ParamMap)</code></p>
     <p>
 SignParam adds an OAuth signature to param.
