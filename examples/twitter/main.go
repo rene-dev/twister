@@ -21,14 +21,15 @@ import (
 	"github.com/garyburd/twister/server"
 	"github.com/garyburd/twister/web"
 	"http"
+	"io/ioutil"
 	"json"
+	"log"
 	"os"
 	"strings"
 	"template"
 )
 
 var oauthClient = oauth.Client{
-	Credentials:                   oauth.Credentials{clientToken, clientSecret},
 	TemporaryCredentialRequestURI: "http://api.twitter.com/oauth/request_token",
 	ResourceOwnerAuthorizationURI: "http://api.twitter.com/oauth/authenticate",
 	TokenRequestURI:               "http://api.twitter.com/oauth/access_token",
@@ -137,12 +138,27 @@ func home(req *web.Request) {
 	homeTempl.Execute(req.Respond(web.StatusOK, web.HeaderContentType, web.ContentTypeHTML), d)
 }
 
+func readSettings() {
+	b, err := ioutil.ReadFile("settings.json")
+	if err != nil {
+		log.Fatal("could not read settings.json", err)
+	}
+	var m map[string]interface{}
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		log.Fatal("could not unmarhal settings.json", err)
+	}
+	oauthClient.Credentials.Token = m["ClientToken"].(string)
+	oauthClient.Credentials.Secret = m["ClientSecret"].(string)
+}
+
 func main() {
 	flag.Parse()
-	h := web.ProcessForm(10000, true, web.DebugLogger(true, web.NewRouter().
+	readSettings()
+	h := web.ProcessForm(10000, true, web.NewRouter().
 		Register("/", "GET", home).
 		Register("/login", "GET", login).
-		Register("/callback", "GET", authCallback)))
+		Register("/callback", "GET", authCallback))
 
 	server.Run(":8080", h)
 }

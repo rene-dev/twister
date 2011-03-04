@@ -6,7 +6,6 @@ include $(GOROOT)/src/Make.inc
 DEPS=../../server ../../oauth
 TARG=example
 GOFILES=\
-    main.go\
-    settings.go\
+    main.go
 
 include $(GOROOT)/src/Make.cmd
