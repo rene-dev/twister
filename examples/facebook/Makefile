@@ -7,7 +7,6 @@ DEPS=$(GOROOT)/src/pkg/github.com/garyburd/twister/server $(GOROOT)/src/pkg/gith
 TARG=example
 GOFILES=\
     main.go\
-    template.go\
-    settings.go\
+    template.go
 
 include $(GOROOT)/src/Make.cmd

@@ -26,14 +26,13 @@ import (
 	"http"
 	"io/ioutil"
 	"json"
+	"log"
 	"os"
 	"strconv"
 )
 
-var settings struct {
-	AppId     string
-	AppSecret string
-}
+var appID string
+var appSecret string
 
 // getUrlEncodedForm fetches a URL and decodes the response body as a URL encoded form.
 func getUrlEncodedForm(url string, param web.ParamMap) (web.ParamMap, os.Error) {
@@ -165,13 +164,28 @@ func homeHandler(req *web.Request) {
 	homeTemplate.respond(req, web.StatusOK, feed)
 }
 
+func readSettings() {
+	b, err := ioutil.ReadFile("settings.json")
+	if err != nil {
+		log.Fatal("could not read settings.json", err)
+	}
+	var m map[string]interface{}
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		log.Fatal("could not unmarhal settings.json", err)
+	}
+	appID = m["AppID"].(string)
+	appSecret = m["AppSecret"].(string)
+}
+
 func main() {
 	flag.Parse()
-	h := web.ProcessForm(10000, true, web.DebugLogger(true, web.NewRouter().
+	readSettings()
+	h := web.ProcessForm(10000, true, web.NewRouter().
 		Register("/", "GET", homeHandler).
 		Register("/logout", "GET", logoutHandler).
 		Register("/login", "GET", loginHandler).
-		Register("/callback", "GET", authCallbackHandler)))
+		Register("/callback", "GET", authCallbackHandler))
 
 	server.Run(":8080", h)
 }
