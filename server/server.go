@@ -55,13 +55,16 @@ type Server struct {
 
 	// The net.Conn.SetWriteTimeout value for new connections.
 	WriteTimeout int64
+
+	// Log the request.
+	Logger func(lr *LogRecord)
 }
 
 type conn struct {
 	server             *Server
 	netConn            net.Conn
 	br                 *bufio.Reader
-	responseBody       web.ResponseBody
+	responseBody       responseBody
 	chunked            bool
 	closeAfterResponse bool
 	hijacked           bool
@@ -69,9 +72,10 @@ type conn struct {
 	requestAvail       int
 	requestErr         os.Error
 	respondCalled      bool
-	responseAvail      int
 	responseErr        os.Error
 	write100Continue   bool
+	status             int
+	header             web.HeaderMap
 }
 
 var requestLineRegexp = regexp.MustCompile("^([_A-Za-z0-9]+) ([^ ]+) HTTP/([0-9]+)\\.([0-9]+)[\r\n ]+$")
@@ -206,6 +210,8 @@ func (c *conn) Respond(status int, header web.HeaderMap) (body web.ResponseBody)
 	}
 	c.respondCalled = true
 	c.requestErr = web.ErrInvalidState
+	c.status = status
+	c.header = header
 
 	if te := header.Get(web.HeaderTransferEncoding); te != "" {
 		log.Println("twister: transfer encoding not allowed")
@@ -217,14 +223,14 @@ func (c *conn) Respond(status int, header web.HeaderMap) (body web.ResponseBody)
 	}
 
 	c.chunked = true
-	c.responseAvail = 0
+	contentLength := -1
 
 	if status == web.StatusNotModified {
 		header[web.HeaderContentType] = nil, false
 		header[web.HeaderContentLength] = nil, false
 		c.chunked = false
 	} else if s := header.Get(web.HeaderContentLength); s != "" {
-		c.responseAvail, _ = strconv.Atoi(s)
+		contentLength, _ = strconv.Atoi(s)
 		c.chunked = false
 	} else if c.req.ProtocolVersion < web.ProtocolVersion(1, 1) {
 		c.closeAfterResponse = true
@@ -259,17 +265,15 @@ func (c *conn) Respond(status int, header web.HeaderMap) (body web.ResponseBody)
 	b.WriteString("\r\n")
 	header.WriteHttpHeader(&b)
 
-	if c.req.Method == "HEAD" {
-		c.responseBody = nullResponseBody{c}
-		_, c.responseErr = c.netConn.Write(b.Bytes())
-	} else if c.chunked {
-		c.responseBody = bufio.NewWriter(chunkedWriter{c})
-		_, c.responseErr = c.netConn.Write(b.Bytes())
-	} else {
-		c.responseBody = bufio.NewWriter(identityWriter{c})
-		c.responseBody.Write(b.Bytes())
+	const bufferSize = 4096
+	switch {
+	case c.req.Method == "HEAD":
+		c.responseBody, _ = newNullResponseBody(c.netConn, b.Bytes())
+	case c.chunked:
+		c.responseBody, _ = newChunkedResponseBody(c.netConn, b.Bytes(), bufferSize)
+	default:
+		c.responseBody, _ = newIdentityResponseBody(c.netConn, b.Bytes(), bufferSize, contentLength)
 	}
-
 	return c.responseBody
 }
 
@@ -299,73 +303,34 @@ func (c *conn) finish() os.Error {
 	if !c.respondCalled {
 		c.req.Respond(web.StatusOK, web.HeaderContentType, "text/html charset=utf-8")
 	}
-	if c.responseAvail != 0 {
-		c.closeAfterResponse = true
-	}
-	c.responseBody.Flush()
-	if c.chunked {
-		_, c.responseErr = io.WriteString(c.netConn, "0\r\n\r\n")
-	}
+	var written int
 	if c.responseErr == nil {
+		written, c.responseErr = c.responseBody.finish()
+	}
+	if c.responseErr != nil {
+		c.closeAfterResponse = true
+	} else {
 		c.responseErr = web.ErrInvalidState
+	}
+	if c.server.Logger != nil {
+		err := c.responseErr
+		if err == web.ErrInvalidState {
+			err = c.requestErr
+			if err == web.ErrInvalidState {
+				err = nil
+			}
+		}
+		c.server.Logger(&LogRecord{
+			Written: written,
+			Request: c.req,
+			Header:  c.header,
+			Status:  c.status,
+			Error:   err})
 	}
 	c.netConn = nil
 	c.br = nil
 	c.responseBody = nil
 	return nil
-}
-
-type nullResponseBody struct {
-	*conn
-}
-
-func (c nullResponseBody) Write(p []byte) (int, os.Error) {
-	if c.responseErr != nil {
-		return 0, c.responseErr
-	}
-	return len(p), nil
-}
-
-func (c nullResponseBody) Flush() os.Error {
-	return c.responseErr
-}
-
-type identityWriter struct {
-	*conn
-}
-
-func (c identityWriter) Write(p []byte) (int, os.Error) {
-	if c.responseErr != nil {
-		return 0, c.responseErr
-	}
-	var n int
-	n, c.responseErr = c.netConn.Write(p)
-	c.responseAvail -= n
-	return n, c.responseErr
-}
-
-type chunkedWriter struct {
-	*conn
-}
-
-func (c chunkedWriter) Write(p []byte) (int, os.Error) {
-	if c.responseErr != nil {
-		return 0, c.responseErr
-	}
-	if len(p) == 0 {
-		return 0, nil
-	}
-	_, c.responseErr = io.WriteString(c.netConn, strconv.Itob(len(p), 16)+"\r\n")
-	if c.responseErr != nil {
-		return 0, c.responseErr
-	}
-	var n int
-	n, c.responseErr = c.netConn.Write(p)
-	if c.responseErr != nil {
-		return n, c.responseErr
-	}
-	_, c.responseErr = io.WriteString(c.netConn, "\r\n")
-	return n, c.responseErr
 }
 
 func (s *Server) serveConnection(netConn net.Conn) {

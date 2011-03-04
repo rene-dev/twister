@@ -29,7 +29,7 @@ var signatureTests = []struct {
 	credentials       Credentials
 	sig               string
 }{
-    {
+	{
 		"GeT",
 		"hTtp://pHotos.example.net/photos",
 		web.NewParamMap(
@@ -69,11 +69,11 @@ func TestSignature(t *testing.T) {
 		writeBaseString(&buf, st.method, st.url, st.param)
 		base := buf.String()
 		if base != st.base {
-            t.Errorf("base string for %s %s = %q, want %q", st.method, st.url, st.base, base)
+			t.Errorf("base string for %s %s = %q, want %q", st.method, st.url, st.base, base)
 		}
 		sig := signature(&st.clientCredentials, &st.credentials, st.method, st.url, st.param)
 		if sig != st.sig {
-            t.Errorf("signature for %s %s = %q, want %q", st.method, st.url, st.sig, sig)
+			t.Errorf("signature for %s %s = %q, want %q", st.method, st.url, st.sig, sig)
 		}
 	}
 }

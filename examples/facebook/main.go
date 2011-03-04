@@ -30,6 +30,11 @@ import (
 	"strconv"
 )
 
+var settings struct {
+	AppId     string
+	AppSecret string
+}
+
 // getUrlEncodedForm fetches a URL and decodes the response body as a URL encoded form.
 func getUrlEncodedForm(url string, param web.ParamMap) (web.ParamMap, os.Error) {
 	if param != nil {

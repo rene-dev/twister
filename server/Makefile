@@ -18,5 +18,7 @@ DEPS=../web
 TARG=github.com/garyburd/twister/server
 GOFILES=\
     server.go\
+    response.go\
+    log.go\
 
 include $(GOROOT)/src/Make.pkg
