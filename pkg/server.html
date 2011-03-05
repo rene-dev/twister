@@ -13,6 +13,8 @@
 <li><a href="#package">Package</a>
 <li><a href="#variables">Variables</a>
 <li><a href="#Run">func Run</a>
+<li><a href="#VerboseLogger">func VerboseLogger</a>
+<li><a href="#LogRecord">type LogRecord</a>
 <li><a href="#Server">type Server</a>
             <ul>
     <li><a href="#Server.Serve">func (*Server) Serve</a>
@@ -37,7 +39,7 @@ var (
 )
 </pre>
 
-<h2 id="Run">func <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/server/server.go#L478">Run</a></h2>
+<h2 id="Run">func <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L443">Run</a></h2>
 <p><code>func Run(addr string, handler web.Handler)</code></p>
 <p>
 Run is a convenience function for running an HTTP server. Run listens on the
@@ -72,6 +74,38 @@ func main() {
 }
 </pre>
 
+<h2 id="VerboseLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L58">VerboseLogger</a></h2>
+<p><code>func VerboseLogger(lr *LogRecord)</code></p>
+<p>
+VerboseLogger prints out just about everything about the request and response.
+</p>
+
+
+<h2 id="LogRecord">type LogRecord</h2>
+<p>
+LogRecord records information about a request for logging.
+</p>
+
+<pre>type LogRecord struct {
+ // The request, possibly modified by handlers.
+ Request *web.Request
+
+ // Errors encoutered while handling request. 
+ Error os.Error
+
+ // Response status.
+ Status int
+
+ // Response headers.
+ Header web.HeaderMap
+
+ // Number of bytes written to output including headers and transfer encoding.
+ Written int
+}</pre>
+
+
+
+
 
 <h2 id="Server">type Server</h2>
 <p>
@@ -99,12 +133,15 @@ Server defines parameters for running an HTTP server.
 
  // The net.Conn.SetWriteTimeout value for new connections.
  WriteTimeout int64
+
+ // Log the request.
+ Logger func(lr *LogRecord)
 }</pre>
 
 
 
 
-    <h3 id="Server.Serve">func (*Server) <a href="http://github.com/garyburd/twister/blob/6d63331f302a1add980d310638d18a5a40457b02/server/server.go#L438">Serve</a></h3>
+    <h3 id="Server.Serve">func (*Server) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L403">Serve</a></h3>
     <p><code>func (s *Server) Serve() os.Error</code></p>
     <p>
 Serve accepts incoming HTTP connections on s.Listener, creating a new
