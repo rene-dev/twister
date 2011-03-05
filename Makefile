@@ -1,6 +1,6 @@
 all: install
 
-DIRS=web server oauth websocket expvar examples/demo examples/twitter examples/facebook
+DIRS=web server oauth websocket expvar examples/demo examples/twitter examples/facebook examples/wiki
 TEST=web oauth server
 
 clean.dirs: $(addsuffix .clean, $(DIRS))

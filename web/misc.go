@@ -26,7 +26,7 @@ import (
 	"encoding/hex"
 )
 
-// ContentTypeHTML is short cut for UTF-8 encoded HTML.
+// ContentTypeHTML is the content type for UTF-8 encoded HTML.
 const ContentTypeHTML = "text/html; charset=\"utf-8\""
 
 // TimeLayout is the time layout used for HTTP headers and other values.
@@ -135,6 +135,7 @@ var statusText = map[int]string{
 	StatusHTTPVersionNotSupported:      "HTTP Version Not Supported",
 }
 
+// StatusText returns a text description of an HTTP status code.
 func StatusText(status int) string {
 	s, found := statusText[status]
 	if !found {
@@ -144,7 +145,7 @@ func StatusText(status int) string {
 }
 
 // ProtocolVersion combines HTTP major and minor protocol numbers into a single
-// integer for easy comparison.
+// integer for easy comparision of protocol versions.
 func ProtocolVersion(major int, minor int) int {
 	if minor > 999 {
 		minor = 999
@@ -199,7 +200,7 @@ func parseCookieValues(values []string, m ParamMap) os.Error {
 }
 
 func signature(secret, key, expiration, value string) string {
-	hm := hmac.NewSHA1([]byte(key))
+	hm := hmac.NewSHA1([]byte(secret))
 	io.WriteString(hm, key)
 	hm.Write([]byte{0})
 	io.WriteString(hm, expiration)
@@ -208,7 +209,30 @@ func signature(secret, key, expiration, value string) string {
 	return hex.EncodeToString(hm.Sum())
 }
 
-// SignValue timestamps and signs a string so that it cannot be forged.  
+// SignValue returns a string containing value, an expiration time and a
+// signature. The expiration time is computed from the current time and
+// maxAgeSeconds.  The signature is an HMAC SHA-1 signature of value, context
+// and the expiration time. Use the function VerifyValue to extract the value,
+// check the expiration time and verify the signature.
+// 
+// SignValue can be used to store credentials in a cookie:
+//
+//  var secret string // Initialized by application
+//  const uidCookieMaxAge = 3600 * 30
+//
+//  // uidCookieValue returns the Set-Cookie header value containing a 
+//  // signed and timestamped user id.
+//  func uidCookieValue(uid string) string {
+//      s := web.SignValue(secret, "uid", uidCookieMaxAge, uid)
+//      return web.NewCookie("uid", s).MaxAge(uidCookieMaxAge).String()
+//  }
+//
+//  // requestUid returns the user id from the request cookie. An error 
+//  // is returned if the cookie is missing, the value has expired or the
+//  // signature is not valid.
+//  func requestUid(req *web.Request) (string, os.Error) {
+//      return web.VerifyValue(secret, "uid", req.Cookie.Get("uid"))
+//  }
 func SignValue(secret, context string, maxAgeSeconds int, value string) string {
 	expiration := strconv.Itob64(time.Seconds()+int64(maxAgeSeconds), 16)
 	sig := signature(secret, context, expiration, value)
@@ -217,7 +241,8 @@ func SignValue(secret, context string, maxAgeSeconds int, value string) string {
 
 var errVerificationFailure = os.NewError("verification failed")
 
-// VerifyValue verifies a timestamped and signed value. 
+// VerifyValue extracts a value from a string created by SignValue. An error is
+// returned if the expiration time has elapsed or the signature is not correct.
 func VerifyValue(secret, context string, signedValue string) (string, os.Error) {
 	a := strings.Split(signedValue, "~", 3)
 	if len(a) != 3 {
@@ -243,7 +268,7 @@ func VerifyValue(secret, context string, signedValue string) (string, os.Error) 
 	return a[2], nil
 }
 
-// Cookie is an HTTP cookie. 
+// Cookie is a helper for constructing Set-Cookie header values.
 type Cookie struct {
 	name     string
 	value    string
@@ -279,7 +304,7 @@ func (c *Cookie) Delete() *Cookie { return c.MaxAgeDays(-30).HTTPOnly(false) }
 // defaults to false.
 func (c *Cookie) Secure(secure bool) *Cookie { c.secure = secure; return c }
 
-// Secure sets the httponly attribute on the cookie. The httponly attribute
+// HTTPOnly sets the httponly attribute on the cookie. The httponly attribute
 // defaults to true.
 func (c *Cookie) HTTPOnly(httpOnly bool) *Cookie {
 	c.httpOnly = httpOnly

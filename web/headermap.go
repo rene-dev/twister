@@ -73,9 +73,12 @@ var (
 	ErrHeadersTooLong = os.NewError("too many HTTP headers")
 )
 
-// HeaderMap maps canonical header names to slices of strings. Use the
-// functions HeaderName and HeaderNameBytes to convert names to canonical
-// format.
+// HeaderMap maps header names to a slice of header values. 
+// 
+// The header names must be in canonical format: all leters are lower case
+// except for the first letter and letters following a '-'. The Header*
+// constants are in canonical format. The function HeaderName converts a string
+// to canonical format.
 type HeaderMap map[string][]string
 
 // NewHeaderMap returns a map initialized with the given key-value pairs.

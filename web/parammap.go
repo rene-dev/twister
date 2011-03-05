@@ -20,7 +20,7 @@ import (
 	"os"
 )
 
-// ParamMap maps strings to slices of strings.
+// ParamMap maps parameter names to slices of paramete values.
 type ParamMap map[string][]string
 
 // NewParamMap returns a map initialized with the given key-value pairs.
@@ -55,7 +55,7 @@ func (m ParamMap) Set(key string, value string) {
 }
 
 // StringMap returns a string to string map by discarding all but the first
-// value for a key.
+// value for a key. 
 func (m ParamMap) StringMap() map[string]string {
 	result := make(map[string]string)
 	for key, values := range m {
