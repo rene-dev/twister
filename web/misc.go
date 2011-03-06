@@ -153,7 +153,8 @@ func ProtocolVersion(major int, minor int) int {
 	return major*1000 + minor
 }
 
-// Commonly used protocol versions in format returned by ProtocolVersion.
+// Commonly used protocol versions in format returned by the ProtocolVersion
+// function.
 const (
 	ProtocolVersion10 = 1000 // HTTP/1.0
 	ProtocolVersion11 = 1001 // HTTP/1.1
@@ -222,7 +223,7 @@ func signature(secret, key, expiration, value string) string {
 // SignValue can be used to store credentials in a cookie:
 //
 //  var secret string // Initialized by application
-//  const uidCookieMaxAge = 3600 * 30
+//  const uidCookieMaxAge = 3600 * 24 * 30
 //
 //  // uidCookieValue returns the Set-Cookie header value containing a 
 //  // signed and timestamped user id.
@@ -280,8 +281,8 @@ func VerifyValue(secret, context string, signedValue string) (string, os.Error) 
 // support any RFC for cookies because the RFCs are not supported by popular
 // browsers.
 //
-// A new cookie starts with the path attribute set to "/" and the HttpOnly
-// attribute set to true. 
+// As a convenience, the NewCookie function returns a cookie with the path
+// attribute set to "/" and the httponly attribute set to true. 
 //
 // The following example shows how to set a cookie header using Cookie:
 //
@@ -301,38 +302,37 @@ type Cookie struct {
 }
 
 // NewCookie returns a new cookie with the given name and value, the path
-// attribute set to "/" and HttpOnly set to true.
+// attribute set to "/" and the httponly attribute set to true.
 func NewCookie(name, value string) *Cookie {
 	return &Cookie{name: name, value: value, path: "/", httpOnly: true}
 }
 
-// Path sets the path attribute for the cookie. The path defaults to "/".
+// Path sets the cookie path attribute. The path must either be "" or start with a
+// '/'.  The NewCookie function initializes the path to "/". If the path is "",
+// then the path attribute is not included in the header value. 
 func (c *Cookie) Path(path string) *Cookie { c.path = path; return c }
 
-// Domain sets the domain attribute for the cookie.
+// Domain sets the cookie domain attribute. If the host is "", then the domain
+// attribute is not included in the header value. 
 func (c *Cookie) Domain(domain string) *Cookie { c.domain = domain; return c }
 
-// MaxAge specifies the maximum age for a cookie. Because some popular browsers
-// do not support the "maxage" cookie attribute, the age is converted to an
-// absolute expiration time when the cookie is rendered as a string.
-//
-// To create a sesession cookie (no expiration time), leave the maximum age at
-// the default value of zero or set the maximum age to zero.
+// MaxAge specifies the maximum age for a cookie. The age is converted to an
+// absolute expiration time when the header value is rendered. If the maximum
+// age is 0, then the expiration time is not included in the header value
+// and the browser will handle the cookie as a "session" cookie.
 func (c *Cookie) MaxAge(seconds int) *Cookie { c.maxAge = seconds; return c }
 
 // MaxAgeDays sets the maximum age for the cookie in days.
 func (c *Cookie) MaxAgeDays(days int) *Cookie { return c.MaxAge(days * 60 * 60 * 24) }
 
-// Delete sets the expiration date for the cookie in the past. This will cause
-// clients to delete the cookie.
+// Delete sets the expiration date to a time in the past. 
 func (c *Cookie) Delete() *Cookie { return c.MaxAgeDays(-30).HTTPOnly(false) }
 
-// Secure sets the secure attribute on the cookie. The secure attribute
-// defaults to false.
+// Secure sets the secure attribute. 
 func (c *Cookie) Secure(secure bool) *Cookie { c.secure = secure; return c }
 
-// HTTPOnly sets the httponly attribute on the cookie. The httponly attribute
-// defaults to true.
+// HTTPOnly sets the httponly attribute. The NewCookie function
+// initializes the httponly attribute to true.
 func (c *Cookie) HTTPOnly(httpOnly bool) *Cookie {
 	c.httpOnly = httpOnly
 	return c

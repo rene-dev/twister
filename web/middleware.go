@@ -36,11 +36,11 @@ func FilterRespond(req *Request, filter func(status int, header HeaderMap) (int,
 	req.Responder = &filterResponder{req.Responder, filter}
 }
 
-// SetErrorHandler returns a handler that sets the request's error handler to the supplied handler.
-func SetErrorHandler(errorHandler ErrorHandler, handler Handler) Handler {
+// SetErrorHandler returns a handler that sets the request's error handler e.
+func SetErrorHandler(e ErrorHandler, h Handler) Handler {
 	return HandlerFunc(func(req *Request) {
-		req.ErrorHandler = errorHandler
-		handler.ServeWeb(req)
+		req.ErrorHandler = e
+		h.ServeWeb(req)
 	})
 }
 
