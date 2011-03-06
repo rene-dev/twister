@@ -234,7 +234,7 @@ func (w *chunkedResponseBody) Write(p []byte) (int, os.Error) {
 			if w.err != nil {
 				break
 			}
-			n = len(w.buf) - 2 // 2 for CRLF after data
+			n = len(w.buf) - w.n - 2 // 2 for CRLF after data
 		}
 		if n > len(p) {
 			n = len(p)

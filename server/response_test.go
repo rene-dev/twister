@@ -42,6 +42,8 @@ var chunkedResponseTests = []struct {
 	{[]int{0, 27}, "1a\r\n" + dots[:26] + "\r\n01\r\n" + "." + "\r\n0\r\n\r\n"},
 	// Flush before and after chunk
 	{[]int{10, -1, 10, -1}, dots[:10] + "0a\r\n" + dots[:10] + "\r\n0\r\n\r\n"},
+	// Write spanning multiple chunks
+	{[]int{0, 53}, "1a\r\n" + dots[:26] + "\r\n1a\r\n" + dots[:26] + "\r\n01\r\n.\r\n0\r\n\r\n"},
 	// Chunk in multipe writes
 	{[]int{10, -1, 5, 5, -1}, dots[:10] + "0a\r\n" + dots[:10] + "\r\n0\r\n\r\n"},
 	{[]int{10, -1, 5, -1, 5, -1}, dots[:10] + "05\r\n" + dots[:5] + "\r\n05\r\n" + dots[:5] + "\r\n0\r\n\r\n"},
