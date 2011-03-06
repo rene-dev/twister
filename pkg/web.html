@@ -300,7 +300,7 @@ FormatDeltaDays returns current time plus delta formatted per HTTP conventions.
 FormatDeltaSeconds returns current time plus delta formatted per HTTP conventions.
 </p>
 
-<h2 id="HTMLEscapeString">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L349">HTMLEscapeString</a></h2>
+<h2 id="HTMLEscapeString">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L376">HTMLEscapeString</a></h2>
 <p><code>func HTMLEscapeString(s string) string</code></p>
 <p>
 HTMLEscapeString returns s with special HTML characters escaped.
@@ -365,7 +365,7 @@ RunHandler runs the handler with a request created from the arguments and
 returns the response. This function is intended to be used in tests.
 </p>
 
-<h2 id="SignValue">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L236">SignValue</a></h2>
+<h2 id="SignValue">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L240">SignValue</a></h2>
 <p><code>func SignValue(secret, context string, maxAgeSeconds int, value string) string</code></p>
 <p>
 SignValue returns a string containing value, an expiration time and a
@@ -408,7 +408,7 @@ UnquoteHeaderValue unquotes s if s is surrounded by quotes, otherwise s is
 returned.
 </p>
 
-<h2 id="VerifyValue">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L246">VerifyValue</a></h2>
+<h2 id="VerifyValue">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L250">VerifyValue</a></h2>
 <p><code>func VerifyValue(secret, context string, signedValue string) (string, os.Error)</code></p>
 <p>
 VerifyValue extracts a value from a string created by SignValue. An error is
@@ -420,6 +420,26 @@ returned if the expiration time has elapsed or the signature is not correct.
 <p>
 Cookie is a helper for constructing Set-Cookie header values.
 </p>
+<p>
+Cookie supports the ancient Netscape draft specification for cookies
+(<a href="http://goo.gl/1WSx3">http://goo.gl/1WSx3</a>) and the modern HttpOnly attribute
+(<a href="http://www.owasp.org/index.php/HttpOnly">http://www.owasp.org/index.php/HttpOnly</a>). Cookie does not attempt to
+support any RFC for cookies because the RFCs are not supported by popular
+browsers.
+</p>
+<p>
+A new cookie starts with the path attribute set to &#34;/&#34; and the HttpOnly
+attribute set to true.
+</p>
+<p>
+The following example shows how to set a cookie header using Cookie:
+</p>
+<pre>func myHandler(req *web.Request) {
+    c := web.NewCookie(&#34;my-cookie-name&#34;, &#34;my-cookie-value&#34;).String()
+    w := req.Respond(web.StatusOK, web.HeaderSetCookie, c)
+    io.WriteString(w, &#34;&lt;html&gt;&lt;body&gt;Hello&lt;/body&gt;&lt;/html&gt;&#34;)
+}
+</pre>
 
 <pre>type Cookie struct {
  // contains unexported fields
@@ -427,62 +447,69 @@ Cookie is a helper for constructing Set-Cookie header values.
 
 
 
-    <h3 id="NewCookie">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L283">NewCookie</a></h3>
+    <h3 id="NewCookie">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L305">NewCookie</a></h3>
     <p><code>func NewCookie(name, value string) *Cookie</code></p>
     <p>
-NewCookie returns a new cookie with parameters name=value; path=/; httponly.
+NewCookie returns a new cookie with the given name and value, the path
+attribute set to &#34;/&#34; and HttpOnly set to true.
 </p>
 
 
-    <h3 id="Cookie.Delete">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L301">Delete</a></h3>
+    <h3 id="Cookie.Delete">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L328">Delete</a></h3>
     <p><code>func (c *Cookie) Delete() *Cookie</code></p>
     <p>
 Delete sets the expiration date for the cookie in the past. This will cause
 clients to delete the cookie.
 </p>
 
-    <h3 id="Cookie.Domain">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L291">Domain</a></h3>
+    <h3 id="Cookie.Domain">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L313">Domain</a></h3>
     <p><code>func (c *Cookie) Domain(domain string) *Cookie</code></p>
     <p>
-Domain sets the domain for the cookie.
+Domain sets the domain attribute for the cookie.
 </p>
 
-    <h3 id="Cookie.HTTPOnly">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L309">HTTPOnly</a></h3>
+    <h3 id="Cookie.HTTPOnly">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L336">HTTPOnly</a></h3>
     <p><code>func (c *Cookie) HTTPOnly(httpOnly bool) *Cookie</code></p>
     <p>
 HTTPOnly sets the httponly attribute on the cookie. The httponly attribute
 defaults to true.
 </p>
 
-    <h3 id="Cookie.MaxAge">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L294">MaxAge</a></h3>
+    <h3 id="Cookie.MaxAge">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L321">MaxAge</a></h3>
     <p><code>func (c *Cookie) MaxAge(seconds int) *Cookie</code></p>
     <p>
-MaxAge sets the maximum age for the cookie in seconds.
+MaxAge specifies the maximum age for a cookie. Because some popular browsers
+do not support the &#34;maxage&#34; cookie attribute, the age is converted to an
+absolute expiration time when the cookie is rendered as a string.
+</p>
+<p>
+To create a sesession cookie (no expiration time), leave the maximum age at
+the default value of zero or set the maximum age to zero.
 </p>
 
-    <h3 id="Cookie.MaxAgeDays">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L297">MaxAgeDays</a></h3>
+    <h3 id="Cookie.MaxAgeDays">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L324">MaxAgeDays</a></h3>
     <p><code>func (c *Cookie) MaxAgeDays(days int) *Cookie</code></p>
     <p>
 MaxAgeDays sets the maximum age for the cookie in days.
 </p>
 
-    <h3 id="Cookie.Path">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L288">Path</a></h3>
+    <h3 id="Cookie.Path">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L310">Path</a></h3>
     <p><code>func (c *Cookie) Path(path string) *Cookie</code></p>
     <p>
-Path sets the path for the cookie. The path defaults to &#34;/&#34;
+Path sets the path attribute for the cookie. The path defaults to &#34;/&#34;.
 </p>
 
-    <h3 id="Cookie.Secure">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L305">Secure</a></h3>
+    <h3 id="Cookie.Secure">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L332">Secure</a></h3>
     <p><code>func (c *Cookie) Secure(secure bool) *Cookie</code></p>
     <p>
 Secure sets the secure attribute on the cookie. The secure attribute
 defaults to false.
 </p>
 
-    <h3 id="Cookie.String">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L315">String</a></h3>
+    <h3 id="Cookie.String">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L342">String</a></h3>
     <p><code>func (c *Cookie) String() string</code></p>
     <p>
-String returns the Set-Cookie header value for the cookie.
+String renders the Set-Cookie header value as a string.
 </p>
 
 
