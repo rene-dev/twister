@@ -24,7 +24,7 @@ import (
 
 // Octet types from RFC 2616
 var (
-	isText  [256]bool
+	isCtl   [256]bool
 	isToken [256]bool
 	isSpace [256]bool
 )
@@ -47,12 +47,11 @@ func init() {
 	// qdtext     = <any TEXT except <">>
 
 	for c := 0; c < 256; c++ {
-		isCtl := (0 <= c && c <= 31) || c == 127
+		isCtl[c] = (0 <= c && c <= 31) || c == 127
 		isChar := 0 <= c && c <= 127
 		isSpace[c] = strings.IndexRune(" \t\r\n", c) >= 0
 		isSeparator := strings.IndexRune(" \t\"(),/:;<=>?@[]\\{}", c) >= 0
-		isText[c] = isSpace[c] || !isCtl
-		isToken[c] = isChar && !isCtl && !isSeparator
+		isToken[c] = isChar && !isCtl[c] && !isSeparator
 	}
 }
 
@@ -171,9 +170,10 @@ func (m HeaderMap) WriteHttpHeader(w io.Writer) os.Error {
 				return err
 			}
 			valueBytes := []byte(value)
-			// Convert \r and \n to space to prevent response splitting attacks.
+			// Convert \r, \n and other control characters to space to 
+			// prevent response splitting attacks.
 			for i, c := range valueBytes {
-				if c == '\r' || c == '\n' {
+				if isCtl[c] {
 					valueBytes[i] = ' '
 				}
 			}
