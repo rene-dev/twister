@@ -36,6 +36,7 @@ type testListener struct {
 	in, out     bytes.Buffer
 	done        chan bool
 	acceptCount int
+	readToEOF   bool
 }
 
 func (l *testListener) Accept() (conn net.Conn, err os.Error) {
@@ -60,7 +61,11 @@ type testConn struct {
 }
 
 func (c testConn) Read(b []byte) (int, os.Error) {
-	return c.in.Read(b)
+	n, err := c.in.Read(b)
+	if err == os.EOF {
+		c.readToEOF = true
+	}
+	return n, err
 }
 
 func (c testConn) Write(b []byte) (int, os.Error) {
@@ -105,47 +110,62 @@ func testHandler(req *web.Request) {
 }
 
 var serverTests = []struct {
-	in  string
-	out string
+	in        string
+	out       string
+	readToEOF bool
 }{
+	{
+		"GET / HTTP/1.0\r\n\r\n",
+		"HTTP/1.0 200 OK\r\nConnection: close\r\n\r\n",
+		false,
+	},
 	{
 		"GET /?w=Hello HTTP/1.0\r\n\r\n",
 		"HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nHello",
+		false,
 	},
 	{
 		"GET /?w=Hello HTTP/1.0\r\nConnection: keep-alive\r\n\r\n",
 		"HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nHello",
+		false,
 	},
 	{
 		"GET /?cl=5&w=Hello HTTP/1.0\r\n\r\n",
 		"HTTP/1.0 200 OK\r\nConnection: close\r\nContent-Length: 5\r\n\r\nHello",
+		false,
 	},
 	{
 		"GET /?cl=5&w=Hello HTTP/1.0\r\nConnection: keep-alive\r\n\r\n",
 		"HTTP/1.0 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		true,
 	},
 	{
 		"GET /?w=Hello HTTP/1.1\r\n\r\n",
 		"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n",
+		true,
 	},
 	{
 		"GET /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
 		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		true,
 	},
 	{
 		// POST
 		"POST /?cl=5 HTTP/1.1\r\nContent-Length: 7\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nw=Hello",
 		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		true,
 	},
 	{
 		// POST with expect
 		"POST /?cl=5 HTTP/1.1\r\nContent-Length: 7\r\nContent-Type: application/x-www-form-urlencoded\r\nExpect: 100-continue\r\n\r\nw=Hello",
 		"HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		true,
 	},
 	{
 		// Expect connection close because request body not read by handler.
 		"POST /?cl=0 HTTP/1.1\r\nContent-Length: 7\r\n\r\nw=Hello",
 		"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
+		false,
 	},
 	{
 		// Two requests with identity encoded resposne.
@@ -153,6 +173,7 @@ var serverTests = []struct {
 			"GET /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
 		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello" +
 			"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		true,
 	},
 	{
 		// Two requests with chunked encoded response.
@@ -160,11 +181,13 @@ var serverTests = []struct {
 			"GET /?w=Hello HTTP/1.1\r\n\r\n",
 		"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n" +
 			"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n",
+		true,
 	},
 	{
 		// HEAD
 		"HEAD /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
 		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n",
+		true,
 	},
 }
 
@@ -180,6 +203,9 @@ func TestServer(t *testing.T) {
 		out := l.out.String()
 		if out != st.out {
 			t.Errorf("in=%q\ngot:  %q\nwant: %q", st.in, out, st.out)
+		}
+		if l.readToEOF != st.readToEOF {
+			t.Errorf("in=%q readToEOF = %v, want %v", st.in, l.readToEOF, st.readToEOF)
 		}
 	}
 }
