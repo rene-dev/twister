@@ -44,7 +44,7 @@ func main() {
 		return
 	}
 	defer listener.Close()
-	err = (&server.Server{Listener: listener, Handler: h, Logger: server.VerboseLogger}).Serve()
+	err = (&server.Server{Listener: listener, Handler: h, Logger: server.LoggerFunc(server.VerboseLogger)}).Serve()
 	if err != nil {
 		log.Fatal("Server", err)
 	}

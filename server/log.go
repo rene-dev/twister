@@ -20,7 +20,10 @@ import (
 	"io"
 	"log"
 	"github.com/garyburd/twister/web"
+	"net"
 	"os"
+	"sync"
+	"time"
 )
 
 // LogRecord records information about a request for logging.
@@ -39,6 +42,9 @@ type LogRecord struct {
 
 	// Number of bytes written to output including headers and transfer encoding.
 	Written int
+
+	// Number of header bytes written including transfer encoding.
+	HeaderWritten int
 
 	// True if connection hijacked.
 	Hijacked bool
@@ -84,7 +90,66 @@ func VerboseLogger(lr *LogRecord) {
 		fmt.Fprintf(b, "  Error: %v\n", lr.Error)
 		fmt.Fprintf(b, "  Status: %d\n", lr.Status)
 		fmt.Fprintf(b, "  Written: %d\n", lr.Written)
+		fmt.Fprintf(b, "  HeaderWritten: %d\n", lr.HeaderWritten)
 		writeStringMap(b, "Header", lr.Header)
 	}
 	log.Print(b.String())
 }
+
+// ApacheCombinedLogger writes Apache Combined Log style logs to the given writer.
+//
+// Example usage:
+//
+//   logFile, err := os.Open("access.log", os.O_CREAT|os.O_WRONLY|os.O_APPEND, 0644)
+//   if err != nil {
+//       panic(fmt.Sprintf("Failed to open \"access.log\": %s", err.String()))
+//   }
+//
+//   defer logFile.Close()
+//   logger := server.NewApacheCombinedLogger(logFile)
+type ApacheCombinedLogger struct {
+	mutex sync.Mutex
+	w io.Writer
+}
+
+const ApacheTimeFormat = "02/Jan/2006:15:04:05 -0700"
+
+// NewApacheCombinedLogger creates a new Apache logger.
+func NewApacheCombinedLogger(w io.Writer) *ApacheCombinedLogger {
+	return &ApacheCombinedLogger{w: w}
+}
+
+// SwitchFiles switches the output of the logger to the new writer.
+func (acl *ApacheCombinedLogger) SwitchFiles(w io.Writer) {
+	acl.mutex.Lock()
+	defer acl.mutex.Unlock()
+
+	acl.w = w
+}
+
+func (acl *ApacheCombinedLogger) Log(lr *LogRecord) {
+	if acl.w == nil {
+		return
+	}
+
+	tcpaddr, err := net.ResolveTCPAddr(lr.Request.RemoteAddr)
+	if err != nil {
+		log.Print(fmt.Sprintf("Failed to resolve \"%s\": %s", lr.Request.RemoteAddr, err.String()))
+		return
+	}
+
+	var b = &bytes.Buffer{}
+	fmt.Fprintf(b, "%s - - [%s] ", tcpaddr.IP, time.LocalTime().Format(ApacheTimeFormat))
+	fmt.Fprintf(b, "\"%s %s HTTP/%d.%d\" ",
+		lr.Request.Method, lr.Request.URL, lr.Request.ProtocolVersion/1000, lr.Request.ProtocolVersion%1000)
+	fmt.Fprintf(b, "%d %d \"%s\" \"%s\"\n",
+		lr.Status, lr.Written-lr.HeaderWritten, lr.Request.Header.Get(web.HeaderReferer),
+		lr.Request.Header.Get(web.HeaderUserAgent))
+
+	// Lock to make sure that we don't write while log output is being changed.
+	acl.mutex.Lock()
+	defer acl.mutex.Unlock()
+
+	acl.w.Write(b.Bytes())
+}
+

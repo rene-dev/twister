@@ -3,7 +3,7 @@ run: example
  
 include $(GOROOT)/src/Make.inc
 
-DEPS=$(GOROOT)/src/pkg/github.com/garyburd/twister/server $(GOROOT)/src/pkg/github.com/garyburd/twister/oauth
+DEPS=../../server ../../oauth
 TARG=example
 GOFILES=\
     main.go\

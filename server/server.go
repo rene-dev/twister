@@ -57,8 +57,19 @@ type Server struct {
 	WriteTimeout int64
 
 	// Log the request.
-	Logger func(lr *LogRecord)
+	Logger LogHandler
 }
+
+// LogHandler defines an interface for logging a request.
+type LogHandler interface {
+	Log(lr *LogRecord)
+}
+
+// LoggerFunc is a type adapter to allow the use of ordinary functions as LogHandlers.
+type LoggerFunc func(*LogRecord)
+
+// Log calls f(lr).
+func (f LoggerFunc) Log(lr *LogRecord) { f(lr) }
 
 // transaction represents a single request-response transaction.
 type transaction struct {
@@ -293,7 +304,7 @@ func (t *transaction) Hijack() (conn net.Conn, buf []byte, err os.Error) {
 	}
 
 	if t.server.Logger != nil {
-		t.server.Logger(&LogRecord{
+		t.server.Logger.Log(&LogRecord{
 			Request:  t.req,
 			Header:   t.header,
 			Hijacked: true,
@@ -315,9 +326,9 @@ func (t *transaction) finish() os.Error {
 	if !t.respondCalled {
 		t.req.Respond(web.StatusOK, web.HeaderContentType, "text/html charset=utf-8")
 	}
-	var written int
+	var responseData responseData
 	if t.responseErr == nil {
-		written, t.responseErr = t.responseBody.finish()
+		responseData, t.responseErr = t.responseBody.finish()
 	}
 	if t.responseErr != nil {
 		t.closeAfterResponse = true
@@ -332,8 +343,9 @@ func (t *transaction) finish() os.Error {
 				err = nil
 			}
 		}
-		t.server.Logger(&LogRecord{
-			Written: written,
+		t.server.Logger.Log(&LogRecord{
+			HeaderWritten: responseData.headerWritten,
+			Written: responseData.written,
 			Request: t.req,
 			Header:  t.header,
 			Status:  t.status,
@@ -459,7 +471,7 @@ func Run(addr string, handler web.Handler) {
 		return
 	}
 	defer listener.Close()
-	err = (&Server{Logger: ShortLogger, Listener: listener, Handler: handler}).Serve()
+	err = (&Server{Logger: LoggerFunc(ShortLogger), Listener: listener, Handler: handler}).Serve()
 	if err != nil {
 		log.Fatal("Server", err)
 	}
