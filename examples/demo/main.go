@@ -18,18 +18,19 @@ func homeHandler(req *web.Request) {
 func main() {
 	flag.Parse()
 	h := web.SetErrorHandler(coreErrorHandler,
-		web.ProcessForm(10000, true, web.NewHostRouter(nil).
-			Register("www.example.com", web.NewRouter().
-			Register("/", "GET", homeHandler).
-			Register("/core/file", "GET", web.FileHandler("static/file.txt")).
-			Register("/static/<path:.*>", "GET", web.DirectoryHandler("static/")).
-			Register("/chat", "GET", chatFrameHandler).
-			Register("/chat/ws", "GET", chatWsHandler).
-			Register("/mp", "GET", mpGetHandler, "POST", mpPostHandler).
-			Register("/core/", "GET", coreHandler).
-			Register("/core/a/<a>/", "GET", coreHandler).
-			Register("/core/b/<b>/c/<c>", "GET", coreHandler).
-			Register("/core/c", "POST", coreHandler))))
+		web.ProxyHeaderHandler("X-Real-Ip", "X-Scheme",
+			web.FormHandler(10000, true, web.NewHostRouter(nil).
+				Register("www.example.com", web.NewRouter().
+				Register("/", "GET", homeHandler).
+				Register("/core/file", "GET", web.FileHandler("static/file.txt")).
+				Register("/static/<path:.*>", "GET", web.DirectoryHandler("static/")).
+				Register("/chat", "GET", chatFrameHandler).
+				Register("/chat/ws", "GET", chatWsHandler).
+				Register("/mp", "GET", mpGetHandler, "POST", mpPostHandler).
+				Register("/core/", "GET", coreHandler).
+				Register("/core/a/<a>/", "GET", coreHandler).
+				Register("/core/b/<b>/c/<c>", "GET", coreHandler).
+				Register("/core/c", "POST", coreHandler)))))
 
 	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {

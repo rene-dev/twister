@@ -50,8 +50,71 @@ const (
 	XSRFParamName  = "xsrf"
 )
 
-// ProcessForm returns a handler that parses URL encoded forms if smaller than the 
-// specified size.
+// ProxyHeaderHandler returns a handler that overrides the Request.RemoteAddr field
+// with the value of the header specified by addrName and the
+// Request.URL.Scheme field with the value of the header specified by
+// schemeName. No fix up is done for a field if the header name equals "" or the
+// header is not present.
+//
+// The header names must be in canonical header name format.
+// 
+// Here's an example of how to use this handler with Nginx. In the nginx proxy
+// configuration, specify a header for the IP address and scheme. The host
+// header should also be passed through the proxy:
+//
+//    location / {
+//        proxy_set_header X-Real-IP $remote_addr;
+//        proxy_set_header X-Scheme $scheme;
+//        proxy_set_header Host $http_host;
+//        proxy_pass http://127.0.0.1:8080;
+//    }       
+//
+// In the main function for the application, wrap the application handler with
+// the proxy fix up:
+//  
+//  import (
+//      "github.com/garyburd/twister/web"
+//      "github.com/garyburd/twister/server"
+//  )
+//
+//  func main() {
+//      var h web.Handler
+//      ... setup the application handler
+//      h = web.ProxyHeaderHandler("X-Scheme", "X-Real-Ip", h)
+//	    server.Run(":8080", h)
+//  }
+func ProxyHeaderHandler(addrName, schemeName string, h Handler) Handler {
+	return proxyHeaderHandler{
+		addrName:   addrName,
+		schemeName: schemeName,
+		h:          h,
+	}
+}
+
+type proxyHeaderHandler struct {
+	addrName, schemeName string
+	h                    Handler
+}
+
+func (h proxyHeaderHandler) ServeWeb(req *Request) {
+	if s := req.Header.Get(h.addrName); s != "" {
+		req.RemoteAddr = s
+	}
+	if s := req.Header.Get(h.schemeName); s != "" {
+		req.URL.Scheme = s
+	}
+	h.h.ServeWeb(req)
+}
+
+// PorcessForm is deprecated. Use FormHandler.
+func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler {
+	return FormHandler(maxRequestBodyLen, checkXSRF, handler)
+}
+
+// FormHandler returns a handler that parses form encoded request bodies.
+//
+// If the request body is larger than maxRequestBodyLen, then the handler
+// responds with an error instead of parsing the request body.
 //
 // If xsrfCheck is true, then cross-site request forgery protection is enabled.
 // The handler rejects POST, PUT, and DELETE requests if the handler does not
@@ -66,60 +129,71 @@ const (
 //
 // See http://en.wikipedia.org/wiki/Cross-site_request_forgery for information
 // on cross-site request forgery.
-func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler {
-	return HandlerFunc(func(req *Request) {
+func FormHandler(maxRequestBodyLen int, checkXSRF bool, h Handler) Handler {
+	return formHandler{
+		maxRequestBodyLen: maxRequestBodyLen,
+		checkXSRF:         checkXSRF,
+		h:                 h,
+	}
+}
 
-		if err := req.ParseForm(maxRequestBodyLen); err != nil {
-			status := StatusBadRequest
-			if err == ErrRequestEntityTooLarge {
-				status = StatusRequestEntityTooLarge
-				if e := req.Header.Get(HeaderExpect); e != "" {
-					status = StatusExpectationFailed
-				}
-			}
-			req.Error(status, os.NewError("twister: Error reading or parsing form."))
-			return
-		}
+type formHandler struct {
+	maxRequestBodyLen int
+	checkXSRF         bool
+	h                 Handler
+}
 
-		if checkXSRF {
-			const tokenLen = 8
-			expectedToken := req.Cookie.Get(XSRFCookieName)
-
-			// Create new XSRF token?
-			if len(expectedToken) != tokenLen {
-				p := make([]byte, tokenLen/2)
-				_, err := rand.Reader.Read(p)
-				if err != nil {
-					panic("twister: rand read failed")
-				}
-				expectedToken = hex.EncodeToString(p)
-				c := NewCookie(XSRFCookieName, expectedToken).String()
-				FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
-					header.Add(HeaderSetCookie, c)
-					return status, header
-				})
-			}
-
-			actualToken := req.Param.Get(XSRFParamName)
-			if actualToken == "" {
-				actualToken = req.Header.Get(HeaderXXSRFToken)
-				req.Param.Set(XSRFParamName, expectedToken)
-			}
-			if expectedToken != actualToken {
-				req.Param.Set(XSRFParamName, expectedToken)
-				if req.Method == "POST" ||
-					req.Method == "PUT" ||
-					req.Method == "DELETE" {
-					err := os.NewError("twister: bad xsrf token")
-					if actualToken == "" {
-						err = os.NewError("twister: missing xsrf token")
-					}
-					req.Error(StatusNotFound, err)
-					return
-				}
+func (h formHandler) ServeWeb(req *Request) {
+	if err := req.ParseForm(h.maxRequestBodyLen); err != nil {
+		status := StatusBadRequest
+		if err == ErrRequestEntityTooLarge {
+			status = StatusRequestEntityTooLarge
+			if e := req.Header.Get(HeaderExpect); e != "" {
+				status = StatusExpectationFailed
 			}
 		}
+		req.Error(status, os.NewError("twister: Error reading or parsing form."))
+		return
+	}
 
-		handler.ServeWeb(req)
-	})
+	if h.checkXSRF {
+		const tokenLen = 8
+		expectedToken := req.Cookie.Get(XSRFCookieName)
+
+		// Create new XSRF token?
+		if len(expectedToken) != tokenLen {
+			p := make([]byte, tokenLen/2)
+			_, err := rand.Reader.Read(p)
+			if err != nil {
+				panic("twister: rand read failed")
+			}
+			expectedToken = hex.EncodeToString(p)
+			c := NewCookie(XSRFCookieName, expectedToken).String()
+			FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
+				header.Add(HeaderSetCookie, c)
+				return status, header
+			})
+		}
+
+		actualToken := req.Param.Get(XSRFParamName)
+		if actualToken == "" {
+			actualToken = req.Header.Get(HeaderXXSRFToken)
+			req.Param.Set(XSRFParamName, expectedToken)
+		}
+		if expectedToken != actualToken {
+			req.Param.Set(XSRFParamName, expectedToken)
+			if req.Method == "POST" ||
+				req.Method == "PUT" ||
+				req.Method == "DELETE" {
+				err := os.NewError("twister: bad xsrf token")
+				if actualToken == "" {
+					err = os.NewError("twister: missing xsrf token")
+				}
+				req.Error(StatusNotFound, err)
+				return
+			}
+		}
+	}
+
+	h.h.ServeWeb(req)
 }
