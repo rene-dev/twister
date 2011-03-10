@@ -60,7 +60,7 @@ type Responder interface {
 	Hijack() (conn net.Conn, buf []byte, err os.Error)
 }
 
-// Request represents an HTTP request.
+// Request represents an HTTP request to the server.
 type Request struct {
 	Responder Responder // The response.
 
@@ -103,7 +103,7 @@ type Request struct {
 	Body RequestBody
 
 	// Attributes attached to the request by middleware. 
-	Attributes map[string]interface{}
+	Attribute map[string]interface{}
 
 	formParsed bool
 }
@@ -136,7 +136,7 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 		Param:           make(ParamMap),
 		Header:          header,
 		Cookie:          make(ParamMap),
-		Attributes:      make(map[string]interface{}),
+		Attribute:       make(map[string]interface{}),
 	}
 
 	err = req.Param.ParseFormEncodedBytes([]byte(req.URL.RawQuery))

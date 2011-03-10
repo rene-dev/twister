@@ -98,9 +98,11 @@ type proxyHeaderHandler struct {
 
 func (h proxyHeaderHandler) ServeWeb(req *Request) {
 	if s := req.Header.Get(h.addrName); s != "" {
+		req.Attribute["web.OriginalRemoteAddr"] = req.RemoteAddr
 		req.RemoteAddr = s
 	}
 	if s := req.Header.Get(h.schemeName); s != "" {
+		req.Attribute["web.OriginalScheme"] = req.URL.Scheme
 		req.URL.Scheme = s
 	}
 	h.h.ServeWeb(req)
