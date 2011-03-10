@@ -55,16 +55,6 @@ func init() {
 	}
 }
 
-// IsTokenByte returns true if c is a token character as defined by RFC 2616
-func IsTokenByte(c byte) bool {
-	return isToken[c]
-}
-
-// IsSpaceByte returns true if c is a space character as defined by RFC 2616
-func IsSpaceByte(c byte) bool {
-	return isSpace[c]
-}
-
 var (
 	ErrLineTooLong    = os.NewError("HTTP header line too long")
 	ErrBadHeaderLine  = os.NewError("could not parse HTTP header line")
@@ -235,7 +225,7 @@ func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
 			return ErrLineTooLong
 		}
 
-		if IsSpaceByte(p[0]) {
+		if isSpace[p[0]] {
 
 			if lastKey == "" {
 				return ErrBadHeaderLine
@@ -262,7 +252,7 @@ func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
 			}
 
 			// Key
-			i := skipBytes(p, IsTokenByte)
+			i := skipBytes(p, isToken[:])
 			if i < 1 {
 				return ErrBadHeaderLine
 			}
@@ -287,10 +277,10 @@ func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
 	return nil
 }
 
-func skipBytes(p []byte, f func(byte) bool) int {
+func skipBytes(p []byte, f []bool) int {
 	i := 0
 	for ; i < len(p); i++ {
-		if !f(byte(p[i])) {
+		if !f[byte(p[i])] {
 			break
 		}
 	}
@@ -298,13 +288,13 @@ func skipBytes(p []byte, f func(byte) bool) int {
 }
 
 func trimWSLeft(p []byte) []byte {
-	return p[skipBytes(p, IsSpaceByte):]
+	return p[skipBytes(p, isSpace[:]):]
 }
 
 func trimWSRight(p []byte) []byte {
 	var i int
 	for i = len(p); i > 0; i-- {
-		if !IsSpaceByte(p[i-1]) {
+		if !isSpace[p[i-1]] {
 			break
 		}
 	}
