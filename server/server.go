@@ -60,9 +60,10 @@ type Server struct {
 	Logger func(lr *LogRecord)
 }
 
-type conn struct {
+// transaction represents a single request-response transaction.
+type transaction struct {
 	server             *Server
-	netConn            net.Conn
+	conn               net.Conn
 	br                 *bufio.Reader
 	responseBody       responseBody
 	chunked            bool
@@ -115,14 +116,14 @@ func readRequestLine(b *bufio.Reader) (method string, url string, version int, e
 	return
 }
 
-func (c *conn) prepare() (err os.Error) {
-	method, rawURL, version, err := readRequestLine(c.br)
+func (t *transaction) prepare() (err os.Error) {
+	method, rawURL, version, err := readRequestLine(t.br)
 	if err != nil {
 		return err
 	}
 
 	header := web.HeaderMap{}
-	err = header.ParseHttpHeader(c.br)
+	err = header.ParseHttpHeader(t.br)
 	if err != nil {
 		return err
 	}
@@ -135,122 +136,122 @@ func (c *conn) prepare() (err os.Error) {
 	if url.Host == "" {
 		url.Host = header.Get(web.HeaderHost)
 		if url.Host == "" {
-			url.Host = c.server.DefaultHost
+			url.Host = t.server.DefaultHost
 		}
 	}
 
-	if c.server.Secure {
+	if t.server.Secure {
 		url.Scheme = "https"
 	} else {
 		url.Scheme = "http"
 	}
 
-	req, err := web.NewRequest(c.netConn.RemoteAddr().String(), method, url, version, header)
+	req, err := web.NewRequest(t.conn.RemoteAddr().String(), method, url, version, header)
 	if err != nil {
 		return
 	}
-	c.req = req
+	t.req = req
 
-	c.requestAvail = req.ContentLength
-	if c.requestAvail < 0 {
-		c.requestAvail = 0
+	t.requestAvail = req.ContentLength
+	if t.requestAvail < 0 {
+		t.requestAvail = 0
 	}
 
 	if s := req.Header.Get(web.HeaderExpect); s != "" {
-		c.write100Continue = strings.ToLower(s) == "100-continue"
+		t.write100Continue = strings.ToLower(s) == "100-continue"
 	}
 
 	connection := strings.ToLower(req.Header.Get(web.HeaderConnection))
 	if version >= web.ProtocolVersion(1, 1) {
-		c.closeAfterResponse = connection == "close"
+		t.closeAfterResponse = connection == "close"
 	} else if version == web.ProtocolVersion(1, 0) && req.ContentLength >= 0 {
-		c.closeAfterResponse = connection != "keep-alive"
+		t.closeAfterResponse = connection != "keep-alive"
 	} else {
-		c.closeAfterResponse = true
+		t.closeAfterResponse = true
 	}
 
-	req.Responder = c
-	req.Body = requestReader{c}
+	req.Responder = t
+	req.Body = requestReader{t}
 	return nil
 }
 
 type requestReader struct {
-	*conn
+	*transaction
 }
 
-func (c requestReader) Read(p []byte) (int, os.Error) {
-	if c.requestErr != nil {
-		return 0, c.requestErr
+func (t requestReader) Read(p []byte) (int, os.Error) {
+	if t.requestErr != nil {
+		return 0, t.requestErr
 	}
-	if c.write100Continue {
-		c.write100Continue = false
-		io.WriteString(c.netConn, "HTTP/1.1 100 Continue\r\n\r\n")
+	if t.write100Continue {
+		t.write100Continue = false
+		io.WriteString(t.conn, "HTTP/1.1 100 Continue\r\n\r\n")
 	}
-	if c.requestAvail <= 0 {
-		c.requestErr = os.EOF
-		return 0, c.requestErr
+	if t.requestAvail <= 0 {
+		t.requestErr = os.EOF
+		return 0, t.requestErr
 	}
-	if len(p) > c.requestAvail {
-		p = p[0:c.requestAvail]
+	if len(p) > t.requestAvail {
+		p = p[0:t.requestAvail]
 	}
 	var n int
-	n, c.requestErr = c.br.Read(p)
-	c.requestAvail -= n
-	return n, c.requestErr
+	n, t.requestErr = t.br.Read(p)
+	t.requestAvail -= n
+	return n, t.requestErr
 }
 
-func (c *conn) Respond(status int, header web.HeaderMap) (body web.ResponseBody) {
-	if c.hijacked {
+func (t *transaction) Respond(status int, header web.HeaderMap) (body web.ResponseBody) {
+	if t.hijacked {
 		log.Println("twister: Respond called on hijacked connection")
 		return nil
 	}
-	if c.respondCalled {
+	if t.respondCalled {
 		log.Println("twister: multiple calls to Respond")
 		return nil
 	}
-	c.respondCalled = true
-	c.requestErr = web.ErrInvalidState
-	c.status = status
-	c.header = header
+	t.respondCalled = true
+	t.requestErr = web.ErrInvalidState
+	t.status = status
+	t.header = header
 
 	if te := header.Get(web.HeaderTransferEncoding); te != "" {
 		log.Println("twister: transfer encoding not allowed")
 		header[web.HeaderTransferEncoding] = nil, false
 	}
 
-	if c.requestAvail > 0 {
-		c.closeAfterResponse = true
+	if t.requestAvail > 0 {
+		t.closeAfterResponse = true
 	}
 
-	c.chunked = true
+	t.chunked = true
 	contentLength := -1
 
 	if status == web.StatusNotModified {
 		header[web.HeaderContentType] = nil, false
 		header[web.HeaderContentLength] = nil, false
-		c.chunked = false
+		t.chunked = false
 	} else if s := header.Get(web.HeaderContentLength); s != "" {
 		contentLength, _ = strconv.Atoi(s)
-		c.chunked = false
-	} else if c.req.ProtocolVersion < web.ProtocolVersion(1, 1) {
-		c.closeAfterResponse = true
+		t.chunked = false
+	} else if t.req.ProtocolVersion < web.ProtocolVersion(1, 1) {
+		t.closeAfterResponse = true
 	}
 
-	if c.closeAfterResponse {
+	if t.closeAfterResponse {
 		header.Set(web.HeaderConnection, "close")
-		c.chunked = false
+		t.chunked = false
 	}
 
-	if c.req.Method == "HEAD" {
-		c.chunked = false
+	if t.req.Method == "HEAD" {
+		t.chunked = false
 	}
 
-	if c.chunked {
+	if t.chunked {
 		header.Set(web.HeaderTransferEncoding, "chunked")
 	}
 
 	proto := "HTTP/1.0"
-	if c.req.ProtocolVersion >= web.ProtocolVersion(1, 1) {
+	if t.req.ProtocolVersion >= web.ProtocolVersion(1, 1) {
 		proto = "HTTP/1.1"
 	}
 	statusString := strconv.Itoa(status)
@@ -267,104 +268,104 @@ func (c *conn) Respond(status int, header web.HeaderMap) (body web.ResponseBody)
 
 	const bufferSize = 4096
 	switch {
-	case c.req.Method == "HEAD":
-		c.responseBody, _ = newNullResponseBody(c.netConn, b.Bytes())
-	case c.chunked:
-		c.responseBody, _ = newChunkedResponseBody(c.netConn, b.Bytes(), bufferSize)
+	case t.req.Method == "HEAD":
+		t.responseBody, _ = newNullResponseBody(t.conn, b.Bytes())
+	case t.chunked:
+		t.responseBody, _ = newChunkedResponseBody(t.conn, b.Bytes(), bufferSize)
 	default:
-		c.responseBody, _ = newIdentityResponseBody(c.netConn, b.Bytes(), bufferSize, contentLength)
+		t.responseBody, _ = newIdentityResponseBody(t.conn, b.Bytes(), bufferSize, contentLength)
 	}
-	return c.responseBody
+	return t.responseBody
 }
 
-func (c *conn) Hijack() (conn net.Conn, buf []byte, err os.Error) {
-	if c.respondCalled {
+func (t *transaction) Hijack() (conn net.Conn, buf []byte, err os.Error) {
+	if t.respondCalled {
 		return nil, nil, web.ErrInvalidState
 	}
 
-	conn = c.netConn
-	buf, err = c.br.Peek(c.br.Buffered())
+	conn = t.conn
+	buf, err = t.br.Peek(t.br.Buffered())
 	if err != nil {
 		panic("twisted.server: unexpected error peeking at bufio")
 	}
 
-	c.hijacked = true
-	c.requestErr = web.ErrInvalidState
-	c.responseErr = web.ErrInvalidState
-	c.req = nil
-	c.br = nil
-	c.netConn = nil
+	t.hijacked = true
+	t.requestErr = web.ErrInvalidState
+	t.responseErr = web.ErrInvalidState
+	t.req = nil
+	t.br = nil
+	t.conn = nil
 
 	return
 }
 
 // Finish the HTTP request
-func (c *conn) finish() os.Error {
-	if !c.respondCalled {
-		c.req.Respond(web.StatusOK, web.HeaderContentType, "text/html charset=utf-8")
+func (t *transaction) finish() os.Error {
+	if !t.respondCalled {
+		t.req.Respond(web.StatusOK, web.HeaderContentType, "text/html charset=utf-8")
 	}
 	var written int
-	if c.responseErr == nil {
-		written, c.responseErr = c.responseBody.finish()
+	if t.responseErr == nil {
+		written, t.responseErr = t.responseBody.finish()
 	}
-	if c.responseErr != nil {
-		c.closeAfterResponse = true
+	if t.responseErr != nil {
+		t.closeAfterResponse = true
 	} else {
-		c.responseErr = web.ErrInvalidState
+		t.responseErr = web.ErrInvalidState
 	}
-	if c.server.Logger != nil {
-		err := c.responseErr
+	if t.server.Logger != nil {
+		err := t.responseErr
 		if err == web.ErrInvalidState {
-			err = c.requestErr
+			err = t.requestErr
 			if err == web.ErrInvalidState {
 				err = nil
 			}
 		}
-		c.server.Logger(&LogRecord{
+		t.server.Logger(&LogRecord{
 			Written: written,
-			Request: c.req,
-			Header:  c.header,
-			Status:  c.status,
+			Request: t.req,
+			Header:  t.header,
+			Status:  t.status,
 			Error:   err})
 	}
-	c.netConn = nil
-	c.br = nil
-	c.responseBody = nil
+	t.conn = nil
+	t.br = nil
+	t.responseBody = nil
 	return nil
 }
 
-func (s *Server) serveConnection(netConn net.Conn) {
+func (s *Server) serveConnection(conn net.Conn) {
 	if s.ReadTimeout != 0 {
-		netConn.SetReadTimeout(s.ReadTimeout)
+		conn.SetReadTimeout(s.ReadTimeout)
 	}
 	if s.WriteTimeout != 0 {
-		netConn.SetWriteTimeout(s.WriteTimeout)
+		conn.SetWriteTimeout(s.WriteTimeout)
 	}
-	br := bufio.NewReader(netConn)
+	br := bufio.NewReader(conn)
 	for {
-		c := conn{
-			server:  s,
-			netConn: netConn,
-			br:      br}
-		if err := c.prepare(); err != nil {
+		t := transaction{
+			server: s,
+			conn:   conn,
+			br:     br}
+		if err := t.prepare(); err != nil {
 			if err != os.EOF {
 				log.Println("twister/server: prepare failed", err)
 			}
 			break
 		}
-		s.Handler.ServeWeb(c.req)
-		if c.hijacked {
+		s.Handler.ServeWeb(t.req)
+		if t.hijacked {
 			return
 		}
-		if err := c.finish(); err != nil {
+		if err := t.finish(); err != nil {
 			log.Println("twister/server: finish failed", err)
 			break
 		}
-		if c.closeAfterResponse {
+		if t.closeAfterResponse {
 			break
 		}
 	}
-	netConn.Close()
+	conn.Close()
 }
 
 // Serve accepts incoming HTTP connections on s.Listener, creating a new
@@ -402,11 +403,11 @@ func (s *Server) serveConnection(netConn net.Conn) {
 //  }
 func (s *Server) Serve() os.Error {
 	for {
-		netConn, e := s.Listener.Accept()
+		conn, e := s.Listener.Accept()
 		if e != nil {
 			return e
 		}
-		go s.serveConnection(netConn)
+		go s.serveConnection(conn)
 	}
 	return nil
 }
