@@ -54,6 +54,15 @@ func writeStringMap(w io.Writer, title string, m map[string][]string) {
 	}
 }
 
+// ShortLogger logs a short summary of the request.
+func ShortLogger(lr *LogRecord) {
+	if lr.Error != nil {
+		log.Printf("%d %s %s %s\n", lr.Status, lr.Request.Method, lr.Request.URL, lr.Error)
+	} else {
+		log.Printf("%d %s %s\n", lr.Status, lr.Request.Method, lr.Request.URL)
+	}
+}
+
 // VerboseLogger prints out just about everything about the request and response.
 func VerboseLogger(lr *LogRecord) {
 	var b = &bytes.Buffer{}

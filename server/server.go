@@ -448,7 +448,7 @@ func Run(addr string, handler web.Handler) {
 		return
 	}
 	defer listener.Close()
-	err = (&Server{Listener: listener, Handler: handler}).Serve()
+	err = (&Server{Logger: ShortLogger, Listener: listener, Handler: handler}).Serve()
 	if err != nil {
 		log.Fatal("Server", err)
 	}
