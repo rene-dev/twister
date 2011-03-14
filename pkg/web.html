@@ -19,8 +19,6 @@
 <li><a href="#HTMLEscapeString">func HTMLEscapeString</a>
 <li><a href="#HeaderName">func HeaderName</a>
 <li><a href="#HeaderNameBytes">func HeaderNameBytes</a>
-<li><a href="#IsSpaceByte">func IsSpaceByte</a>
-<li><a href="#IsTokenByte">func IsTokenByte</a>
 <li><a href="#ParseMultipartForm">func ParseMultipartForm</a>
 <li><a href="#ProtocolVersion">func ProtocolVersion</a>
 <li><a href="#QuoteHeaderValue">func QuoteHeaderValue</a>
@@ -47,8 +45,10 @@
         <ul>
     <li><a href="#DirectoryHandler">func DirectoryHandler</a>
     <li><a href="#FileHandler">func FileHandler</a>
+    <li><a href="#FormHandler">func FormHandler</a>
     <li><a href="#NotFoundHandler">func NotFoundHandler</a>
     <li><a href="#ProcessForm">func ProcessForm</a>
+    <li><a href="#ProxyHeaderHandler">func ProxyHeaderHandler</a>
     <li><a href="#RedirectHandler">func RedirectHandler</a>
     <li><a href="#SetErrorHandler">func SetErrorHandler</a>
         </ul>
@@ -307,29 +307,17 @@ FormatDeltaSeconds returns current time plus delta formatted per HTTP convention
 HTMLEscapeString returns s with special HTML characters escaped.
 </p>
 
-<h2 id="HeaderName">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L374">HeaderName</a></h2>
+<h2 id="HeaderName">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L364">HeaderName</a></h2>
 <p><code>func HeaderName(name string) string</code></p>
 <p>
 HeaderName returns the canonical format of the header name.
 </p>
 
-<h2 id="HeaderNameBytes">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L380">HeaderNameBytes</a></h2>
+<h2 id="HeaderNameBytes">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L370">HeaderNameBytes</a></h2>
 <p><code>func HeaderNameBytes(p []byte) string</code></p>
 <p>
 HeaderNameBytes returns the canonical format for the header name specified
 by the bytes in p. This function modifies the contents p.
-</p>
-
-<h2 id="IsSpaceByte">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L65">IsSpaceByte</a></h2>
-<p><code>func IsSpaceByte(c byte) bool</code></p>
-<p>
-IsSpaceByte returns true if c is a space character as defined by RFC 2616
-</p>
-
-<h2 id="IsTokenByte">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L60">IsTokenByte</a></h2>
-<p><code>func IsTokenByte(c byte) bool</code></p>
-<p>
-IsTokenByte returns true if c is a token character as defined by RFC 2616
 </p>
 
 <h2 id="ParseMultipartForm">func <a href="http://github.com/garyburd/twister/blob/master/web/multipart.go#L40">ParseMultipartForm</a></h2>
@@ -347,19 +335,19 @@ ProtocolVersion combines HTTP major and minor protocol numbers into a single
 integer for easy comparision of protocol versions.
 </p>
 
-<h2 id="QuoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L398">QuoteHeaderValue</a></h2>
+<h2 id="QuoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L388">QuoteHeaderValue</a></h2>
 <p><code>func QuoteHeaderValue(s string) string</code></p>
 <p>
 QuoteHeaderValue quotes s using quoted-string rules described in RFC 2616.
 </p>
 
-<h2 id="QuoteHeaderValueOrToken">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L414">QuoteHeaderValueOrToken</a></h2>
+<h2 id="QuoteHeaderValueOrToken">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L404">QuoteHeaderValueOrToken</a></h2>
 <p><code>func QuoteHeaderValueOrToken(s string) string</code></p>
 <p>
 QuoteHeaderValueOrToken quotes s if s is not a valid token per RFC 2616.
 </p>
 
-<h2 id="RunHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/test.go#L50">RunHandler</a></h2>
+<h2 id="RunHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/test.go#L104">RunHandler</a></h2>
 <p><code>func RunHandler(url string, method string, reqHeader HeaderMap, reqBody []byte, handler Handler) (status int, header HeaderMap, respBody []byte)</code></p>
 <p>
 RunHandler runs the handler with a request created from the arguments and
@@ -402,7 +390,7 @@ func requestUid(req *web.Request) (string, os.Error) {
 StatusText returns a text description of an HTTP status code.
 </p>
 
-<h2 id="UnquoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L425">UnquoteHeaderValue</a></h2>
+<h2 id="UnquoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L415">UnquoteHeaderValue</a></h2>
 <p><code>func UnquoteHeaderValue(s string) string</code></p>
 <p>
 UnquoteHeaderValue unquotes s if s is surrounded by quotes, otherwise s is
@@ -559,17 +547,14 @@ If the &#34;v&#34; request parameter is supplied, then the cache control headers
 set to expire the file in 10 years.
 </p>
 
-    <h3 id="NotFoundHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L163">NotFoundHandler</a></h3>
-    <p><code>func NotFoundHandler() Handler</code></p>
+    <h3 id="FormHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L134">FormHandler</a></h3>
+    <p><code>func FormHandler(maxRequestBodyLen int, checkXSRF bool, h Handler) Handler</code></p>
     <p>
-NotFoundHandler returns a request handler that responds with 404 not found.
+FormHandler returns a handler that parses form encoded request bodies.
 </p>
-
-    <h3 id="ProcessForm">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L69">ProcessForm</a></h3>
-    <p><code>func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler</code></p>
-    <p>
-ProcessForm returns a handler that parses URL encoded forms if smaller than the
-specified size.
+<p>
+If the request body is larger than maxRequestBodyLen, then the handler
+responds with an error instead of parsing the request body.
 </p>
 <p>
 If xsrfCheck is true, then cross-site request forgery protection is enabled.
@@ -588,6 +573,59 @@ X-XSRFToken header can be set.
 See <a href="http://en.wikipedia.org/wiki/Cross-site_request_forgery">http://en.wikipedia.org/wiki/Cross-site_request_forgery</a> for information
 on cross-site request forgery.
 </p>
+
+    <h3 id="NotFoundHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L163">NotFoundHandler</a></h3>
+    <p><code>func NotFoundHandler() Handler</code></p>
+    <p>
+NotFoundHandler returns a request handler that responds with 404 not found.
+</p>
+
+    <h3 id="ProcessForm">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L112">ProcessForm</a></h3>
+    <p><code>func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler</code></p>
+    <p>
+PorcessForm is deprecated. Use FormHandler.
+</p>
+
+    <h3 id="ProxyHeaderHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L86">ProxyHeaderHandler</a></h3>
+    <p><code>func ProxyHeaderHandler(addrName, schemeName string, h Handler) Handler</code></p>
+    <p>
+ProxyHeaderHandler returns a handler that overrides the Request.RemoteAddr field
+with the value of the header specified by addrName and the
+Request.URL.Scheme field with the value of the header specified by
+schemeName. No fix up is done for a field if the header name equals &#34;&#34; or the
+header is not present.
+</p>
+<p>
+The header names must be in canonical header name format.
+</p>
+<p>
+Here&#39;s an example of how to use this handler with Nginx. In the nginx proxy
+configuration, specify a header for the IP address and scheme. The host
+header should also be passed through the proxy:
+</p>
+<pre>location / {
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Scheme $scheme;
+    proxy_set_header Host $http_host;
+    proxy_pass <a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a>;
+}
+</pre>
+<p>
+In the main function for the application, wrap the application handler with
+the proxy fix up:
+</p>
+<pre> import (
+     &#34;github.com/garyburd/twister/web&#34;
+     &#34;github.com/garyburd/twister/server&#34;
+ )
+
+ func main() {
+     var h web.Handler
+     ... setup the application handler
+     h = web.ProxyHeaderHandler(&#34;X-Scheme&#34;, &#34;X-Real-Ip&#34;, h)
+	    server.Run(&#34;:8080&#34;, h)
+ }
+</pre>
 
     <h3 id="RedirectHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L156">RedirectHandler</a></h3>
     <p><code>func RedirectHandler(url string, permanent bool) Handler</code></p>
@@ -637,26 +675,26 @@ convert a string to canonical format.
 
 
 
-    <h3 id="NewHeaderMap">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L85">NewHeaderMap</a></h3>
+    <h3 id="NewHeaderMap">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L74">NewHeaderMap</a></h3>
     <p><code>func NewHeaderMap(kvs ...string) HeaderMap</code></p>
     <p>
 NewHeaderMap returns a map initialized with the given key-value pairs.
 </p>
 
 
-    <h3 id="HeaderMap.Add">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L106">Add</a></h3>
+    <h3 id="HeaderMap.Add">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L95">Add</a></h3>
     <p><code>func (m HeaderMap) Add(key string, value string)</code></p>
     <p>
 Add appends value to slice for given key.
 </p>
 
-    <h3 id="HeaderMap.Get">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L97">Get</a></h3>
+    <h3 id="HeaderMap.Get">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L86">Get</a></h3>
     <p><code>func (m HeaderMap) Get(key string) string</code></p>
     <p>
 Get returns the first value for given key or &#34;&#34; if the key is not found.
 </p>
 
-    <h3 id="HeaderMap.GetList">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L118">GetList</a></h3>
+    <h3 id="HeaderMap.GetList">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L107">GetList</a></h3>
     <p><code>func (m HeaderMap) GetList(key string) []string</code></p>
     <p>
 GetList returns list of comma separated values over multiple header values
@@ -664,20 +702,20 @@ for the given key. Commas are ignored in quoted strings. Quoted values are
 not unescaped or unqoted. Whitespace is trimmmed.
 </p>
 
-    <h3 id="HeaderMap.ParseHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L194">ParseHttpHeader</a></h3>
+    <h3 id="HeaderMap.ParseHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L184">ParseHttpHeader</a></h3>
     <p><code>func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error)</code></p>
     <p>
 ParseHttpHeader parses the HTTP headers and appends the values to the
 supplied map. Header names are converted to canonical format.
 </p>
 
-    <h3 id="HeaderMap.Set">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L111">Set</a></h3>
+    <h3 id="HeaderMap.Set">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L100">Set</a></h3>
     <p><code>func (m HeaderMap) Set(key string, value string)</code></p>
     <p>
 Set value for given key, discarding previous values if any.
 </p>
 
-    <h3 id="HeaderMap.WriteHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L163">WriteHttpHeader</a></h3>
+    <h3 id="HeaderMap.WriteHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L152">WriteHttpHeader</a></h3>
     <p><code>func (m HeaderMap) WriteHttpHeader(w io.Writer) os.Error</code></p>
     <p>
 WriteHttpHeader writes the map in HTTP header format.
@@ -816,7 +854,7 @@ Part represents an element of a multi-part request entity.
 
 <h2 id="Request">type Request</h2>
 <p>
-Request represents an HTTP request.
+Request represents an HTTP request to the server.
 </p>
 
 <pre>type Request struct {
@@ -862,7 +900,7 @@ Request represents an HTTP request.
  Body RequestBody
 
  // Attributes attached to the request by middleware. 
- Attributes map[string]interface{}
+ Attribute map[string]interface{}
  // contains unexported fields
 }</pre>
 

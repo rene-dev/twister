@@ -13,6 +13,7 @@
 <li><a href="#package">Package</a>
 <li><a href="#variables">Variables</a>
 <li><a href="#Run">func Run</a>
+<li><a href="#ShortLogger">func ShortLogger</a>
 <li><a href="#VerboseLogger">func VerboseLogger</a>
 <li><a href="#LogRecord">type LogRecord</a>
 <li><a href="#Server">type Server</a>
@@ -39,7 +40,7 @@ var (
 )
 </pre>
 
-<h2 id="Run">func <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L443">Run</a></h2>
+<h2 id="Run">func <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L452">Run</a></h2>
 <p><code>func Run(addr string, handler web.Handler)</code></p>
 <p>
 Run is a convenience function for running an HTTP server. Run listens on the
@@ -74,7 +75,13 @@ func main() {
 }
 </pre>
 
-<h2 id="VerboseLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L58">VerboseLogger</a></h2>
+<h2 id="ShortLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L61">ShortLogger</a></h2>
+<p><code>func ShortLogger(lr *LogRecord)</code></p>
+<p>
+ShortLogger logs a short summary of the request.
+</p>
+
+<h2 id="VerboseLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L70">VerboseLogger</a></h2>
 <p><code>func VerboseLogger(lr *LogRecord)</code></p>
 <p>
 VerboseLogger prints out just about everything about the request and response.
@@ -101,6 +108,9 @@ LogRecord records information about a request for logging.
 
  // Number of bytes written to output including headers and transfer encoding.
  Written int
+
+ // True if connection hijacked.
+ Hijacked bool
 }</pre>
 
 
@@ -141,7 +151,7 @@ Server defines parameters for running an HTTP server.
 
 
 
-    <h3 id="Server.Serve">func (*Server) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L403">Serve</a></h3>
+    <h3 id="Server.Serve">func (*Server) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L412">Serve</a></h3>
     <p><code>func (s *Server) Serve() os.Error</code></p>
     <p>
 Serve accepts incoming HTTP connections on s.Listener, creating a new

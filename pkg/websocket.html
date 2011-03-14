@@ -15,8 +15,8 @@
         <ul>
     <li><a href="#Upgrade">func Upgrade</a>
     <li><a href="#Conn.Close">func (*Conn) Close</a>
-    <li><a href="#Conn.Receive">func (*Conn) Receive</a>
-    <li><a href="#Conn.Send">func (*Conn) Send</a>
+    <li><a href="#Conn.ReadMessage">func (*Conn) ReadMessage</a>
+    <li><a href="#Conn.WriteMessage">func (*Conn) WriteMessage</a>
         </ul>
 </ul>
 
@@ -37,23 +37,35 @@
 
 
 
-    <h3 id="Upgrade">func <a href="http://github.com/garyburd/twister/blob/master/websocket/websocket.go#L91">Upgrade</a></h3>
-    <p><code>func Upgrade(req *web.Request) (conn *Conn, err os.Error)</code></p>
+    <h3 id="Upgrade">func <a href="http://github.com/garyburd/twister/blob/master/websocket/websocket.go#L110">Upgrade</a></h3>
+    <p><code>func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.HeaderMap) (conn *Conn, err os.Error)</code></p>
     <p>
 Upgrade upgrades the HTTP connection to the WebSocket protocol. The
 caller is responsible for closing the returned connection.
 </p>
 
 
-    <h3 id="Conn.Close">func (*Conn) <a href="http://github.com/garyburd/twister/blob/master/websocket/websocket.go#L35">Close</a></h3>
+    <h3 id="Conn.Close">func (*Conn) <a href="http://github.com/garyburd/twister/blob/master/websocket/websocket.go#L36">Close</a></h3>
     <p><code>func (conn *Conn) Close() os.Error</code></p>
     
-    <h3 id="Conn.Receive">func (*Conn) <a href="http://github.com/garyburd/twister/blob/master/websocket/websocket.go#L39">Receive</a></h3>
-    <p><code>func (conn *Conn) Receive() ([]byte, os.Error)</code></p>
-    
-    <h3 id="Conn.Send">func (*Conn) <a href="http://github.com/garyburd/twister/blob/master/websocket/websocket.go#L56">Send</a></h3>
-    <p><code>func (conn *Conn) Send(p []byte) os.Error</code></p>
-    
+    <h3 id="Conn.ReadMessage">func (*Conn) <a href="http://github.com/garyburd/twister/blob/master/websocket/websocket.go#L46">ReadMessage</a></h3>
+    <p><code>func (conn *Conn) ReadMessage() (chunk []byte, hasMore bool, err os.Error)</code></p>
+    <p>
+ReadMessage reads a message from the client. The message is returned in one
+or more chunks. hasMore is set to false on the last chunk of the message.
+If the message fits in the read buffer size specified in the call to
+Upgrade, then the message is guaranteed to be returned in a single chunk.
+The returned chunk points to the internal state of the connection and is only
+valid until the next call to ReadMessage.
+</p>
+
+    <h3 id="Conn.WriteMessage">func (*Conn) <a href="http://github.com/garyburd/twister/blob/master/websocket/websocket.go#L75">WriteMessage</a></h3>
+    <p><code>func (conn *Conn) WriteMessage(p []byte) os.Error</code></p>
+    <p>
+WriteMessage write a message to the client. The message cannot contain the
+bytes with value 0 or 127.
+</p>
+
 
 <hr>
 This page was generated automatically from the source code. If you installed
