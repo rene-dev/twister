@@ -289,6 +289,14 @@ func (t *transaction) Hijack() (conn net.Conn, buf []byte, err os.Error) {
 		panic("twisted.server: unexpected error peeking at bufio")
 	}
 
+	if t.server.Logger != nil {
+		t.server.Logger(&LogRecord{
+			Request:  t.req,
+			Header:   t.header,
+			Hijacked: true,
+		})
+	}
+
 	t.hijacked = true
 	t.requestErr = web.ErrInvalidState
 	t.responseErr = web.ErrInvalidState

@@ -27,33 +27,52 @@ import (
 )
 
 type Conn struct {
-	conn net.Conn
-	br   *bufio.Reader
-	bw   *bufio.Writer
+	conn    net.Conn
+	br      *bufio.Reader
+	bw      *bufio.Writer
+	hasMore bool
 }
 
 func (conn *Conn) Close() os.Error {
 	return conn.conn.Close()
 }
 
-func (conn *Conn) Receive() ([]byte, os.Error) {
+// ReadMessage reads a message from the client. The message is returned in one
+// or more chunks. hasMore is set to false on the last chunk of the message.
+// If the message fits in the read buffer size specified in the call to
+// Upgrade, then the message is guaranteed to be returned in a single chunk.
+// The returned chunk points to the internal state of the connection and is only
+// valid until the next call to ReadMessage.
+func (conn *Conn) ReadMessage() (chunk []byte, hasMore bool, err os.Error) {
 	// Support text framing for now. Revisit after browsers support framing
 	// described in later specs.
-	c, err := conn.br.ReadByte()
-	if err != nil {
-		return nil, err
+
+	if !conn.hasMore {
+		c, err := conn.br.ReadByte()
+		if err != nil {
+			return nil, false, err
+		}
+		if c != 0 {
+			return nil, false, os.NewError("twister.websocket: unexpected framing.")
+		}
 	}
-	if c != 0 {
-		return nil, os.NewError("twister.websocket: unexpected framing.")
-	}
+
 	p, err := conn.br.ReadSlice(0xff)
-	if err != nil {
-		return nil, err
+	switch err {
+	case bufio.ErrBufferFull:
+		conn.hasMore = true
+	case nil:
+		p = p[:len(p)-1]
+		conn.hasMore = false
+	default:
+		return nil, false, err
 	}
-	return p[:len(p)-1], nil
+	return p, conn.hasMore, nil
 }
 
-func (conn *Conn) Send(p []byte) os.Error {
+// WriteMessage write a message to the client. The message cannot contain the
+// bytes with value 0 or 127.
+func (conn *Conn) WriteMessage(p []byte) os.Error {
 	// Support text framing for now. Revisit after browsers support framing
 	// described in later specs.
 	conn.bw.WriteByte(0)
@@ -88,11 +107,45 @@ func webSocketKey(req *web.Request, name string) (key []byte, err os.Error) {
 
 // Upgrade upgrades the HTTP connection to the WebSocket protocol. The 
 // caller is responsible for closing the returned connection.
-func Upgrade(req *web.Request) (conn *Conn, err os.Error) {
+func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.HeaderMap) (conn *Conn, err os.Error) {
+
+	if req.Method != "GET" {
+		req.Respond(web.StatusMethodNotAllowed)
+		return nil, os.NewError("twister.websocket: bad request method")
+	}
+
+	origin := req.Header.Get(web.HeaderOrigin)
+	if origin == "" {
+		req.Respond(web.StatusBadRequest)
+		return nil, os.NewError("twister.websocket: origin missing")
+	}
+
+	connection := strings.ToLower(req.Header.Get(web.HeaderConnection))
+	if connection != "upgrade" {
+		req.Respond(web.StatusBadRequest)
+		return nil, os.NewError("twister.websocket: connection header missing or wrong value")
+	}
+
+	upgrade := strings.ToLower(req.Header.Get(web.HeaderUpgrade))
+	if upgrade != "websocket" {
+		req.Respond(web.StatusBadRequest)
+		return nil, os.NewError("twister.websocket: upgrade header missing or wrong value")
+	}
+
+	key1, err := webSocketKey(req, web.HeaderSecWebSocketKey1)
+	if err != nil {
+		req.Respond(web.StatusBadRequest)
+		return nil, err
+	}
+
+	key2, err := webSocketKey(req, web.HeaderSecWebSocketKey2)
+	if err != nil {
+		req.Respond(web.StatusBadRequest)
+		return nil, err
+	}
 
 	netConn, buf, err := req.Responder.Hijack()
 	if err != nil {
-		panic("twister.websocket: hijack failed")
 		return nil, err
 	}
 
@@ -108,72 +161,62 @@ func Upgrade(req *web.Request) (conn *Conn, err os.Error) {
 	} else {
 		r = netConn
 	}
-	br := bufio.NewReader(r)
-	bw := bufio.NewWriter(netConn)
 
-	if req.Method != "GET" {
-		return nil, os.NewError("twister.websocket: bad request method")
-	}
-
-	origin := req.Header.Get(web.HeaderOrigin)
-	if origin == "" {
-		return nil, os.NewError("twister.websocket: origin missing")
-	}
-
-	connection := strings.ToLower(req.Header.Get(web.HeaderConnection))
-	if connection != "upgrade" {
-		return nil, os.NewError("twister.websocket: connection header missing or wrong value")
-	}
-
-	upgrade := strings.ToLower(req.Header.Get(web.HeaderUpgrade))
-	if upgrade != "websocket" {
-		return nil, os.NewError("twister.websocket: upgrade header missing or wrong value")
-	}
-
-	key1, err := webSocketKey(req, web.HeaderSecWebSocketKey1)
+	br, err := bufio.NewReaderSize(r, readBufSize)
 	if err != nil {
 		return nil, err
 	}
 
-	key2, err := webSocketKey(req, web.HeaderSecWebSocketKey2)
+	bw, err := bufio.NewWriterSize(netConn, writeBufSize)
 	if err != nil {
 		return nil, err
 	}
 
 	key3 := make([]byte, 8)
 	if _, err := io.ReadFull(br, key3); err != nil {
+		req.Respond(web.StatusBadRequest)
 		return nil, err
 	}
 
-	h := md5.New()
-	h.Write(key1)
-	h.Write(key2)
-	h.Write(key3)
-	response := h.Sum()
+	hash := md5.New()
+	hash.Write(key1)
+	hash.Write(key2)
+	hash.Write(key3)
+	response := hash.Sum()
 
 	// TODO: handle tls
 	location := "ws://" + req.URL.Host + req.URL.RawPath
 	protocol := req.Header.Get(web.HeaderSecWebSocketProtocol)
 
-	bw.WriteString("HTTP/1.1 101 WebSocket Protocol Handshake")
-	bw.WriteString("\r\nUpgrade: WebSocket")
-	bw.WriteString("\r\nConnection: Upgrade")
-	bw.WriteString("\r\nSec-WebSocket-Location: ")
-	bw.WriteString(location)
-	bw.WriteString("\r\nSec-WebSocket-Origin: ")
-	bw.WriteString(origin)
-	if len(protocol) > 0 {
-		bw.WriteString("\r\nSec-WebSocket-Protocol: ")
-		bw.WriteString(protocol)
+	h := make(web.HeaderMap)
+	for k, v := range header {
+		h[k] = v
 	}
-	bw.WriteString("\r\n\r\n")
-	bw.Write(response)
+	h.Set("Upgrade", "WebSocket")
+	h.Set("Connection", "Upgrade")
+	h.Set("Sec-Websocket-Location", location)
+	h.Set("Sec-Websocket-Origin", origin)
+	if len(protocol) > 0 {
+		h.Set("Sec-Websocket-Protocol", protocol)
+	}
+
+	if _, err := bw.WriteString("HTTP/1.1 101 WebSocket Protocol Handshake"); err != nil {
+		return nil, err
+	}
+
+	if err := h.WriteHttpHeader(bw); err != nil {
+		return nil, err
+	}
+
+	if _, err := bw.Write(response); err != nil {
+		return nil, err
+	}
 
 	if err := bw.Flush(); err != nil {
 		return nil, err
 	}
 
-	conn = &Conn{netConn, br, bw}
+	conn = &Conn{netConn, br, bw, false}
 	netConn = nil
 	return conn, nil
 }

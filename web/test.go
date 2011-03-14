@@ -21,33 +21,91 @@ import (
 	"net"
 )
 
-type testResponseBody struct {
-	bytes.Buffer
+type testTransaction struct {
+	in, out bytes.Buffer
+	status  int
+	header  HeaderMap
 }
 
 type testResponder struct {
-	body   testResponseBody
-	status int
-	header HeaderMap
+	t *testTransaction
 }
 
-func (r *testResponder) Respond(status int, header HeaderMap) ResponseBody {
-	r.status = status
-	r.header = header
-	return &r.body
+func (r testResponder) Respond(status int, header HeaderMap) ResponseBody {
+	r.t.status = status
+	r.t.header = header
+	return testResponseBody{r.t}
 }
 
-func (r *testResponder) Hijack() (net.Conn, []byte, os.Error) {
-	return nil, nil, os.NewError("Not supported")
+func (r testResponder) Hijack() (net.Conn, []byte, os.Error) {
+	return testConn{r.t}, []byte{}, nil
 }
 
-func (b *testResponseBody) Flush() os.Error {
+type testResponseBody struct {
+	t *testTransaction
+}
+
+func (b testResponseBody) Flush() os.Error {
 	return nil
+}
+
+func (b testResponseBody) Write(p []byte) (int, os.Error) {
+	return b.t.out.Write(p)
+}
+
+type testConn struct {
+	t *testTransaction
+}
+
+func (c testConn) Read(b []byte) (int, os.Error) {
+	return c.t.in.Read(b)
+}
+
+func (c testConn) Write(b []byte) (int, os.Error) {
+	return c.t.out.Write(b)
+}
+
+func (c testConn) Close() os.Error {
+	return nil
+}
+
+func (c testConn) LocalAddr() net.Addr {
+	return testAddr("local")
+}
+
+func (c testConn) RemoteAddr() net.Addr {
+	return testAddr("remote")
+}
+
+func (c testConn) SetTimeout(nsec int64) os.Error {
+	return nil
+}
+
+func (c testConn) SetReadTimeout(nsec int64) os.Error {
+	return nil
+}
+
+func (c testConn) SetWriteTimeout(nsec int64) os.Error {
+	return nil
+}
+
+type testAddr string
+
+func (a testAddr) Network() string {
+	return string(a)
+}
+
+func (a testAddr) String() string {
+	return string(a)
 }
 
 // RunHandler runs the handler with a request created from the arguments and
 // returns the response. This function is intended to be used in tests.
 func RunHandler(url string, method string, reqHeader HeaderMap, reqBody []byte, handler Handler) (status int, header HeaderMap, respBody []byte) {
+	var t testTransaction
+	if reqBody != nil {
+		t.in.Write(reqBody)
+	}
 	remoteAddr := "1.2.3.4"
 	protocolVersion := ProtocolVersion11
 	if reqHeader == nil {
@@ -61,9 +119,8 @@ func RunHandler(url string, method string, reqHeader HeaderMap, reqBody []byte, 
 	if err != nil {
 		panic(err)
 	}
-	var resp testResponder
-	req.Body = bytes.NewBuffer(reqBody)
-	req.Responder = &resp
+	req.Body = &t.in
+	req.Responder = testResponder{&t}
 	handler.ServeWeb(req)
-	return resp.status, resp.header, resp.body.Bytes()
+	return t.status, t.header, t.out.Bytes()
 }

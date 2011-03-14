@@ -39,6 +39,9 @@ type LogRecord struct {
 
 	// Number of bytes written to output including headers and transfer encoding.
 	Written int
+
+	// True if connection hijacked.
+	Hijacked bool
 }
 
 func writeStringMap(w io.Writer, title string, m map[string][]string) {
@@ -74,10 +77,14 @@ func VerboseLogger(lr *LogRecord) {
 	writeStringMap(b, "Header", map[string][]string(lr.Request.Header))
 	writeStringMap(b, "Param", map[string][]string(lr.Request.Param))
 	writeStringMap(b, "Cookie", map[string][]string(lr.Request.Cookie))
-	fmt.Fprintf(b, "RESPONSE\n")
-	fmt.Fprintf(b, "  Error: %v\n", lr.Error)
-	fmt.Fprintf(b, "  Status: %d\n", lr.Status)
-	fmt.Fprintf(b, "  Written: %d\n", lr.Written)
-	writeStringMap(b, "Header", lr.Header)
+	if lr.Hijacked {
+		fmt.Fprintf(b, "HIJACKED\n")
+	} else {
+		fmt.Fprintf(b, "RESPONSE\n")
+		fmt.Fprintf(b, "  Error: %v\n", lr.Error)
+		fmt.Fprintf(b, "  Status: %d\n", lr.Status)
+		fmt.Fprintf(b, "  Written: %d\n", lr.Written)
+		writeStringMap(b, "Header", lr.Header)
+	}
 	log.Print(b.String())
 }

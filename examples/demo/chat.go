@@ -5,6 +5,7 @@ import (
 	"github.com/garyburd/twister/websocket"
 	"template"
 	"sync"
+	"log"
 )
 
 var messageChan = make(chan []byte)
@@ -24,7 +25,7 @@ func hub() {
 			conns[subscription.conn] = 0, subscription.subscribe
 		case message := <-messageChan:
 			for conn, _ := range conns {
-				if err := conn.Send(message); err != nil {
+				if err := conn.WriteMessage(message); err != nil {
 					conn.Close()
 				}
 			}
@@ -40,8 +41,9 @@ func startHub() {
 
 func chatWsHandler(req *web.Request) {
 	startHub()
-	conn, err := websocket.Upgrade(req)
+	conn, err := websocket.Upgrade(req, 1024, 1024, nil)
 	if err != nil {
+		log.Print("upgrade failed", err)
 		return
 	}
 
@@ -53,8 +55,8 @@ func chatWsHandler(req *web.Request) {
 	subscriptionChan <- subscription{conn, true}
 
 	for {
-		p, err := conn.Receive()
-		if err != nil {
+		p, hasMore, err := conn.ReadMessage()
+		if err != nil || hasMore {
 			break
 		}
 		// copy because Receive reuses underling byte array.
