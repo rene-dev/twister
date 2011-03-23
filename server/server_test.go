@@ -184,9 +184,15 @@ var serverTests = []struct {
 		true,
 	},
 	{
-		// HEAD
+		// HEAD does not include body for identity encoded responses.
 		"HEAD /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
 		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n",
+		true,
+	},
+	{
+		// HEAD does not include body for chunked  encoded responses.
+		"HEAD /?w=Hello HTTP/1.1\r\n\r\n",
+		"HTTP/1.1 200 OK\r\n\r\n",
 		true,
 	},
 }

@@ -286,7 +286,7 @@ func (t *transaction) Hijack() (conn net.Conn, buf []byte, err os.Error) {
 	conn = t.conn
 	buf, err = t.br.Peek(t.br.Buffered())
 	if err != nil {
-		panic("twisted.server: unexpected error peeking at bufio")
+		panic("twister.server: unexpected error peeking at bufio")
 	}
 
 	if t.server.Logger != nil {
