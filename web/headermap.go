@@ -103,7 +103,7 @@ func (m HeaderMap) Set(key string, value string) {
 
 // GetList returns list of comma separated values over multiple header values
 // for the given key. Commas are ignored in quoted strings. Quoted values are
-// not unescaped or unqoted. Whitespace is trimmmed.
+// not unescaped or unquoted. Whitespace is trimmmed.
 func (m HeaderMap) GetList(key string) []string {
 	var result []string
 	for _, s := range m[key] {
@@ -181,7 +181,33 @@ func (m HeaderMap) WriteHttpHeader(w io.Writer) os.Error {
 
 // ParseHttpHeader parses the HTTP headers and appends the values to the
 // supplied map. Header names are converted to canonical format.
-func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
+func (m HeaderMap) ParseHttpHeader(br *bufio.Reader) (err os.Error) {
+	return m.parseHttpHeaderInternal(func() ([]byte, os.Error) {
+		return br.ReadSlice('\n')
+	})
+}
+
+// ParseHttpHeaderBytes parses the HTTP headers and appends the values to the
+// supplied map. Header names are converted to canonical format. The function
+// returns the number of bytes in the header including the trailing blank line
+// and its line terminator.
+func (m HeaderMap) ParseHttpHeaderBytes(p []byte) (int, os.Error) {
+	var i, j int
+	err := m.parseHttpHeaderInternal(func() ([]byte, os.Error) {
+		j = bytes.IndexByte(p[i:], '\n')
+		if j < 0 {
+			i = len(p)
+			return nil, io.ErrUnexpectedEOF
+		}
+		j += i + 1
+		result := p[i:j]
+		i = j
+		return result, nil
+	})
+	return i, err
+}
+
+func (m HeaderMap) parseHttpHeaderInternal(readLine func() ([]byte, os.Error)) (err os.Error) {
 
 	const (
 		// Max size for header line
@@ -196,7 +222,7 @@ func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error) {
 	headerCount := 0
 
 	for {
-		p, err := b.ReadSlice('\n')
+		p, err := readLine()
 		if err != nil {
 			if err == bufio.ErrBufferFull {
 				err = ErrLineTooLong
