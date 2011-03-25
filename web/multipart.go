@@ -85,65 +85,30 @@ func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error) 
 		part := p[2:i]
 		p = p[i+len(sep):]
 
-		var contentType string
-		var contentParam map[string]string
-		var filename string
-		var name string
+		header := make(HeaderMap)
+		n, err := header.ParseHttpHeaderBytes(part)
+		if err != nil {
+			return nil, err
+		}
+		part = part[n:]
 
-		// Loop over header lines
-		for {
-			i := bytes.Index(part, crlfBytes)
-			if i < 0 {
-				return nil, errMpHeader
-			}
-			line := part[:i]
-			part = part[i+2:]
-			if len(line) == 0 {
-				break
-			}
-
-			// Parse line to lowercase key and value.
-			var key, value string
-			for i, b := range line {
-				if b == ':' {
-					key = string(line[:i])
-					value = string(line[i+1:])
-					break
-				} else if mime.IsTokenChar(int(b)) {
-					if 'A' <= b && b <= 'Z' {
-						line[i] = b + 'a' - 'A'
+		if val := header.Get(HeaderContentDisposition); val != "" {
+			disposition, dispositionParam := mime.ParseMediaType(val)
+			if disposition == "form-data" {
+				if name := dispositionParam["name"]; name != "" {
+					if filename := dispositionParam["filename"]; filename != "" {
+						contentType, contentParam := mime.ParseMediaType(header.Get(HeaderContentType))
+						result = append(result, Part{
+							ContentType:  contentType,
+							ContentParam: contentParam,
+							Name:         name,
+							Filename:     filename,
+							Data:         part})
+					} else {
+						req.Param.Add(name, string(part))
 					}
-				} else {
-					return nil, errMpHeader
 				}
 			}
-
-			switch key {
-			case "content-type":
-				contentType, contentParam = mime.ParseMediaType(value)
-			case "content-disposition":
-				disposition, param := mime.ParseMediaType(value)
-				if disposition != "form-data" {
-					continue
-				}
-				name = param["name"]
-				filename = param["filename"]
-			}
-		}
-
-		if name == "" {
-			continue
-		}
-
-		if filename == "" {
-			req.Param.Add(name, string(part))
-		} else {
-			result = append(result, Part{
-				ContentType:  contentType,
-				ContentParam: contentParam,
-				Name:         name,
-				Filename:     filename,
-				Data:         part})
 		}
 	}
 	return result, nil

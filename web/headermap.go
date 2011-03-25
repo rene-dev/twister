@@ -339,6 +339,7 @@ const (
 	HeaderAuthorization        = "Authorization"
 	HeaderCacheControl         = "Cache-Control"
 	HeaderConnection           = "Connection"
+	HeaderContentDisposition   = "Content-Disposition"
 	HeaderContentEncoding      = "Content-Encoding"
 	HeaderContentLanguage      = "Content-Language"
 	HeaderContentLength        = "Content-Length"
