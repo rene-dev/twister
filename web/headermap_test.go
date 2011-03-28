@@ -64,12 +64,15 @@ var getHeaderListTests = []struct {
 	s string
 	l []string
 }{
-	{s: "a", l: []string{"a"}},
-	{s: "a, b , c ", l: []string{"a", "b", "c"}},
-	{s: "a,b,c", l: []string{"a", "b", "c"}},
-	{s: " a b, c d ", l: []string{"a b", "c d"}},
-	{s: "\"a, b, c\", d ", l: []string{"\"a, b, c\"", "d"}},
-	{s: "\" \"", l: []string{"\" \""}},
+	{s: `a`, l: []string{`a`}},
+	{s: `a, b , c `, l: []string{`a`, `b`, `c`}},
+	{s: `a,, b , , c `, l: []string{`a`, `b`, `c`}},
+	{s: `a,b,c`, l: []string{`a`, `b`, `c`}},
+	{s: ` a b, c d `, l: []string{`a b`, `c d`}},
+	{s: `"a, b, c", d `, l: []string{`"a, b, c"`, "d"}},
+	{s: `","`, l: []string{`","`}},
+	{s: `"\""`, l: []string{`"\""`}},
+	{s: `" "`, l: []string{`" "`}},
 }
 
 func TestGetHeaderList(t *testing.T) {
@@ -130,7 +133,39 @@ func TestParseHttpHeaderBytes(t *testing.T) {
 			t.Errorf("ParseHttpHeaderBytes for %s = %q, want %q", tt.name, header, tt.header)
 		}
 		if n != len(tt.s) {
-			t.Errorf("ParseHEaderBytes returned n = %d, want %d", n, len(tt.s))
+			t.Errorf("ParseHeaderBytes returned n = %d, want %d", n, len(tt.s))
+		}
+	}
+}
+
+var getValueParamTests = []struct {
+	s     string
+	value string
+	param map[string]string
+}{
+	{"text/html", "text/html", map[string]string{}},
+	{"text/html  ", "text/html", map[string]string{}},
+	{"text/html ; ", "text/html", map[string]string{}},
+	{"tExt/htMl", "text/html", map[string]string{}},
+	{`tExt/htMl; fOO=";"; hellO=world`, "text/html", map[string]string{
+		"hello": "world",
+		"foo":   `;`,
+	}},
+	// Everything after comma ignored. 
+	{`text/html; foo=bar, hello=world`, "text/html", map[string]string{"foo": "bar"}},
+	{`text/html ; foo=bar `, "text/html", map[string]string{"foo": "bar"}},
+	{`text/html; foo=bar `, "text/html", map[string]string{"foo": "bar"}},
+}
+
+func TestGetValueParam(t *testing.T) {
+	for _, tt := range getValueParamTests {
+		header := NewHeaderMap(HeaderContentType, tt.s)
+		value, param := header.GetValueParam(HeaderContentType)
+		if value != tt.value {
+			t.Errorf("%q, value=%s, want %s", tt.s, value, tt.value)
+		}
+		if !reflect.DeepEqual(param, tt.param) {
+			t.Errorf("%q, param=%v, want %v", tt.s, param, tt.param)
 		}
 	}
 }

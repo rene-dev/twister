@@ -17,7 +17,6 @@ package web
 import (
 	"os"
 	"bytes"
-	"mime"
 )
 
 var (
@@ -92,21 +91,18 @@ func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error) 
 		}
 		part = part[n:]
 
-		if val := header.Get(HeaderContentDisposition); val != "" {
-			disposition, dispositionParam := mime.ParseMediaType(val)
-			if disposition == "form-data" {
-				if name := dispositionParam["name"]; name != "" {
-					if filename := dispositionParam["filename"]; filename != "" {
-						contentType, contentParam := mime.ParseMediaType(header.Get(HeaderContentType))
-						result = append(result, Part{
-							ContentType:  contentType,
-							ContentParam: contentParam,
-							Name:         name,
-							Filename:     filename,
-							Data:         part})
-					} else {
-						req.Param.Add(name, string(part))
-					}
+		if disp, dispParam := header.GetValueParam(HeaderContentDisposition); disp == "form-data" {
+			if name := dispParam["name"]; name != "" {
+				if filename := dispParam["filename"]; filename != "" {
+					contentType, contentParam := header.GetValueParam(HeaderContentType)
+					result = append(result, Part{
+						ContentType:  contentType,
+						ContentParam: contentParam,
+						Name:         name,
+						Filename:     filename,
+						Data:         part})
+				} else {
+					req.Param.Add(name, string(part))
 				}
 			}
 		}

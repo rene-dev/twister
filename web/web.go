@@ -21,7 +21,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"mime"
 	"net"
 	"os"
 	"path"
@@ -159,10 +158,7 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 		req.ContentLength = -1
 	}
 
-	if s := req.Header.Get(HeaderContentType); s != "" {
-		req.ContentType, req.ContentParam = mime.ParseMediaType(s)
-	}
-
+	req.ContentType, req.ContentParam = req.Header.GetValueParam(HeaderContentType)
 	return req, nil
 }
 

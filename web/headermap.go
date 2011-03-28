@@ -82,15 +82,6 @@ func NewHeaderMap(kvs ...string) HeaderMap {
 	return m
 }
 
-// Get returns the first value for given key or "" if the key is not found.
-func (m HeaderMap) Get(key string) string {
-	values, found := m[key]
-	if !found || len(values) == 0 {
-		return ""
-	}
-	return values[0]
-}
-
 // Add appends value to slice for given key.
 func (m HeaderMap) Add(key string, value string) {
 	m[key] = append(m[key], value)
@@ -99,6 +90,24 @@ func (m HeaderMap) Add(key string, value string) {
 // Set value for given key, discarding previous values if any.
 func (m HeaderMap) Set(key string, value string) {
 	m[key] = []string{value}
+}
+
+// Get returns the first value for given key or "" if the key is not found.
+func (m HeaderMap) Get(key string) string {
+	values := m[key]
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
+}
+
+// GetValueParam returns a value and optional semi-colon prefixed name-value
+// pairs for header with name key. The value and parameter keys are converted
+// to lowercase. All whitespace is trimmed. This format is used by the
+// Content-Type and Content-Disposition headers.
+func (m HeaderMap) GetValueParam(key string) (value string, param map[string]string) {
+	value, param, _ = splitValueParam(m.Get(key))
+	return
 }
 
 // GetList returns list of comma separated values over multiple header values
@@ -134,7 +143,9 @@ func (m HeaderMap) GetList(key string) []string {
 					end = begin
 				}
 			case b == ',':
-				result = append(result, s[begin:end])
+				if begin < end {
+					result = append(result, s[begin:end])
+				}
 				begin = i + 1
 				end = begin
 			default:
@@ -257,7 +268,7 @@ func (m HeaderMap) parseHttpHeaderInternal(readLine func() ([]byte, os.Error)) (
 				return ErrBadHeaderLine
 			}
 
-			p = trimWSLeft(trimWSRight(p))
+			p = trimBytes(p)
 
 			if len(p) > 0 {
 				values := m[lastKey]
@@ -278,15 +289,18 @@ func (m HeaderMap) parseHttpHeaderInternal(readLine func() ([]byte, os.Error)) (
 			}
 
 			// Key
-			i := skipBytes(p, isToken[:])
+			i := 0
+			for i < len(p) && isToken[p[i]] {
+				i += 1
+			}
 			if i < 1 {
 				return ErrBadHeaderLine
 			}
-			key := HeaderNameBytes(p[0:i])
+			key := HeaderNameBytes(p[:i])
 			p = p[i:]
 			lastKey = key
 
-			p = trimWSLeft(p)
+			p = trimBytesLeft(p)
 
 			// Colon
 			if p[0] != ':' {
@@ -295,29 +309,25 @@ func (m HeaderMap) parseHttpHeaderInternal(readLine func() ([]byte, os.Error)) (
 			p = p[1:]
 
 			// Value 
-			p = trimWSLeft(p)
-			value := string(trimWSRight(p))
+			value := string(trimBytes(p))
 			m.Add(key, value)
 		}
 	}
 	return nil
 }
 
-func skipBytes(p []byte, f []bool) int {
-	i := 0
-	for ; i < len(p); i++ {
-		if !f[byte(p[i])] {
+func trimBytesLeft(p []byte) []byte {
+	var i int
+	for i = 0; i < len(p); i++ {
+		if !isSpace[p[i]] {
 			break
 		}
 	}
-	return i
+	return p[i:]
 }
 
-func trimWSLeft(p []byte) []byte {
-	return p[skipBytes(p, isSpace[:]):]
-}
-
-func trimWSRight(p []byte) []byte {
+func trimBytes(p []byte) []byte {
+	p = trimBytesLeft(p)
 	var i int
 	for i = len(p); i > 0; i-- {
 		if !isSpace[p[i-1]] {
@@ -466,4 +476,157 @@ func UnquoteHeaderValue(s string) string {
 		}
 	}
 	return s
+}
+
+// indexFunc returns the index in s of the first byte satisfying f(c), or -1 if
+// none do.
+func indexFunc(s string, f func(b byte) bool) int {
+	for i := 0; i < len(s); i++ {
+		if f(s[i]) {
+			return i
+		}
+	}
+	return -1
+}
+
+// splitValueParam parses a value followed by optional semi-colon prefixed
+// name-value pairsParameters.  It returns the value, parameters and the
+// reminder of the string.
+func splitValueParam(s string) (value string, param map[string]string, rest string) {
+	i := indexFunc(s, func(b byte) bool { return b == ';' })
+	if i < 0 {
+		value = s
+		rest = ""
+	} else {
+		value = s[:i]
+		rest = s[i+1:]
+	}
+	value = toLowerToken(trimRight(value))
+	param, rest = splitParam(rest)
+	return value, param, rest
+}
+
+// splitParam returns map of RFC 2616 parameters parsed from string and the
+// remainder of the string.
+func splitParam(s string) (param map[string]string, rest string) {
+	param = make(map[string]string)
+	for {
+		var name string
+		name, s = splitToken(skipSpace(s))
+		if name == "" {
+			break
+		}
+		if len(s) == 0 || s[0] != '=' {
+			break
+		}
+		var value string
+		value, s = splitTokenOrQuoted(s[1:])
+		if value == "" {
+			break
+		}
+		param[toLowerToken(name)] = value
+		s = skipSpace(s)
+		if len(s) == 0 || s[0] != ';' {
+			return param, s
+		}
+		s = s[1:]
+	}
+	return param, s
+}
+
+// skipSpace returns remainder of s following any RFC 2616 whitespace.
+func skipSpace(s string) (rest string) {
+	i := indexFunc(s, func(b byte) bool { return !isSpace[b] })
+	if i < 0 {
+		return ""
+	}
+	return s[i:]
+}
+
+// splitToken returns RFC 2616 token at start of s and the remainder of s.
+func splitToken(s string) (token, rest string) {
+	i := indexFunc(s, func(b byte) bool { return !isToken[b] })
+	if i < 0 {
+		return s, ""
+	}
+	return s[:i], s[i:]
+}
+
+// splitQuoted returns RFC 2616 quoted value at the start of s and the
+// remainder of s. The value is unescaped and quotes are removed. 
+func splitQuoted(s string) (value, rest string) {
+	if len(s) == 0 || s[0] != '"' {
+		return "", ""
+	}
+	s = s[1:]
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '"':
+			return s[:i], s[i+1:]
+		case '\\':
+			p := make([]byte, len(s)-1)
+			j := copy(p, s[:i])
+			escape := true
+			for i = i + i; i < len(s); i++ {
+				b := s[i]
+				switch {
+				case escape:
+					escape = false
+					p[j] = b
+					j += 1
+				case b == '\\':
+					escape = true
+				case b == '"':
+					return string(p[:j]), s[i+1:]
+				default:
+					p[j] = b
+					j += 1
+				}
+			}
+			return "", ""
+		}
+	}
+	return "", ""
+}
+
+func splitTokenOrQuoted(s string) (string, string) {
+	if len(s) == 0 {
+		return "", ""
+	}
+	if s[0] == '"' {
+		return splitQuoted(s)
+	}
+	return splitToken(s)
+}
+
+// toLowerToken converts RFC 2616 token bytes to lowercase.
+func toLowerToken(s string) string {
+	for i := 0; i < len(s); i++ {
+		b := s[i]
+		if 'A' <= b && b <= 'Z' {
+			p := make([]byte, len(s))
+			copy(p, s[:i])
+			p[i] = b + ('a' - 'A')
+			for i = i + 1; i < len(s); i++ {
+				b := s[i]
+				if 'A' <= b && b <= 'Z' {
+					b = b + ('a' - 'A')
+				}
+				p[i] = b
+			}
+			return string(p)
+		}
+	}
+	return s
+}
+
+// trimRight removes RFC 2616 whitespace bytes from the end of s.
+func trimRight(s string) string {
+	var i int
+	for i = len(s); i > 0; i-- {
+		if !isSpace[s[i-1]] {
+			break
+		}
+	}
+	return s[0:i]
 }
