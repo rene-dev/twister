@@ -4,6 +4,8 @@ import (
 	"flag"
 	"github.com/garyburd/twister/web"
 	"github.com/garyburd/twister/server"
+	"github.com/garyburd/twister/expvar"
+	"github.com/garyburd/twister/pprof"
 	"template"
 	"net"
 	"log"
@@ -19,14 +21,18 @@ func main() {
 	flag.Parse()
 	h := web.SetErrorHandler(coreErrorHandler,
 		web.ProxyHeaderHandler("X-Real-Ip", "X-Scheme",
-			web.FormHandler(10000, true, web.NewHostRouter(nil).
-				Register("www.example.com", web.NewRouter().
+			web.NewRouter().
+				Register("/debug/<:.*>", "*", web.NewRouter().
+					Register("/debug/expvar", "GET", expvar.ServeWeb).
+					Register("/debug/pprof/<:.*>", "*", pprof.ServeWeb)).
+				Register("/<:.*>", "*", web.FormHandler(10000, true, web.NewRouter().
 				Register("/", "GET", homeHandler).
 				Register("/core/file", "GET", web.FileHandler("static/file.txt")).
 				Register("/static/<path:.*>", "GET", web.DirectoryHandler("static/")).
 				Register("/chat", "GET", chatFrameHandler).
 				Register("/chat/ws", "GET", chatWsHandler).
 				Register("/mp", "GET", mpGetHandler, "POST", mpPostHandler).
+				Register("/debug/pprof/<command>", "*", web.HandlerFunc(pprof.ServeWeb)).
 				Register("/core/", "GET", coreHandler).
 				Register("/core/a/<a>/", "GET", coreHandler).
 				Register("/core/b/<b>/c/<c>", "GET", coreHandler).

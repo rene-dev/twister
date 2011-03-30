@@ -181,6 +181,9 @@ type requestReader struct {
 
 func (t requestReader) Read(p []byte) (int, os.Error) {
 	if t.requestErr != nil {
+		if t.requestErr == web.ErrInvalidState {
+			log.Println("twister: Request Read after response started.")
+		}
 		return 0, t.requestErr
 	}
 	if t.write100Continue {
@@ -206,7 +209,7 @@ func (t *transaction) Respond(status int, header web.HeaderMap) (body web.Respon
 		return nil
 	}
 	if t.respondCalled {
-		log.Println("twister: multiple calls to Respond")
+		log.Println("twister: Multiple calls to Respond")
 		return nil
 	}
 	t.respondCalled = true

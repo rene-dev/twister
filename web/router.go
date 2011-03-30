@@ -59,7 +59,7 @@ type route struct {
 	handlers map[string]Handler
 }
 
-var parameterRegexp = regexp.MustCompile("<([A-Za-z0-9_]+)(:[^>]*)?>")
+var parameterRegexp = regexp.MustCompile("<([A-Za-z0-9_]*)(:[^>]*)?>")
 
 // compilePattern compiles the pattern to a regexp and array of parameter names.
 func compilePattern(pattern string, addSlash bool, sep string) (*regexp.Regexp, []string) {
@@ -74,14 +74,19 @@ func compilePattern(pattern string, addSlash bool, sep string) (*regexp.Regexp, 
 			break
 		} else {
 			buf.WriteString(regexp.QuoteMeta(pattern[0:a[0]]))
-			names[i] = pattern[a[2]:a[3]]
-			i += 1
-			if a[4] >= 0 {
+			name := pattern[a[2]:a[3]]
+			if name != "" {
+				names[i] = pattern[a[2]:a[3]]
+				i += 1
 				buf.WriteString("(")
+			}
+			if a[4] >= 0 {
 				buf.WriteString(pattern[a[4]+1 : a[5]])
-				buf.WriteString(")")
 			} else {
-				buf.WriteString("([^" + sep + "]+)")
+				buf.WriteString("[^" + sep + "]+")
+			}
+			if name != "" {
+				buf.WriteString(")")
 			}
 			pattern = pattern[a[1]:]
 		}

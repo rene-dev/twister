@@ -64,6 +64,8 @@ var routeTests = []struct {
 	{url: "/e/foo/", method: "GET", status: StatusNotFound, body: ""},
 	{url: "/f/foo/bar", method: "GET", status: StatusMovedPermanently, body: ""},
 	{url: "/f/foo/bar/", method: "GET", status: StatusOK, body: "f x:foo y:bar"},
+	{url: "/g/foo", method: "GET", status: StatusNotFound, body: ""},
+	{url: "/g/99", method: "GET", status: StatusOK, body: "g x:99"},
 }
 
 func TestRouter(t *testing.T) {
@@ -75,6 +77,7 @@ func TestRouter(t *testing.T) {
 	r.Register("/d/", "GET", routeTestHandler("d"))
 	r.Register("/e/<x>", "GET", routeTestHandler("e"))
 	r.Register("/f/<x>/<y>/", "GET", routeTestHandler("f"))
+	r.Register("/g/<x:[0-9]+>", "GET", routeTestHandler("g"))
 
 	for _, rt := range routeTests {
 		status, _, body := RunHandler(rt.url, rt.method, nil, nil, r)
