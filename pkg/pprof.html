@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Twister: pprof</title>
+<link rel="stylesheet" href="../static/base.css" type="text/css"/> 
+</head>
+<body>
+<div id="content"> 
+<h1><a href="..">Twister</a>: pprof</h1>
+
+<h4>Table Of Contents</h4>
+<ul>
+<li><a href="#package">Package</a>
+<li><a href="#ServeWeb">func ServeWeb</a>
+</ul>
+
+<h2 id="package">Package</h2>
+
+<p><code>import "github.com/garyburd/twister/pprof"</code></p>
+
+<p>
+The ppprof package serves runtime profile data in the format used by the
+pprof tool (<a href="http://code.google.com/p/google-perftools/">http://code.google.com/p/google-perftools/</a>). A copy of the pprof
+tool is included in the Go distribution as the gopprof command.
+</p>
+<p>
+The application should wrap the ServeWeb function in this package with
+appropriate access control and register the resulting handler for a path
+with the suffix &#34;/pprof/.*&#34;. An example of registering the handler with
+a web.Router is:
+</p>
+<pre>r.Register(&#34;/debug/pprof/&lt;:.*&gt;&#34;, &#34;*&#34;, pprof.ServeWeb)
+</pre>
+<p>
+The handler is not compatible with the XSRF protection in
+web.WebFormHandler. See twister/example/demo/main.go for an example of how
+structure an application with both pprof an XSRF protection.
+</p>
+<p>
+Use the gopprof tool to look at a heap profile:
+</p>
+<pre>gopprof <a href="http://localhost:8080/debug/pprof/heap">http://localhost:8080/debug/pprof/heap</a>
+</pre>
+<p>
+Or to look at a 30-second CPU profile:
+</p>
+<pre>gopprof <a href="http://localhost:6060/debug/pprof/profile">http://localhost:6060/debug/pprof/profile</a>
+</pre>
+
+
+
+
+<h2 id="ServeWeb">func <a href="http://github.com/garyburd/twister/blob/master/pprof/pprof.go#L116">ServeWeb</a></h2>
+<p><code>func ServeWeb(req *web.Request)</code></p>
+<p>
+ServeWeb serves profile data for the pprof tool.
+</p>
+
+
+<hr>
+This page was generated automatically from the source code. If you installed
+Twister using <a href="http://golang.org/cmd/goinstall/">goinstall</a>, then
+you can also view the source documentation with <a
+href="http://golang.org/cmd/godoc/">godoc</a>.  
+</div>
+</body>
+</html>

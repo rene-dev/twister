@@ -62,7 +62,9 @@
     <li><a href="#HeaderMap.Add">func (HeaderMap) Add</a>
     <li><a href="#HeaderMap.Get">func (HeaderMap) Get</a>
     <li><a href="#HeaderMap.GetList">func (HeaderMap) GetList</a>
+    <li><a href="#HeaderMap.GetValueParam">func (HeaderMap) GetValueParam</a>
     <li><a href="#HeaderMap.ParseHttpHeader">func (HeaderMap) ParseHttpHeader</a>
+    <li><a href="#HeaderMap.ParseHttpHeaderBytes">func (HeaderMap) ParseHttpHeaderBytes</a>
     <li><a href="#HeaderMap.Set">func (HeaderMap) Set</a>
     <li><a href="#HeaderMap.WriteHttpHeader">func (HeaderMap) WriteHttpHeader</a>
         </ul>
@@ -141,6 +143,7 @@ const (
  HeaderAuthorization        = &#34;Authorization&#34;
  HeaderCacheControl         = &#34;Cache-Control&#34;
  HeaderConnection           = &#34;Connection&#34;
+ HeaderContentDisposition   = &#34;Content-Disposition&#34;
  HeaderContentEncoding      = &#34;Content-Encoding&#34;
  HeaderContentLanguage      = &#34;Content-Language&#34;
  HeaderContentLength        = &#34;Content-Length&#34;
@@ -307,20 +310,20 @@ FormatDeltaSeconds returns current time plus delta formatted per HTTP convention
 HTMLEscapeString returns s with special HTML characters escaped.
 </p>
 
-<h2 id="HeaderName">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L364">HeaderName</a></h2>
+<h2 id="HeaderName">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L401">HeaderName</a></h2>
 <p><code>func HeaderName(name string) string</code></p>
 <p>
 HeaderName returns the canonical format of the header name.
 </p>
 
-<h2 id="HeaderNameBytes">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L370">HeaderNameBytes</a></h2>
+<h2 id="HeaderNameBytes">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L407">HeaderNameBytes</a></h2>
 <p><code>func HeaderNameBytes(p []byte) string</code></p>
 <p>
 HeaderNameBytes returns the canonical format for the header name specified
 by the bytes in p. This function modifies the contents p.
 </p>
 
-<h2 id="ParseMultipartForm">func <a href="http://github.com/garyburd/twister/blob/master/web/multipart.go#L40">ParseMultipartForm</a></h2>
+<h2 id="ParseMultipartForm">func <a href="http://github.com/garyburd/twister/blob/master/web/multipart.go#L39">ParseMultipartForm</a></h2>
 <p><code>func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error)</code></p>
 <p>
 ParseMultipartForm parses a multipart/form-data body. Form fields are
@@ -335,13 +338,13 @@ ProtocolVersion combines HTTP major and minor protocol numbers into a single
 integer for easy comparision of protocol versions.
 </p>
 
-<h2 id="QuoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L388">QuoteHeaderValue</a></h2>
+<h2 id="QuoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L425">QuoteHeaderValue</a></h2>
 <p><code>func QuoteHeaderValue(s string) string</code></p>
 <p>
 QuoteHeaderValue quotes s using quoted-string rules described in RFC 2616.
 </p>
 
-<h2 id="QuoteHeaderValueOrToken">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L404">QuoteHeaderValueOrToken</a></h2>
+<h2 id="QuoteHeaderValueOrToken">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L441">QuoteHeaderValueOrToken</a></h2>
 <p><code>func QuoteHeaderValueOrToken(s string) string</code></p>
 <p>
 QuoteHeaderValueOrToken quotes s if s is not a valid token per RFC 2616.
@@ -390,7 +393,7 @@ func requestUid(req *web.Request) (string, os.Error) {
 StatusText returns a text description of an HTTP status code.
 </p>
 
-<h2 id="UnquoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L415">UnquoteHeaderValue</a></h2>
+<h2 id="UnquoteHeaderValue">func <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L452">UnquoteHeaderValue</a></h2>
 <p><code>func UnquoteHeaderValue(s string) string</code></p>
 <p>
 UnquoteHeaderValue unquotes s if s is surrounded by quotes, otherwise s is
@@ -653,7 +656,7 @@ request with an error response.
 
 
 
-    <h3 id="HandlerFunc.ServeWeb">func (HandlerFunc) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L125">ServeWeb</a></h3>
+    <h3 id="HandlerFunc.ServeWeb">func (HandlerFunc) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L124">ServeWeb</a></h3>
     <p><code>func (f HandlerFunc) ServeWeb(req *Request)</code></p>
     <p>
 ServeWeb calls f(req).
@@ -682,40 +685,58 @@ NewHeaderMap returns a map initialized with the given key-value pairs.
 </p>
 
 
-    <h3 id="HeaderMap.Add">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L95">Add</a></h3>
+    <h3 id="HeaderMap.Add">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L86">Add</a></h3>
     <p><code>func (m HeaderMap) Add(key string, value string)</code></p>
     <p>
 Add appends value to slice for given key.
 </p>
 
-    <h3 id="HeaderMap.Get">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L86">Get</a></h3>
+    <h3 id="HeaderMap.Get">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L96">Get</a></h3>
     <p><code>func (m HeaderMap) Get(key string) string</code></p>
     <p>
 Get returns the first value for given key or &#34;&#34; if the key is not found.
 </p>
 
-    <h3 id="HeaderMap.GetList">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L107">GetList</a></h3>
+    <h3 id="HeaderMap.GetList">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L116">GetList</a></h3>
     <p><code>func (m HeaderMap) GetList(key string) []string</code></p>
     <p>
 GetList returns list of comma separated values over multiple header values
 for the given key. Commas are ignored in quoted strings. Quoted values are
-not unescaped or unqoted. Whitespace is trimmmed.
+not unescaped or unquoted. Whitespace is trimmmed.
 </p>
 
-    <h3 id="HeaderMap.ParseHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L184">ParseHttpHeader</a></h3>
-    <p><code>func (m HeaderMap) ParseHttpHeader(b *bufio.Reader) (err os.Error)</code></p>
+    <h3 id="HeaderMap.GetValueParam">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L108">GetValueParam</a></h3>
+    <p><code>func (m HeaderMap) GetValueParam(key string) (value string, param map[string]string)</code></p>
+    <p>
+GetValueParam returns a value and optional semi-colon prefixed name-value
+pairs for header with name key. The value and parameter keys are converted
+to lowercase. All whitespace is trimmed. This format is used by the
+Content-Type and Content-Disposition headers.
+</p>
+
+    <h3 id="HeaderMap.ParseHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L195">ParseHttpHeader</a></h3>
+    <p><code>func (m HeaderMap) ParseHttpHeader(br *bufio.Reader) (err os.Error)</code></p>
     <p>
 ParseHttpHeader parses the HTTP headers and appends the values to the
 supplied map. Header names are converted to canonical format.
 </p>
 
-    <h3 id="HeaderMap.Set">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L100">Set</a></h3>
+    <h3 id="HeaderMap.ParseHttpHeaderBytes">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L205">ParseHttpHeaderBytes</a></h3>
+    <p><code>func (m HeaderMap) ParseHttpHeaderBytes(p []byte) (int, os.Error)</code></p>
+    <p>
+ParseHttpHeaderBytes parses the HTTP headers and appends the values to the
+supplied map. Header names are converted to canonical format. The function
+returns the number of bytes in the header including the trailing blank line
+and its line terminator.
+</p>
+
+    <h3 id="HeaderMap.Set">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L91">Set</a></h3>
     <p><code>func (m HeaderMap) Set(key string, value string)</code></p>
     <p>
 Set value for given key, discarding previous values if any.
 </p>
 
-    <h3 id="HeaderMap.WriteHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L152">WriteHttpHeader</a></h3>
+    <h3 id="HeaderMap.WriteHttpHeader">func (HeaderMap) <a href="http://github.com/garyburd/twister/blob/master/web/headermap.go#L163">WriteHttpHeader</a></h3>
     <p><code>func (m HeaderMap) WriteHttpHeader(w io.Writer) os.Error</code></p>
     <p>
 WriteHttpHeader writes the map in HTTP header format.
@@ -752,20 +773,20 @@ with the value of the hostOverride flag if set.
 
 
 
-    <h3 id="NewHostRouter">func <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L225">NewHostRouter</a></h3>
+    <h3 id="NewHostRouter">func <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L230">NewHostRouter</a></h3>
     <p><code>func NewHostRouter(defaultHandler Handler) *HostRouter</code></p>
     <p>
 NewHostRouter allocates and initializes a new HostRouter.
 </p>
 
 
-    <h3 id="HostRouter.Register">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L233">Register</a></h3>
+    <h3 id="HostRouter.Register">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L238">Register</a></h3>
     <p><code>func (router *HostRouter) Register(hostPattern string, handler Handler) *HostRouter</code></p>
     <p>
 Register a handler for the given pattern.
 </p>
 
-    <h3 id="HostRouter.ServeWeb">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L254">ServeWeb</a></h3>
+    <h3 id="HostRouter.ServeWeb">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L259">ServeWeb</a></h3>
     <p><code>func (router *HostRouter) ServeWeb(req *Request)</code></p>
     <p>
 ServeWeb dispatches the request to a registered handler.
@@ -906,7 +927,7 @@ Request represents an HTTP request to the server.
 
 
 
-    <h3 id="NewRequest">func <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L129">NewRequest</a></h3>
+    <h3 id="NewRequest">func <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L128">NewRequest</a></h3>
     <p><code>func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion int, header HeaderMap) (req *Request, err os.Error)</code></p>
     <p>
 NewRequest allocates and initializes a request. This function is provided
@@ -914,7 +935,7 @@ for the convenience of protocol adapters (fcgi, native http server, ...).
 </p>
 
 
-    <h3 id="Request.BodyBytes">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L212">BodyBytes</a></h3>
+    <h3 id="Request.BodyBytes">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L208">BodyBytes</a></h3>
     <p><code>func (req *Request) BodyBytes(maxLen int) ([]byte, os.Error)</code></p>
     <p>
 BodyBytes returns the request body a slice of bytes. If maxLen is negative,
@@ -922,13 +943,13 @@ then no limit is imposed on the length of the body. If the body is longer
 than maxLen, then ErrRequestEntityTooLarge is returned.
 </p>
 
-    <h3 id="Request.Error">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L186">Error</a></h3>
+    <h3 id="Request.Error">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L182">Error</a></h3>
     <p><code>func (req *Request) Error(status int, reason os.Error, headerKeysAndValues ...string)</code></p>
     <p>
 Error responds to the request with an error.
 </p>
 
-    <h3 id="Request.ParseForm">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L240">ParseForm</a></h3>
+    <h3 id="Request.ParseForm">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L236">ParseForm</a></h3>
     <p><code>func (req *Request) ParseForm(maxRequestBodyLen int) os.Error</code></p>
     <p>
 ParseForm parses url-encoded form bodies. ParseForm is idempotent.  Most
@@ -936,13 +957,13 @@ applications should use the ParseForm middleware instead of calling this
 method directly.
 </p>
 
-    <h3 id="Request.Redirect">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L191">Redirect</a></h3>
+    <h3 id="Request.Redirect">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L187">Redirect</a></h3>
     <p><code>func (req *Request) Redirect(url string, perm bool, headerKeysAndValues ...string)</code></p>
     <p>
 Redirect responds to the request with a redirect to the specified URL.
 </p>
 
-    <h3 id="Request.Respond">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L172">Respond</a></h3>
+    <h3 id="Request.Respond">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L168">Respond</a></h3>
     <p><code>func (req *Request) Respond(status int, headerKeysAndValues ...string) ResponseBody</code></p>
     <p>
 Respond is a convenience function that adds (key, value) pairs in
@@ -1041,14 +1062,14 @@ trailing slash to the URL with the trailing slash.
 
 
 
-    <h3 id="NewRouter">func <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L193">NewRouter</a></h3>
+    <h3 id="NewRouter">func <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L198">NewRouter</a></h3>
     <p><code>func NewRouter() *Router</code></p>
     <p>
 NewRouter allocates and initializes a new Router.
 </p>
 
 
-    <h3 id="Router.Register">func (*Router) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L103">Register</a></h3>
+    <h3 id="Router.Register">func (*Router) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L108">Register</a></h3>
     <p><code>func (router *Router) Register(pattern string, handlers ...interface{}) *Router</code></p>
     <p>
 Register the route with the given pattern and handlers. The structure of the
@@ -1062,7 +1083,7 @@ where method is a string and handler is a Handler or a
 func(*Request). Use &#34;*&#34; to match all methods.
 </p>
 
-    <h3 id="Router.ServeWeb">func (*Router) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L184">ServeWeb</a></h3>
+    <h3 id="Router.ServeWeb">func (*Router) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L189">ServeWeb</a></h3>
     <p><code>func (router *Router) ServeWeb(req *Request)</code></p>
     <p>
 ServeWeb dispatches the request to a registered handler.
