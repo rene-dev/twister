@@ -15,7 +15,18 @@
 <li><a href="#Run">func Run</a>
 <li><a href="#ShortLogger">func ShortLogger</a>
 <li><a href="#VerboseLogger">func VerboseLogger</a>
+<li><a href="#ApacheCombinedLogger">type ApacheCombinedLogger</a>
+        <ul>
+    <li><a href="#NewApacheCombinedLogger">func NewApacheCombinedLogger</a>
+    <li><a href="#ApacheCombinedLogger.Log">func (*ApacheCombinedLogger) Log</a>
+    <li><a href="#ApacheCombinedLogger.SwitchFiles">func (*ApacheCombinedLogger) SwitchFiles</a>
+        </ul>
 <li><a href="#LogRecord">type LogRecord</a>
+<li><a href="#Logger">type Logger</a>
+<li><a href="#LoggerFunc">type LoggerFunc</a>
+            <ul>
+    <li><a href="#LoggerFunc.Log">func (LoggerFunc) Log</a>
+            </ul>
 <li><a href="#Server">type Server</a>
             <ul>
     <li><a href="#Server.Serve">func (*Server) Serve</a>
@@ -40,7 +51,7 @@ var (
 )
 </pre>
 
-<h2 id="Run">func <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L455">Run</a></h2>
+<h2 id="Run">func <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L469">Run</a></h2>
 <p><code>func Run(addr string, handler web.Handler)</code></p>
 <p>
 Run is a convenience function for running an HTTP server. Run listens on the
@@ -75,16 +86,55 @@ func main() {
 }
 </pre>
 
-<h2 id="ShortLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L61">ShortLogger</a></h2>
+<h2 id="ShortLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L67">ShortLogger</a></h2>
 <p><code>func ShortLogger(lr *LogRecord)</code></p>
 <p>
 ShortLogger logs a short summary of the request.
 </p>
 
-<h2 id="VerboseLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L70">VerboseLogger</a></h2>
+<h2 id="VerboseLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L76">VerboseLogger</a></h2>
 <p><code>func VerboseLogger(lr *LogRecord)</code></p>
 <p>
 VerboseLogger prints out just about everything about the request and response.
+</p>
+
+
+<h2 id="ApacheCombinedLogger">type ApacheCombinedLogger</h2>
+<p>
+ApacheCombinedLogger writes Apache Combined Log style logs to the given writer.
+</p>
+<p>
+Example usage:
+</p>
+<pre>logFile, err := os.Open(&#34;access.log&#34;, os.O_CREAT|os.O_WRONLY|os.O_APPEND, 0644)
+if err != nil {
+    panic(fmt.Sprintf(&#34;Failed to open \&#34;access.log\&#34;: %s&#34;, err.String()))
+}
+
+defer logFile.Close()
+logger := server.NewApacheCombinedLogger(logFile)
+</pre>
+
+<pre>type ApacheCombinedLogger struct {
+ // contains unexported fields
+}</pre>
+
+
+
+    <h3 id="NewApacheCombinedLogger">func <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L118">NewApacheCombinedLogger</a></h3>
+    <p><code>func NewApacheCombinedLogger(w io.Writer) *ApacheCombinedLogger</code></p>
+    <p>
+NewApacheCombinedLogger creates a new Apache logger.
+</p>
+
+
+    <h3 id="ApacheCombinedLogger.Log">func (*ApacheCombinedLogger) <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L130">Log</a></h3>
+    <p><code>func (acl *ApacheCombinedLogger) Log(lr *LogRecord)</code></p>
+    
+    <h3 id="ApacheCombinedLogger.SwitchFiles">func (*ApacheCombinedLogger) <a href="http://github.com/garyburd/twister/blob/master/server/log.go#L123">SwitchFiles</a></h3>
+    <p><code>func (acl *ApacheCombinedLogger) SwitchFiles(w io.Writer)</code></p>
+    <p>
+SwitchFiles switches the output of the logger to the new writer.
 </p>
 
 
@@ -109,12 +159,45 @@ LogRecord records information about a request for logging.
  // Number of bytes written to output including headers and transfer encoding.
  Written int
 
+ // Size of the header in bytes.
+ HeaderSize int
+
  // True if connection hijacked.
  Hijacked bool
 }</pre>
 
 
 
+
+
+<h2 id="Logger">type Logger</h2>
+<p>
+Logger defines an interface for logging a request.
+</p>
+
+<pre>type Logger interface {
+ Log(lr *LogRecord)
+}</pre>
+
+
+
+
+
+<h2 id="LoggerFunc">type LoggerFunc</h2>
+<p>
+LoggerFunc is a type adapter to allow the use of ordinary functions as Logger.
+</p>
+
+<pre>type LoggerFunc func(*LogRecord)</pre>
+
+
+
+
+    <h3 id="LoggerFunc.Log">func (LoggerFunc) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L72">Log</a></h3>
+    <p><code>func (f LoggerFunc) Log(lr *LogRecord)</code></p>
+    <p>
+Log calls f(lr).
+</p>
 
 
 <h2 id="Server">type Server</h2>
@@ -145,13 +228,13 @@ Server defines parameters for running an HTTP server.
  WriteTimeout int64
 
  // Log the request.
- Logger func(lr *LogRecord)
+ Logger Logger
 }</pre>
 
 
 
 
-    <h3 id="Server.Serve">func (*Server) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L415">Serve</a></h3>
+    <h3 id="Server.Serve">func (*Server) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L429">Serve</a></h3>
     <p><code>func (s *Server) Serve() os.Error</code></p>
     <p>
 Serve accepts incoming HTTP connections on s.Listener, creating a new
