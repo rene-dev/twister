@@ -21,32 +21,23 @@ import (
 	"bufio"
 )
 
-type responseData struct {
-	// Number of bytes written to output including headers and transfer encoding.
-	written int
-
-	// Number of header bytes written.
-	headerWritten int
-}
-
 type responseBody interface {
 	web.ResponseBody
 
 	// finish the response body and return an error if the connection should be
 	// closed due to a write error.
-	finish() (responseData, os.Error)
+	finish() (int, os.Error)
 }
 
 // nullResponseBody discoards the response body.
 type nullResponseBody struct {
-	err          os.Error
-	responseData responseData
+	err     os.Error
+	written int
 }
 
 func newNullResponseBody(wr io.Writer, header []byte) (*nullResponseBody, os.Error) {
 	w := &nullResponseBody{}
-	w.responseData.headerWritten, w.err = wr.Write(header)
-	w.responseData.written = w.responseData.headerWritten
+	w.written, w.err = wr.Write(header)
 	return w, w.err
 }
 
@@ -61,12 +52,12 @@ func (w *nullResponseBody) Flush() os.Error {
 	return w.err
 }
 
-func (w *nullResponseBody) finish() (responseData, os.Error) {
+func (w *nullResponseBody) finish() (int, os.Error) {
 	err := w.err
 	if w.err == nil {
 		w.err = web.ErrInvalidState
 	}
-	return w.responseData, err
+	return w.written, err
 }
 
 // identityResponseBody implements identity encoding of the response body. 
@@ -77,8 +68,11 @@ type identityResponseBody struct {
 	// Value of Content-Length header.
 	contentLength int
 
-	// Bytes written.
-	responseData responseData
+	// Number of body bytes written.
+	written int
+
+	// Number of heaer bytes written.
+	headerWritten int
 }
 
 func newIdentityResponseBody(wr io.Writer, header []byte, bufferSize, contentLength int) (*identityResponseBody, os.Error) {
@@ -89,8 +83,7 @@ func newIdentityResponseBody(wr io.Writer, header []byte, bufferSize, contentLen
 		return w, w.err
 	}
 
-	w.responseData.headerWritten, w.err = w.bw.Write(header)
-	w.responseData.written = w.responseData.headerWritten
+	w.headerWritten, w.err = w.bw.Write(header)
 	return w, w.err
 }
 
@@ -100,8 +93,8 @@ func (w *identityResponseBody) Write(p []byte) (int, os.Error) {
 	}
 	var n int
 	n, w.err = w.bw.Write(p)
-	w.responseData.written += n
-	if w.err == nil && w.contentLength >= 0 && (w.responseData.written - w.responseData.headerWritten) > w.contentLength {
+	w.written += n
+	if w.err == nil && w.contentLength >= 0 && w.written > w.contentLength {
 		w.err = os.NewError("twister: long write by handler")
 	}
 	return n, w.err
@@ -115,19 +108,19 @@ func (w *identityResponseBody) Flush() os.Error {
 	return w.err
 }
 
-func (w *identityResponseBody) finish() (responseData, os.Error) {
+func (w *identityResponseBody) finish() (int, os.Error) {
 	w.Flush()
 	if w.err != nil {
-		return w.responseData, w.err
+		return w.headerWritten + w.written, w.err
 	}
-	if w.contentLength >= 0 && (w.responseData.written - w.responseData.headerWritten) < w.contentLength {
+	if w.contentLength >= 0 && w.written < w.contentLength {
 		w.err = os.NewError("twister: short write by handler")
 	}
 	err := w.err
 	if w.err == nil {
 		w.err = web.ErrInvalidState
 	}
-	return w.responseData, err
+	return w.headerWritten + w.written, err
 }
 
 type chunkedResponseBody struct {
@@ -137,7 +130,7 @@ type chunkedResponseBody struct {
 	s       int       // start of chunk in buf 
 	n       int       // current write position in buf
 	ndigit  int       // number of hex digits in chunk size
-	responseData responseData // Bytes written
+	written int
 }
 
 func newChunkedResponseBody(wr io.Writer, header []byte, bufferSize int) (*chunkedResponseBody, os.Error) {
@@ -150,8 +143,7 @@ func newChunkedResponseBody(wr io.Writer, header []byte, bufferSize int) (*chunk
 	if len(header) < len(w.buf) {
 		w.n = copy(w.buf, header)
 	} else {
-		w.responseData.headerWritten, w.err = w.wr.Write(header)
-		w.responseData.written = w.responseData.headerWritten
+		w.written, w.err = w.wr.Write(header)
 	}
 
 	w.s = w.n
@@ -162,7 +154,7 @@ func newChunkedResponseBody(wr io.Writer, header []byte, bufferSize int) (*chunk
 func (w *chunkedResponseBody) writeBuf() {
 	var n int
 	n, w.err = w.wr.Write(w.buf[:w.n])
-	w.responseData.written += n
+	w.written += n
 }
 
 func (w *chunkedResponseBody) finalizeChunk() {
@@ -207,16 +199,16 @@ func (w *chunkedResponseBody) Flush() os.Error {
 	return nil
 }
 
-func (w *chunkedResponseBody) finish() (responseData, os.Error) {
+func (w *chunkedResponseBody) finish() (int, os.Error) {
 	if w.err != nil {
-		return w.responseData, w.err
+		return w.written, w.err
 	}
 	w.finalizeChunk()
 	const last = "0\r\n\r\n"
 	if w.n+len(last) > len(w.buf) {
 		w.writeBuf()
 		if w.err != nil {
-			return w.responseData, w.err
+			return w.written, w.err
 		}
 		w.n = 0
 	}
@@ -227,7 +219,7 @@ func (w *chunkedResponseBody) finish() (responseData, os.Error) {
 	if w.err == nil {
 		w.err = web.ErrInvalidState
 	}
-	return w.responseData, err
+	return w.written, err
 }
 
 func (w *chunkedResponseBody) Write(p []byte) (int, os.Error) {

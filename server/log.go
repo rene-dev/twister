@@ -43,8 +43,8 @@ type LogRecord struct {
 	// Number of bytes written to output including headers and transfer encoding.
 	Written int
 
-	// Number of header bytes written including transfer encoding.
-	HeaderWritten int
+	// Size of the header in bytes.
+	HeaderSize int
 
 	// True if connection hijacked.
 	Hijacked bool
@@ -90,7 +90,7 @@ func VerboseLogger(lr *LogRecord) {
 		fmt.Fprintf(b, "  Error: %v\n", lr.Error)
 		fmt.Fprintf(b, "  Status: %d\n", lr.Status)
 		fmt.Fprintf(b, "  Written: %d\n", lr.Written)
-		fmt.Fprintf(b, "  HeaderWritten: %d\n", lr.HeaderWritten)
+		fmt.Fprintf(b, "  HeaderSize: %d\n", lr.HeaderSize)
 		writeStringMap(b, "Header", lr.Header)
 	}
 	log.Print(b.String())
@@ -112,7 +112,7 @@ type ApacheCombinedLogger struct {
 	w io.Writer
 }
 
-const ApacheTimeFormat = "02/Jan/2006:15:04:05 -0700"
+const apacheTimeFormat = "02/Jan/2006:15:04:05 -0700"
 
 // NewApacheCombinedLogger creates a new Apache logger.
 func NewApacheCombinedLogger(w io.Writer) *ApacheCombinedLogger {
@@ -139,11 +139,11 @@ func (acl *ApacheCombinedLogger) Log(lr *LogRecord) {
 	}
 
 	var b = &bytes.Buffer{}
-	fmt.Fprintf(b, "%s - - [%s] ", tcpaddr.IP, time.LocalTime().Format(ApacheTimeFormat))
+	fmt.Fprintf(b, "%s - - [%s] ", tcpaddr.IP, time.LocalTime().Format(apacheTimeFormat))
 	fmt.Fprintf(b, "\"%s %s HTTP/%d.%d\" ",
 		lr.Request.Method, lr.Request.URL, lr.Request.ProtocolVersion/1000, lr.Request.ProtocolVersion%1000)
 	fmt.Fprintf(b, "%d %d \"%s\" \"%s\"\n",
-		lr.Status, lr.Written-lr.HeaderWritten, lr.Request.Header.Get(web.HeaderReferer),
+		lr.Status, lr.Written-lr.HeaderSize, lr.Request.Header.Get(web.HeaderReferer),
 		lr.Request.Header.Get(web.HeaderUserAgent))
 
 	// Lock to make sure that we don't write while log output is being changed.

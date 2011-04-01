@@ -57,15 +57,15 @@ type Server struct {
 	WriteTimeout int64
 
 	// Log the request.
-	Logger LogHandler
+	Logger Logger
 }
 
-// LogHandler defines an interface for logging a request.
-type LogHandler interface {
+// Logger defines an interface for logging a request.
+type Logger interface {
 	Log(lr *LogRecord)
 }
 
-// LoggerFunc is a type adapter to allow the use of ordinary functions as LogHandlers.
+// LoggerFunc is a type adapter to allow the use of ordinary functions as Logger.
 type LoggerFunc func(*LogRecord)
 
 // Log calls f(lr).
@@ -88,6 +88,7 @@ type transaction struct {
 	write100Continue   bool
 	status             int
 	header             web.HeaderMap
+	headerSize         int
 }
 
 var requestLineRegexp = regexp.MustCompile("^([_A-Za-z0-9]+) ([^ ]+) HTTP/([0-9]+)\\.([0-9]+)[\r\n ]+$")
@@ -279,6 +280,7 @@ func (t *transaction) Respond(status int, header web.HeaderMap) (body web.Respon
 	b.WriteString(text)
 	b.WriteString("\r\n")
 	header.WriteHttpHeader(&b)
+	t.headerSize = b.Len()
 
 	const bufferSize = 4096
 	switch {
@@ -326,9 +328,9 @@ func (t *transaction) finish() os.Error {
 	if !t.respondCalled {
 		t.req.Respond(web.StatusOK, web.HeaderContentType, "text/html charset=utf-8")
 	}
-	var responseData responseData
+	var written int
 	if t.responseErr == nil {
-		responseData, t.responseErr = t.responseBody.finish()
+		written, t.responseErr = t.responseBody.finish()
 	}
 	if t.responseErr != nil {
 		t.closeAfterResponse = true
@@ -344,12 +346,12 @@ func (t *transaction) finish() os.Error {
 			}
 		}
 		t.server.Logger.Log(&LogRecord{
-			HeaderWritten: responseData.headerWritten,
-			Written: responseData.written,
-			Request: t.req,
-			Header:  t.header,
-			Status:  t.status,
-			Error:   err})
+			Written:    written,
+			Request:    t.req,
+			Header:     t.header,
+			HeaderSize: t.headerSize,
+			Status:     t.status,
+			Error:      err})
 	}
 	t.conn = nil
 	t.br = nil
