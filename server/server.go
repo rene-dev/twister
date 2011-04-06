@@ -25,6 +25,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 )
@@ -58,6 +59,9 @@ type Server struct {
 
 	// Log the request.
 	Logger Logger
+
+	// If true, recover from handler panics.
+	RecoverHandlers bool
 }
 
 // Logger defines an interface for logging a request.
@@ -378,6 +382,17 @@ func (s *Server) serveConnection(conn net.Conn) {
 			}
 			break
 		}
+
+		defer func() {
+			if s.RecoverHandlers {
+				if r := recover(); r != nil {
+					url := t.req.URL.String()
+					stack := string(debug.Stack())
+					log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
+				}
+			}
+		}()
+
 		s.Handler.ServeWeb(t.req)
 		if t.hijacked {
 			return
