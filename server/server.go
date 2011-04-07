@@ -60,8 +60,8 @@ type Server struct {
 	// Log the request.
 	Logger Logger
 
-	// If true, recover from handler panics.
-	RecoverHandlers bool
+	// If true, do not recover from handler panics.
+	NoRecoverHandlers bool
 }
 
 // Logger defines an interface for logging a request.
@@ -384,7 +384,7 @@ func (s *Server) serveConnection(conn net.Conn) {
 		}
 
 		defer func() {
-			if s.RecoverHandlers {
+			if !s.NoRecoverHandlers {
 				if r := recover(); r != nil {
 					url := t.req.URL.String()
 					stack := string(debug.Stack())
