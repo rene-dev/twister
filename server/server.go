@@ -366,9 +366,10 @@ func (t *transaction) finish() os.Error {
 func (s *Server) serveConnection(conn net.Conn) {
 	var t *transaction
 
-	defer func() {
-		if !s.NoRecoverHandlers {
+	if !s.NoRecoverHandlers {
+		defer func() {
 			if r := recover(); r != nil {
+				conn.Close()
 				url := "none"
 				if t != nil {
 					url = t.req.URL.String()
@@ -376,9 +377,8 @@ func (s *Server) serveConnection(conn net.Conn) {
 				stack := string(debug.Stack())
 				log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
 			}
-		}
-		conn.Close()
-	}()
+		}()
+	}
 
 	if s.ReadTimeout != 0 {
 		conn.SetReadTimeout(s.ReadTimeout)
@@ -411,6 +411,7 @@ func (s *Server) serveConnection(conn net.Conn) {
 			break
 		}
 	}
+	conn.Close()
 }
 
 // Serve accepts incoming HTTP connections on s.Listener, creating a new

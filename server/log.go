@@ -109,7 +109,7 @@ func VerboseLogger(lr *LogRecord) {
 //   logger := server.NewApacheCombinedLogger(logFile)
 type ApacheCombinedLogger struct {
 	mutex sync.Mutex
-	w io.Writer
+	w     io.Writer
 }
 
 const apacheTimeFormat = "02/Jan/2006:15:04:05 -0700"
@@ -152,4 +152,3 @@ func (acl *ApacheCombinedLogger) Log(lr *LogRecord) {
 
 	acl.w.Write(b.Bytes())
 }
-

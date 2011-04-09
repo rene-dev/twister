@@ -93,7 +93,7 @@ var parseHTTPHeaderTests = []struct {
 		HeaderContentType, "text/html",
 		HeaderCookie, "hello=world",
 		HeaderCookie, "foo=bar"),
-`Content-Type: text/html
+		`Content-Type: text/html
 CoOkie: hello=world
 Cookie: foo=bar
 
@@ -101,7 +101,7 @@ Cookie: foo=bar
 	{"continuation", NewHeaderMap(
 		HeaderContentType, "text/html",
 		HeaderCookie, "hello=world, foo=bar"),
-`Cookie: hello=world,
+		`Cookie: hello=world,
  foo=bar
 Content-Type: text/html
 

@@ -100,12 +100,19 @@ func (c testConn) SetWriteTimeout(nsec int64) os.Error {
 func testHandler(req *web.Request) {
 	req.ParseForm(1000)
 	header := make(web.HeaderMap)
+	p := req.Param.Get("panic")
+	if p == "before" {
+		panic("before")
+	}
 	if s := req.Param.Get("cl"); s != "" {
 		header.Set(web.HeaderContentLength, s)
 	}
 	w := req.Responder.Respond(web.StatusOK, header)
 	if s := req.Param.Get("w"); s != "" {
 		w.Write([]byte(s))
+	}
+	if p == "after" {
+		panic("after")
 	}
 }
 
@@ -194,6 +201,18 @@ var serverTests = []struct {
 		"HEAD /?w=Hello HTTP/1.1\r\n\r\n",
 		"HTTP/1.1 200 OK\r\n\r\n",
 		true,
+	},
+	{
+		// panic
+		"GET /?panic=before HTTP/1.1\r\n\r\n",
+		"",
+		false,
+	},
+	{
+		// panic
+		"GET /?panic=after HTTP/1.1\r\n\r\n",
+		"",
+		false,
 	},
 }
 
