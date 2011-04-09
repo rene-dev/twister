@@ -364,6 +364,22 @@ func (t *transaction) finish() os.Error {
 }
 
 func (s *Server) serveConnection(conn net.Conn) {
+	var t *transaction
+
+	defer func() {
+		if !s.NoRecoverHandlers {
+			if r := recover(); r != nil {
+				url := "none"
+				if t != nil {
+					url = t.req.URL.String()
+				}
+				stack := string(debug.Stack())
+				log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
+			}
+		}
+		conn.Close()
+	}()
+
 	if s.ReadTimeout != 0 {
 		conn.SetReadTimeout(s.ReadTimeout)
 	}
@@ -372,7 +388,7 @@ func (s *Server) serveConnection(conn net.Conn) {
 	}
 	br := bufio.NewReader(conn)
 	for {
-		t := transaction{
+		t = &transaction{
 			server: s,
 			conn:   conn,
 			br:     br}
@@ -382,16 +398,6 @@ func (s *Server) serveConnection(conn net.Conn) {
 			}
 			break
 		}
-
-		defer func() {
-			if !s.NoRecoverHandlers {
-				if r := recover(); r != nil {
-					url := t.req.URL.String()
-					stack := string(debug.Stack())
-					log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
-				}
-			}
-		}()
 
 		s.Handler.ServeWeb(t.req)
 		if t.hijacked {
@@ -405,7 +411,6 @@ func (s *Server) serveConnection(conn net.Conn) {
 			break
 		}
 	}
-	conn.Close()
 }
 
 // Serve accepts incoming HTTP connections on s.Listener, creating a new
