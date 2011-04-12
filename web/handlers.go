@@ -23,7 +23,24 @@ import (
 	"strings"
 )
 
-func serveFile(req *Request, fname string, extraHeader []string) {
+type ServeFileOptions struct {
+	// Map file extension to mime type.
+	MimeType map[string]string
+
+	// Response headers. 
+	Header HeaderMap
+}
+
+var defaultServeFileOptions ServeFileOptions
+
+// ServeFile responds to the request with the contents of the named file.
+//
+// If the "v" request parameter is set, then ServeFile sets the expires header
+// and the cache control maximum age parameter to ten years in the future.
+func ServeFile(req *Request, fname string, options *ServeFileOptions) {
+	if options == nil {
+		options = &defaultServeFileOptions
+	}
 
 	f, err := os.Open(fname, os.O_RDONLY, 0)
 	if err != nil {
@@ -39,31 +56,67 @@ func serveFile(req *Request, fname string, extraHeader []string) {
 	}
 
 	status := StatusOK
-	etag := strconv.Itob64(info.Mtime_ns, 36)
-	header := NewHeaderMap(extraHeader...)
 
-	match := false
+	header := HeaderMap{}
+	if options.Header != nil {
+		for k, v := range options.Header {
+			header[k] = v
+		}
+	}
+
+	etag := strconv.Itob64(info.Mtime_ns, 36)
+	header.Set(HeaderETag, QuoteHeaderValue(etag))
+
 	for _, qetag := range req.Header.GetList(HeaderIfNoneMatch) {
 		if etag == UnquoteHeaderValue(qetag) {
-			match = true
+			status = StatusNotModified
 			break
 		}
 	}
-	if match {
-		status = StatusNotModified
+
+	if status == StatusNotModified {
+		// Clear entity headers.
+		for k, _ := range header {
+			if strings.HasPrefix(k, "Content-") {
+				header[k] = nil, false
+			}
+		}
 	} else {
-		header.Set(HeaderETag, QuoteHeaderValue(etag))
+		// Set entity headers
 		header.Set(HeaderContentLength, strconv.Itoa64(info.Size))
-		ext := path.Ext(fname)
-		if contentType := mime.TypeByExtension(ext); contentType != "" {
-			header.Set(HeaderContentType, contentType)
+		if _, found := header[HeaderContentType]; !found {
+			ext := path.Ext(fname)
+			contentType := ""
+			if options.MimeType != nil {
+				contentType = options.MimeType[ext]
+			}
+			if contentType == "" {
+				contentType = mime.TypeByExtension(ext)
+			}
+			if contentType != "" {
+				header.Set(HeaderContentType, contentType)
+			}
 		}
-		if v := req.Param.Get("v"); v != "" {
-			header.Set(HeaderExpires, FormatDeltaDays(3650))
-			header.Set(HeaderCacheControl, "max-age=315360000")
-		} else {
-			header.Set(HeaderCacheControl, "public")
+	}
+
+	if v := req.Param.Get("v"); v != "" {
+
+		parts := header.GetList(HeaderCacheControl)
+		i := 0
+		for _, part := range parts {
+			if strings.HasPrefix(part, "max-age=") {
+				continue
+			}
+			parts[i] = part
+			i += 1
 		}
+		if i != len(parts) {
+			parts = parts[:i]
+		}
+
+		const maxAge = 60 * 60 * 24 * 365 * 10
+		header.Set(HeaderExpires, FormatDeltaSeconds(maxAge))
+		header.Set(HeaderCacheControl, strings.Join(append(parts, "max-age="+strconv.Itoa(maxAge)), ", "))
 	}
 
 	w := req.Responder.Respond(status, header)
@@ -78,9 +131,8 @@ func serveFile(req *Request, fname string, extraHeader []string) {
 //
 //  r.Register("/static/<path:.*>", "GET", DirectoryHandler(root))
 //
-// If the "v" request parameter is supplied, then the cache control headers are
-// set to expire the file in 10 years. 
-func DirectoryHandler(root string, extraHeader ...string) Handler {
+// Directory handler does not serve directory listings.
+func DirectoryHandler(root string, options *ServeFileOptions) Handler {
 	if !path.IsAbs(root) {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -89,19 +141,13 @@ func DirectoryHandler(root string, extraHeader ...string) Handler {
 		root = path.Join(wd, root)
 	}
 	root = path.Clean(root) + "/"
-
-	info, err := os.Stat(root)
-	if err != nil || !info.IsDirectory() {
-		panic("twister: root directory not found for DirectoryHandler.")
-	}
-
-	return &directoryHandler{root, extraHeader}
+	return &directoryHandler{root, options}
 }
 
 // directoryHandler serves static files from a directory.
 type directoryHandler struct {
-	root   string
-	header []string
+	root    string
+	options *ServeFileOptions
 }
 
 func (dh *directoryHandler) ServeWeb(req *Request) {
@@ -117,30 +163,23 @@ func (dh *directoryHandler) ServeWeb(req *Request) {
 		return
 	}
 
-	serveFile(req, fname, dh.header)
+	ServeFile(req, fname, dh.options)
 }
 
 // FileHandler returns a request handler that serves a static file specified by
 // fname. 
-//
-// If the "v" request parameter is supplied, then the cache control headers are
-// set to expire the file in 10 years. 
-func FileHandler(fname string, extraHeader ...string) Handler {
-	info, err := os.Stat(fname)
-	if err != nil || !info.IsRegular() {
-		panic("twister: file not found for FileHandler.")
-	}
-	return &fileHandler{fname, extraHeader}
+func FileHandler(fname string, options *ServeFileOptions) Handler {
+	return &fileHandler{fname, options}
 }
 
 // fileHandler servers static files.
 type fileHandler struct {
-	fname  string
-	header []string
+	fname   string
+	options *ServeFileOptions
 }
 
 func (fh *fileHandler) ServeWeb(req *Request) {
-	serveFile(req, fh.fname, fh.header)
+	ServeFile(req, fh.fname, fh.options)
 }
 
 type redirectHandler struct {
