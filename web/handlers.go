@@ -42,7 +42,7 @@ func ServeFile(req *Request, fname string, options *ServeFileOptions) {
 		options = &defaultServeFileOptions
 	}
 
-	f, err := os.Open(fname, os.O_RDONLY, 0)
+	f, err := os.Open(fname)
 	if err != nil {
 		req.Error(StatusNotFound, err)
 		return
