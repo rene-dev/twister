@@ -143,18 +143,23 @@ var getValueParamTests = []struct {
 	value string
 	param map[string]string
 }{
-	{"text/html", "text/html", map[string]string{}},
-	{"text/html  ", "text/html", map[string]string{}},
-	{"text/html ; ", "text/html", map[string]string{}},
-	{"tExt/htMl", "text/html", map[string]string{}},
+	{`text/html`, "text/html", map[string]string{}},
+	{`text/html  `, "text/html", map[string]string{}},
+	{`text/html ; `, "text/html", map[string]string{}},
+	{`tExt/htMl`, "text/html", map[string]string{}},
 	{`tExt/htMl; fOO=";"; hellO=world`, "text/html", map[string]string{
 		"hello": "world",
 		"foo":   `;`,
 	}},
-	// Everything after comma ignored. 
+    {`"quoted"`, `"quoted"`, map[string]string{}},
 	{`text/html; foo=bar, hello=world`, "text/html", map[string]string{"foo": "bar"}},
 	{`text/html ; foo=bar `, "text/html", map[string]string{"foo": "bar"}},
-	{`text/html; foo=bar `, "text/html", map[string]string{"foo": "bar"}},
+	{`text/html ;foo=bar `, "text/html", map[string]string{"foo": "bar"}},
+	{`text/html; foo="b\ar"`, "text/html", map[string]string{"foo": "bar"}},
+	{`text/html; foo="b\"a\"r"`, "text/html", map[string]string{"foo": "b\"a\"r"}},
+	{`text/html; foo="b;ar"`, "text/html", map[string]string{"foo": "b;ar"}},
+	{`text/html; FOO="bar"`, "text/html", map[string]string{"foo": "bar"}},
+
 }
 
 func TestGetValueParam(t *testing.T) {

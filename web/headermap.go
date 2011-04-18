@@ -490,7 +490,7 @@ func indexFunc(s string, f func(b byte) bool) int {
 }
 
 // splitValueParam parses a value followed by optional semi-colon prefixed
-// name-value pairsParameters.  It returns the value, parameters and the
+// name-value pairsParameters. It returns the value, parameters and the
 // reminder of the string.
 func splitValueParam(s string) (value string, param map[string]string, rest string) {
 	i := indexFunc(s, func(b byte) bool { return b == ';' })
