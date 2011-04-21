@@ -14,7 +14,7 @@
 
 // The expvar package provides an interface for registering and publishing
 // objects as JSON over HTTP. This is useful for publishing counters and other
-// operational data to monitoring tools.
+// operational data for monitoring tools.
 // 
 // The application should wrap the ServeWeb function in this package with
 // appropriate access control and register the resulting handler with a web
@@ -49,7 +49,7 @@ var (
 func Publish(name string, v interface{}) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	if _, existing := vars[name]; existing {
+	if _, found := vars[name]; found {
 		log.Panicln("Reuse of published var name:", name)
 	}
 	vars[name] = v
@@ -64,29 +64,11 @@ func (f MarshalJSONFunc) MarshalJSON() ([]byte, os.Error) {
 	return f()
 }
 
-type IntFunc func() int
-
-func (f IntFunc) MarshalJSON() ([]byte, os.Error) {
-	return []byte(strconv.Itoa(f())), nil
-}
-
-type Int32Func func() int32
-
-func (f Int32Func) MarshalJSON() ([]byte, os.Error) {
-	return []byte(strconv.Itoa(int(f()))), nil
-}
-
-type Int64Func func() int64
-
-func (f Int64Func) MarshalJSON() ([]byte, os.Error) {
-	return []byte(strconv.Itoa64(f())), nil
-}
-
-// ValueFunc wraps a func() interface{} with JSON marshalling of the returned
+// Func wraps a func() interface{} with JSON marshalling of the returned
 // value. The function is called each time the object is marshaled.
-type ValueFunc func() interface{}
+type Func func() interface{}
 
-func (f ValueFunc) MarshalJSON() ([]byte, os.Error) {
+func (f Func) MarshalJSON() ([]byte, os.Error) {
 	return json.Marshal(f())
 }
 
@@ -186,11 +168,11 @@ func ServeWeb(req *web.Request) {
 func init() {
 	start := time.Seconds()
 	Publish("runtime", map[string]interface{}{
-		"cgocalls":   Int64Func(runtime.Cgocalls),
-		"goroutines": Int32Func(runtime.Goroutines),
+		"cgocalls":   Func(func() interface{} { return runtime.Cgocalls()}),
+		"goroutines": Func(func() interface{} { return runtime.Goroutines()}),
 		"version":    runtime.Version(),
 		"memstats":   &runtime.MemStats,
 	})
-	Publish("uptimeSeconds", ValueFunc(func() interface{} { return time.Seconds() - start }))
+	Publish("uptimeSeconds", Func(func() interface{} { return time.Seconds() - start }))
 	Publish("cmdline", &os.Args)
 }
