@@ -132,7 +132,7 @@ func (acl *ApacheCombinedLogger) Log(lr *LogRecord) {
 		return
 	}
 
-	tcpaddr, err := net.ResolveTCPAddr(lr.Request.RemoteAddr)
+	tcpaddr, err := net.ResolveTCPAddr("tcp", lr.Request.RemoteAddr)
 	if err != nil {
 		log.Print(fmt.Sprintf("Failed to resolve \"%s\": %s", lr.Request.RemoteAddr, err.String()))
 		return
