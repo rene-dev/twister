@@ -132,14 +132,14 @@ func (acl *ApacheCombinedLogger) Log(lr *LogRecord) {
 		return
 	}
 
-	tcpaddr, err := net.ResolveTCPAddr("tcp", lr.Request.RemoteAddr)
+	host, _, err := net.SplitHostPort(lr.Request.RemoteAddr)
 	if err != nil {
 		log.Print(fmt.Sprintf("Failed to resolve \"%s\": %s", lr.Request.RemoteAddr, err.String()))
 		return
 	}
 
 	var b = &bytes.Buffer{}
-	fmt.Fprintf(b, "%s - - [%s] ", tcpaddr.IP, time.LocalTime().Format(apacheTimeFormat))
+	fmt.Fprintf(b, "%s - - [%s] ", host, time.LocalTime().Format(apacheTimeFormat))
 	fmt.Fprintf(b, "\"%s %s HTTP/%d.%d\" ",
 		lr.Request.Method, lr.Request.URL, lr.Request.ProtocolVersion/1000, lr.Request.ProtocolVersion%1000)
 	fmt.Fprintf(b, "%d %d \"%s\" \"%s\"\n",
