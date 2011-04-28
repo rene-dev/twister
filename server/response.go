@@ -71,7 +71,7 @@ type identityResponseBody struct {
 	// Number of body bytes written.
 	written int
 
-	// Number of heaer bytes written.
+	// Number of header bytes written.
 	headerWritten int
 }
 

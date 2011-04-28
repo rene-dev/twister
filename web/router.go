@@ -16,7 +16,6 @@ package web
 
 import (
 	"bytes"
-	"flag"
 	"http"
 	"regexp"
 	"strings"
@@ -212,9 +211,6 @@ func NewRouter() *Router {
 //
 // If the regexp is not specified, then the regexp is set to to [^.]+.  The
 // host router adds the parameters to the request Param.
-// 
-// To facilitate debugging on localhost, the router overrides the request host
-// with the value of the hostOverride flag if set.
 type HostRouter struct {
 	defaultHandler Handler
 	routes         []hostRoute
@@ -241,8 +237,6 @@ func (router *HostRouter) Register(hostPattern string, handler Handler) *HostRou
 	return router
 }
 
-var hostOverride = flag.String("hostOverride", "", "Override request host in HostRouter")
-
 func (router *HostRouter) find(host string) (Handler, []string, []string) {
 	for _, r := range router.routes {
 		values := r.regexp.FindStringSubmatch(host)
@@ -257,12 +251,7 @@ func (router *HostRouter) find(host string) (Handler, []string, []string) {
 
 // ServeWeb dispatches the request to a registered handler.
 func (router *HostRouter) ServeWeb(req *Request) {
-	var host string
-	if len(*hostOverride) == 0 {
-		host = strings.ToLower(req.URL.Host)
-	} else {
-		host = *hostOverride
-	}
+    host := strings.ToLower(req.URL.Host)
 	handler, names, values := router.find(host)
 	for i := 0; i < len(names); i++ {
 		req.Param.Set(names[i], values[i])

@@ -1,5 +1,5 @@
 run: clean example
-	./example -hostOverride=www.example.com
+	./example 
  
 include $(GOROOT)/src/Make.inc
 
