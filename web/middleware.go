@@ -15,8 +15,6 @@
 package web
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"os"
 )
 
@@ -43,12 +41,6 @@ func SetErrorHandler(e ErrorHandler, h Handler) Handler {
 		h.ServeWeb(req)
 	})
 }
-
-// Name of XSRF cookie and request parameter.
-const (
-	XSRFCookieName = "xsrf"
-	XSRFParamName  = "xsrf"
-)
 
 // ProxyHeaderHandler returns a handler that overrides the Request.RemoteAddr field
 // with the value of the header specified by addrName and the
@@ -113,24 +105,18 @@ func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler
 	return FormHandler(maxRequestBodyLen, checkXSRF, handler)
 }
 
+// Name of XSRF cookie and request parameter.
+const (
+	XSRFCookieName = "xsrf"
+	XSRFParamName  = "xsrf"
+)
+
 // FormHandler returns a handler that parses form encoded request bodies.
 //
-// If the request body is larger than maxRequestBodyLen, then the handler
-// responds with an error instead of parsing the request body.
-//
-// If xsrfCheck is true, then cross-site request forgery protection is enabled.
-// The handler rejects POST, PUT, and DELETE requests if the handler does not
-// find a matching value for the "xsrf" cookie in the "xsrf" request parameter
-// or the X-XSRFToken header. 
-//
-// The handler ensures that the "xsrf" cookie and the "xsrf" request parameter
-// are set before passing the the request to the downstream handler or the
-// error handler. The application must include the value fo the "xsrf" request
-// parameter in POSTed forms or pass the value to AJAX code so that the
-// X-XSRFToken header can be set.
-//
-// See http://en.wikipedia.org/wiki/Cross-site_request_forgery for information
-// on cross-site request forgery.
+// If xsrfCheck is true, then cross-site request forgery protection is enabled
+// using the cookie name XSRFCookieName and the parameter name
+// XSRFParameterName. See CheckXSRF() for more information on cross-site
+// request forgery protection.
 func FormHandler(maxRequestBodyLen int, checkXSRF bool, h Handler) Handler {
 	return formHandler{
 		maxRequestBodyLen: maxRequestBodyLen,
@@ -159,41 +145,9 @@ func (h formHandler) ServeWeb(req *Request) {
 	}
 
 	if h.checkXSRF {
-		const tokenLen = 8
-		expectedToken := req.Cookie.Get(XSRFCookieName)
-
-		// Create new XSRF token?
-		if len(expectedToken) != tokenLen {
-			p := make([]byte, tokenLen/2)
-			_, err := rand.Reader.Read(p)
-			if err != nil {
-				panic("twister: rand read failed")
-			}
-			expectedToken = hex.EncodeToString(p)
-			c := NewCookie(XSRFCookieName, expectedToken).String()
-			FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
-				header.Add(HeaderSetCookie, c)
-				return status, header
-			})
-		}
-
-		actualToken := req.Param.Get(XSRFParamName)
-		if actualToken == "" {
-			actualToken = req.Header.Get(HeaderXXSRFToken)
-			req.Param.Set(XSRFParamName, expectedToken)
-		}
-		if expectedToken != actualToken {
-			req.Param.Set(XSRFParamName, expectedToken)
-			if req.Method == "POST" ||
-				req.Method == "PUT" ||
-				req.Method == "DELETE" {
-				err := os.NewError("twister: bad xsrf token")
-				if actualToken == "" {
-					err = os.NewError("twister: missing xsrf token")
-				}
-				req.Error(StatusNotFound, err)
-				return
-			}
+		if err := CheckXSRF(req, XSRFCookieName, XSRFParamName); err != nil {
+			req.Error(StatusNotFound, err)
+			return
 		}
 	}
 

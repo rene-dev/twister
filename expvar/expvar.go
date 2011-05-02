@@ -168,8 +168,8 @@ func ServeWeb(req *web.Request) {
 func init() {
 	start := time.Seconds()
 	Publish("runtime", map[string]interface{}{
-		"cgocalls":   Func(func() interface{} { return runtime.Cgocalls()}),
-		"goroutines": Func(func() interface{} { return runtime.Goroutines()}),
+		"cgocalls":   Func(func() interface{} { return runtime.Cgocalls() }),
+		"goroutines": Func(func() interface{} { return runtime.Goroutines() }),
 		"version":    runtime.Version(),
 		"memstats":   &runtime.MemStats,
 	})

@@ -151,7 +151,7 @@ var getValueParamTests = []struct {
 		"hello": "world",
 		"foo":   `;`,
 	}},
-    {`"quoted"`, `"quoted"`, map[string]string{}},
+	{`"quoted"`, `"quoted"`, map[string]string{}},
 	{`text/html; foo=bar, hello=world`, "text/html", map[string]string{"foo": "bar"}},
 	{`text/html ; foo=bar `, "text/html", map[string]string{"foo": "bar"}},
 	{`text/html ;foo=bar `, "text/html", map[string]string{"foo": "bar"}},
@@ -159,7 +159,6 @@ var getValueParamTests = []struct {
 	{`text/html; foo="b\"a\"r"`, "text/html", map[string]string{"foo": "b\"a\"r"}},
 	{`text/html; foo="b;ar"`, "text/html", map[string]string{"foo": "b;ar"}},
 	{`text/html; FOO="bar"`, "text/html", map[string]string{"foo": "bar"}},
-
 }
 
 func TestGetValueParam(t *testing.T) {

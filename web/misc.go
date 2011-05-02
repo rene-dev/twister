@@ -16,14 +16,15 @@ package web
 
 import (
 	"bytes"
-	"os"
-	"io"
-	"strings"
 	"crypto/hmac"
-	"strconv"
-	"time"
-	"fmt"
+	"crypto/rand"
 	"encoding/hex"
+	"fmt"
+	"io"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // ContentTypeHTML is the content type for UTF-8 encoded HTML.
@@ -162,8 +163,7 @@ const (
 
 // parseCookieValues parses cookies from values and adds them to m. The
 // function supports the Netscape draft specification for cookies
-// (http://goo.gl/1WSx3). The function does not attempt to support any RFC for
-// cookies because the RFCs are not supported by popular browsers.
+// (http://goo.gl/1WSx3). 
 func parseCookieValues(values []string, m ParamMap) os.Error {
 	for _, s := range values {
 		key := ""
@@ -406,4 +406,71 @@ func HTMLEscapeString(s string) string {
 		}
 	}
 	return b.String()
+}
+
+
+// CheckXSRF implements cross-site request forgery protection. Here's how it works:
+// 
+// CheckXSRF sets a cookie with name cookieName to a random token.
+//
+// The application ensures that POSTed forms include a parameter with name
+// paramName and value equal to the token.
+//
+// POSTed forms are considered valid if the cookieName cookie is set and is
+// equal to the paramName request parameter. A third party site cannot generate
+// a request where the cookie and request parameter are equal because the third
+// party site cannot access the cookie value.
+//
+// CheckXSRF returns an error if the request is not valid. It is the applications's 
+// responsiblity to respond to the request with an appropriate error.
+//
+// Before returning, CheckXSRF ensures that the paramName request parameter is
+// set to the token. The application should use the value of the paramName
+// parameter when generating hidden fields in POSTed forms.
+//
+// CheckXSRF also validates PUT and DELETE requests. 
+//
+// The X-XSRFToken can be used to specifiy the token in addition to the
+// paramName request parameter.
+//
+// See http://en.wikipedia.org/wiki/Cross-site_request_forgery for information
+// on cross-site request forgery.
+func CheckXSRF(req *Request, cookieName string, paramName string) os.Error {
+
+	const tokenLen = 8
+	expectedToken := req.Cookie.Get(cookieName)
+
+	// Create new XSRF token?
+	if len(expectedToken) != tokenLen {
+		p := make([]byte, tokenLen/2)
+		_, err := rand.Reader.Read(p)
+		if err != nil {
+			panic("twister: rand read failed")
+		}
+		expectedToken = hex.EncodeToString(p)
+		c := NewCookie(cookieName, expectedToken).String()
+		FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
+			header.Add(HeaderSetCookie, c)
+			return status, header
+		})
+	}
+
+	actualToken := req.Param.Get(paramName)
+	if actualToken == "" {
+		actualToken = req.Header.Get(HeaderXXSRFToken)
+		req.Param.Set(paramName, expectedToken)
+	}
+	if expectedToken != actualToken {
+		req.Param.Set(paramName, expectedToken)
+		if req.Method == "POST" ||
+			req.Method == "PUT" ||
+			req.Method == "DELETE" {
+			err := os.NewError("twister: bad xsrf token")
+			if actualToken == "" {
+				err = os.NewError("twister: missing xsrf token")
+			}
+			return err
+		}
+	}
+	return nil
 }

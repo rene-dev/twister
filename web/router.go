@@ -251,7 +251,7 @@ func (router *HostRouter) find(host string) (Handler, []string, []string) {
 
 // ServeWeb dispatches the request to a registered handler.
 func (router *HostRouter) ServeWeb(req *Request) {
-    host := strings.ToLower(req.URL.Host)
+	host := strings.ToLower(req.URL.Host)
 	handler, names, values := router.find(host)
 	for i := 0; i < len(names); i++ {
 		req.Param.Set(names[i], values[i])
