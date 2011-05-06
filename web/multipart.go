@@ -23,6 +23,22 @@ import (
 	"os"
 )
 
+var scratch [1024]byte
+
+func scratchReadFrom(r io.Reader) (n int64, err os.Error) {
+	for {
+		m, err := r.Read(scratch[:])
+		n += int64(m)
+		if err == os.EOF {
+			break
+		}
+		if err != nil {
+			return n, err
+		}
+	}
+	return n, nil
+}
+
 // Part represents an element of a multi-part request entity.
 type Part struct {
 	Name         string
@@ -41,6 +57,7 @@ func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error) 
 		return nil, err
 	}
 	var parts []Part
+	var buf bytes.Buffer
 	for {
 		header, r, err := m.Next()
 		if err == os.EOF {
@@ -48,22 +65,27 @@ func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error) 
 		} else if err != nil {
 			return nil, err
 		}
-		part, err := ioutil.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
 		if disp, dispParam := header.GetValueParam(HeaderContentDisposition); disp == "form-data" {
 			if name := dispParam["name"]; name != "" {
 				if filename := dispParam["filename"]; filename != "" {
 					contentType, contentParam := header.GetValueParam(HeaderContentType)
+					data, err := ioutil.ReadAll(r)
+					if err != nil {
+						return nil, err
+					}
 					parts = append(parts, Part{
 						ContentType:  contentType,
 						ContentParam: contentParam,
 						Name:         name,
 						Filename:     filename,
-						Data:         part})
+						Data:         data})
 				} else {
-					req.Param.Add(name, string(part))
+					buf.Reset()
+					_, err := buf.ReadFrom(r)
+					if err != nil {
+						return nil, err
+					}
+					req.Param.Add(name, buf.String())
 				}
 			}
 		}
@@ -77,6 +99,7 @@ type MultipartReader struct {
 	err      os.Error
 	boundary []byte
 	avail    int
+	r        *partReader
 }
 
 var ErrNotMultipartFormData = os.NewError("twister: request not multipart/form-data")
@@ -125,10 +148,14 @@ func NewMultipartReader(req *Request, maxRequestBodyLen int) (*MultipartReader, 
 	return m, nil
 }
 
-// Next returns the next part of a multipart/form-data body.  Next returnes
-// os.EOF if no more parts remain. The application must read the returned
-// Reader until an error is returned (os.EOF or other).
+// Next returns the next part of a multipart/form-data body.  Next returns
+// os.EOF if no more parts remain. 
 func (m *MultipartReader) Next() (HeaderMap, io.Reader, os.Error) {
+	if m.r != nil {
+		scratchReadFrom(m.r)
+		m.r = nil
+	}
+
 	if m.err != nil {
 		return nil, nil, m.err
 	}
@@ -140,9 +167,9 @@ func (m *MultipartReader) Next() (HeaderMap, io.Reader, os.Error) {
 	}
 
 	m.avail = 0
-	return header, &partReader{m, nil}, nil
+	m.r = &partReader{m, nil}
+	return header, m.r, nil
 }
-
 
 func (m *MultipartReader) fill() os.Error {
 	if m.err != nil {
