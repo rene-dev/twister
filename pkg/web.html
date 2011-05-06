@@ -13,6 +13,7 @@
 <li><a href="#package">Package</a>
 <li><a href="#constants">Constants</a>
 <li><a href="#variables">Variables</a>
+<li><a href="#CheckXSRF">func CheckXSRF</a>
 <li><a href="#FilterRespond">func FilterRespond</a>
 <li><a href="#FormatDeltaDays">func FormatDeltaDays</a>
 <li><a href="#FormatDeltaSeconds">func FormatDeltaSeconds</a>
@@ -24,6 +25,7 @@
 <li><a href="#QuoteHeaderValue">func QuoteHeaderValue</a>
 <li><a href="#QuoteHeaderValueOrToken">func QuoteHeaderValueOrToken</a>
 <li><a href="#RunHandler">func RunHandler</a>
+<li><a href="#ServeFile">func ServeFile</a>
 <li><a href="#SignValue">func SignValue</a>
 <li><a href="#StatusText">func StatusText</a>
 <li><a href="#UnquoteHeaderValue">func UnquoteHeaderValue</a>
@@ -74,6 +76,11 @@
     <li><a href="#HostRouter.Register">func (*HostRouter) Register</a>
     <li><a href="#HostRouter.ServeWeb">func (*HostRouter) ServeWeb</a>
         </ul>
+<li><a href="#MultipartReader">type MultipartReader</a>
+        <ul>
+    <li><a href="#NewMultipartReader">func NewMultipartReader</a>
+    <li><a href="#MultipartReader.Next">func (*MultipartReader) Next</a>
+        </ul>
 <li><a href="#ParamMap">type ParamMap</a>
         <ul>
     <li><a href="#NewParamMap">func NewParamMap</a>
@@ -104,6 +111,7 @@
     <li><a href="#Router.Register">func (*Router) Register</a>
     <li><a href="#Router.ServeWeb">func (*Router) ServeWeb</a>
         </ul>
+<li><a href="#ServeFileOptions">type ServeFileOptions</a>
 </ul>
 
 <h2 id="package">Package</h2>
@@ -284,7 +292,50 @@ var (
 )
 </pre>
 
-<h2 id="FilterRespond">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L35">FilterRespond</a></h2>
+<pre>
+var ErrNotMultipartFormData = os.NewError(&#34;twister: request not multipart/form-data&#34;)
+</pre>
+
+<h2 id="CheckXSRF">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L437">CheckXSRF</a></h2>
+<p><code>func CheckXSRF(req *Request, cookieName string, paramName string) os.Error</code></p>
+<p>
+CheckXSRF implements cross-site request forgery protection. Here&#39;s how it works:
+</p>
+<p>
+CheckXSRF sets a cookie with name cookieName to a random token.
+</p>
+<p>
+The application ensures that POSTed forms include a parameter with name
+paramName and value equal to the token.
+</p>
+<p>
+POSTed forms are considered valid if the cookieName cookie is set and is
+equal to the paramName request parameter. A third party site cannot generate
+a request where the cookie and request parameter are equal because the third
+party site cannot access the cookie value.
+</p>
+<p>
+CheckXSRF returns an error if the request is not valid. It is the applications&#39;s
+responsiblity to respond to the request with an appropriate error.
+</p>
+<p>
+Before returning, CheckXSRF ensures that the paramName request parameter is
+set to the token. The application should use the value of the paramName
+parameter when generating hidden fields in POSTed forms.
+</p>
+<p>
+CheckXSRF also validates PUT and DELETE requests.
+</p>
+<p>
+The X-XSRFToken can be used to specifiy the token in addition to the
+paramName request parameter.
+</p>
+<p>
+See <a href="http://en.wikipedia.org/wiki/Cross-site_request_forgery">http://en.wikipedia.org/wiki/Cross-site_request_forgery</a> for information
+on cross-site request forgery.
+</p>
+
+<h2 id="FilterRespond">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L33">FilterRespond</a></h2>
 <p><code>func FilterRespond(req *Request, filter func(status int, header HeaderMap) (int, HeaderMap))</code></p>
 <p>
 FilterRespond replaces the request&#39;s responder with one that filters the
@@ -304,7 +355,7 @@ FormatDeltaDays returns current time plus delta formatted per HTTP conventions.
 FormatDeltaSeconds returns current time plus delta formatted per HTTP conventions.
 </p>
 
-<h2 id="HTMLEscapeString">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L376">HTMLEscapeString</a></h2>
+<h2 id="HTMLEscapeString">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L375">HTMLEscapeString</a></h2>
 <p><code>func HTMLEscapeString(s string) string</code></p>
 <p>
 HTMLEscapeString returns s with special HTML characters escaped.
@@ -323,7 +374,7 @@ HeaderNameBytes returns the canonical format for the header name specified
 by the bytes in p. This function modifies the contents p.
 </p>
 
-<h2 id="ParseMultipartForm">func <a href="http://github.com/garyburd/twister/blob/master/web/multipart.go#L39">ParseMultipartForm</a></h2>
+<h2 id="ParseMultipartForm">func <a href="http://github.com/garyburd/twister/blob/master/web/multipart.go#L38">ParseMultipartForm</a></h2>
 <p><code>func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error)</code></p>
 <p>
 ParseMultipartForm parses a multipart/form-data body. Form fields are
@@ -357,7 +408,17 @@ RunHandler runs the handler with a request created from the arguments and
 returns the response. This function is intended to be used in tests.
 </p>
 
-<h2 id="SignValue">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L241">SignValue</a></h2>
+<h2 id="ServeFile">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L40">ServeFile</a></h2>
+<p><code>func ServeFile(req *Request, fname string, options *ServeFileOptions)</code></p>
+<p>
+ServeFile responds to the request with the contents of the named file.
+</p>
+<p>
+If the &#34;v&#34; request parameter is set, then ServeFile sets the expires header
+and the cache control maximum age parameter to ten years in the future.
+</p>
+
+<h2 id="SignValue">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L240">SignValue</a></h2>
 <p><code>func SignValue(secret, context string, maxAgeSeconds int, value string) string</code></p>
 <p>
 SignValue returns a string containing value, an expiration time and a
@@ -400,7 +461,7 @@ UnquoteHeaderValue unquotes s if s is surrounded by quotes, otherwise s is
 returned.
 </p>
 
-<h2 id="VerifyValue">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L251">VerifyValue</a></h2>
+<h2 id="VerifyValue">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L250">VerifyValue</a></h2>
 <p><code>func VerifyValue(secret, context string, signedValue string) (string, os.Error)</code></p>
 <p>
 VerifyValue extracts a value from a string created by SignValue. An error is
@@ -439,7 +500,7 @@ The following example shows how to set a cookie header using Cookie:
 
 
 
-    <h3 id="NewCookie">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L306">NewCookie</a></h3>
+    <h3 id="NewCookie">func <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L305">NewCookie</a></h3>
     <p><code>func NewCookie(name, value string) *Cookie</code></p>
     <p>
 NewCookie returns a new cookie with the given name and value, the path
@@ -447,27 +508,27 @@ attribute set to &#34;/&#34; and the httponly attribute set to true.
 </p>
 
 
-    <h3 id="Cookie.Delete">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L329">Delete</a></h3>
+    <h3 id="Cookie.Delete">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L328">Delete</a></h3>
     <p><code>func (c *Cookie) Delete() *Cookie</code></p>
     <p>
 Delete sets the expiration date to a time in the past.
 </p>
 
-    <h3 id="Cookie.Domain">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L317">Domain</a></h3>
+    <h3 id="Cookie.Domain">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L316">Domain</a></h3>
     <p><code>func (c *Cookie) Domain(domain string) *Cookie</code></p>
     <p>
 Domain sets the cookie domain attribute. If the host is &#34;&#34;, then the domain
 attribute is not included in the header value.
 </p>
 
-    <h3 id="Cookie.HTTPOnly">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L336">HTTPOnly</a></h3>
+    <h3 id="Cookie.HTTPOnly">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L335">HTTPOnly</a></h3>
     <p><code>func (c *Cookie) HTTPOnly(httpOnly bool) *Cookie</code></p>
     <p>
 HTTPOnly sets the httponly attribute. The NewCookie function
 initializes the httponly attribute to true.
 </p>
 
-    <h3 id="Cookie.MaxAge">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L323">MaxAge</a></h3>
+    <h3 id="Cookie.MaxAge">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L322">MaxAge</a></h3>
     <p><code>func (c *Cookie) MaxAge(seconds int) *Cookie</code></p>
     <p>
 MaxAge specifies the maximum age for a cookie. The age is converted to an
@@ -476,13 +537,13 @@ age is 0, then the expiration time is not included in the header value
 and the browser will handle the cookie as a &#34;session&#34; cookie.
 </p>
 
-    <h3 id="Cookie.MaxAgeDays">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L326">MaxAgeDays</a></h3>
+    <h3 id="Cookie.MaxAgeDays">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L325">MaxAgeDays</a></h3>
     <p><code>func (c *Cookie) MaxAgeDays(days int) *Cookie</code></p>
     <p>
 MaxAgeDays sets the maximum age for the cookie in days.
 </p>
 
-    <h3 id="Cookie.Path">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L313">Path</a></h3>
+    <h3 id="Cookie.Path">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L312">Path</a></h3>
     <p><code>func (c *Cookie) Path(path string) *Cookie</code></p>
     <p>
 Path sets the cookie path attribute. The path must either be &#34;&#34; or start with a
@@ -490,13 +551,13 @@ Path sets the cookie path attribute. The path must either be &#34;&#34; or start
 then the path attribute is not included in the header value.
 </p>
 
-    <h3 id="Cookie.Secure">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L332">Secure</a></h3>
+    <h3 id="Cookie.Secure">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L331">Secure</a></h3>
     <p><code>func (c *Cookie) Secure(secure bool) *Cookie</code></p>
     <p>
 Secure sets the secure attribute.
 </p>
 
-    <h3 id="Cookie.String">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L342">String</a></h3>
+    <h3 id="Cookie.String">func (*Cookie) <a href="http://github.com/garyburd/twister/blob/master/web/misc.go#L341">String</a></h3>
     <p><code>func (c *Cookie) String() string</code></p>
     <p>
 String renders the Set-Cookie header value as a string.
@@ -525,8 +586,8 @@ Handler is the interface for web handlers.
 
 
 
-    <h3 id="DirectoryHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L83">DirectoryHandler</a></h3>
-    <p><code>func DirectoryHandler(root string, extraHeader ...string) Handler</code></p>
+    <h3 id="DirectoryHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L135">DirectoryHandler</a></h3>
+    <p><code>func DirectoryHandler(root string, options *ServeFileOptions) Handler</code></p>
     <p>
 DirectoryHandler returns a request handler that serves static files from root
 using using the relative request parameter &#34;path&#34;. The &#34;path&#34; parameter is
@@ -535,61 +596,41 @@ typically set using a Router pattern match:
 <pre>r.Register(&#34;/static/&lt;path:.*&gt;&#34;, &#34;GET&#34;, DirectoryHandler(root))
 </pre>
 <p>
-If the &#34;v&#34; request parameter is supplied, then the cache control headers are
-set to expire the file in 10 years.
+Directory handler does not serve directory listings.
 </p>
 
-    <h3 id="FileHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L128">FileHandler</a></h3>
-    <p><code>func FileHandler(fname string, extraHeader ...string) Handler</code></p>
+    <h3 id="FileHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L171">FileHandler</a></h3>
+    <p><code>func FileHandler(fname string, options *ServeFileOptions) Handler</code></p>
     <p>
 FileHandler returns a request handler that serves a static file specified by
 fname.
 </p>
-<p>
-If the &#34;v&#34; request parameter is supplied, then the cache control headers are
-set to expire the file in 10 years.
-</p>
 
-    <h3 id="FormHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L134">FormHandler</a></h3>
+    <h3 id="FormHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L120">FormHandler</a></h3>
     <p><code>func FormHandler(maxRequestBodyLen int, checkXSRF bool, h Handler) Handler</code></p>
     <p>
 FormHandler returns a handler that parses form encoded request bodies.
 </p>
 <p>
-If the request body is larger than maxRequestBodyLen, then the handler
-responds with an error instead of parsing the request body.
-</p>
-<p>
-If xsrfCheck is true, then cross-site request forgery protection is enabled.
-The handler rejects POST, PUT, and DELETE requests if the handler does not
-find a matching value for the &#34;xsrf&#34; cookie in the &#34;xsrf&#34; request parameter
-or the X-XSRFToken header.
-</p>
-<p>
-The handler ensures that the &#34;xsrf&#34; cookie and the &#34;xsrf&#34; request parameter
-are set before passing the the request to the downstream handler or the
-error handler. The application must include the value fo the &#34;xsrf&#34; request
-parameter in POSTed forms or pass the value to AJAX code so that the
-X-XSRFToken header can be set.
-</p>
-<p>
-See <a href="http://en.wikipedia.org/wiki/Cross-site_request_forgery">http://en.wikipedia.org/wiki/Cross-site_request_forgery</a> for information
-on cross-site request forgery.
+If xsrfCheck is true, then cross-site request forgery protection is enabled
+using the cookie name XSRFCookieName and the parameter name
+XSRFParameterName. See CheckXSRF() for more information on cross-site
+request forgery protection.
 </p>
 
-    <h3 id="NotFoundHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L163">NotFoundHandler</a></h3>
+    <h3 id="NotFoundHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L202">NotFoundHandler</a></h3>
     <p><code>func NotFoundHandler() Handler</code></p>
     <p>
 NotFoundHandler returns a request handler that responds with 404 not found.
 </p>
 
-    <h3 id="ProcessForm">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L112">ProcessForm</a></h3>
+    <h3 id="ProcessForm">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L104">ProcessForm</a></h3>
     <p><code>func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler</code></p>
     <p>
 PorcessForm is deprecated. Use FormHandler.
 </p>
 
-    <h3 id="ProxyHeaderHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L86">ProxyHeaderHandler</a></h3>
+    <h3 id="ProxyHeaderHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L78">ProxyHeaderHandler</a></h3>
     <p><code>func ProxyHeaderHandler(addrName, schemeName string, h Handler) Handler</code></p>
     <p>
 ProxyHeaderHandler returns a handler that overrides the Request.RemoteAddr field
@@ -630,13 +671,13 @@ the proxy fix up:
  }
 </pre>
 
-    <h3 id="RedirectHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L156">RedirectHandler</a></h3>
+    <h3 id="RedirectHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/handlers.go#L195">RedirectHandler</a></h3>
     <p><code>func RedirectHandler(url string, permanent bool) Handler</code></p>
     <p>
 RedirectHandler returns a request handler that redirects to the given URL.
 </p>
 
-    <h3 id="SetErrorHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L40">SetErrorHandler</a></h3>
+    <h3 id="SetErrorHandler">func <a href="http://github.com/garyburd/twister/blob/master/web/middleware.go#L38">SetErrorHandler</a></h3>
     <p><code>func SetErrorHandler(e ErrorHandler, h Handler) Handler</code></p>
     <p>
 SetErrorHandler returns a handler that sets the request&#39;s error handler e.
@@ -762,10 +803,6 @@ A pattern is a string with embedded parameters. A parameter has the syntax:
 If the regexp is not specified, then the regexp is set to to [^.]+.  The
 host router adds the parameters to the request Param.
 </p>
-<p>
-To facilitate debugging on localhost, the router overrides the request host
-with the value of the hostOverride flag if set.
-</p>
 
 <pre>type HostRouter struct {
  // contains unexported fields
@@ -773,23 +810,50 @@ with the value of the hostOverride flag if set.
 
 
 
-    <h3 id="NewHostRouter">func <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L230">NewHostRouter</a></h3>
+    <h3 id="NewHostRouter">func <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L226">NewHostRouter</a></h3>
     <p><code>func NewHostRouter(defaultHandler Handler) *HostRouter</code></p>
     <p>
 NewHostRouter allocates and initializes a new HostRouter.
 </p>
 
 
-    <h3 id="HostRouter.Register">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L238">Register</a></h3>
+    <h3 id="HostRouter.Register">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L234">Register</a></h3>
     <p><code>func (router *HostRouter) Register(hostPattern string, handler Handler) *HostRouter</code></p>
     <p>
 Register a handler for the given pattern.
 </p>
 
-    <h3 id="HostRouter.ServeWeb">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L259">ServeWeb</a></h3>
+    <h3 id="HostRouter.ServeWeb">func (*HostRouter) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L253">ServeWeb</a></h3>
     <p><code>func (router *HostRouter) ServeWeb(req *Request)</code></p>
     <p>
 ServeWeb dispatches the request to a registered handler.
+</p>
+
+
+<h2 id="MultipartReader">type MultipartReader</h2>
+<p>
+MultipartReader reads a multipart/form-data request body.
+</p>
+
+<pre>type MultipartReader struct {
+ // contains unexported fields
+}</pre>
+
+
+
+    <h3 id="NewMultipartReader">func <a href="http://github.com/garyburd/twister/blob/master/web/multipart.go#L85">NewMultipartReader</a></h3>
+    <p><code>func NewMultipartReader(req *Request, maxRequestBodyLen int) (*MultipartReader, os.Error)</code></p>
+    <p>
+NewMultipartReader returns a a multipart/form-data reader.
+</p>
+
+
+    <h3 id="MultipartReader.Next">func (*MultipartReader) <a href="http://github.com/garyburd/twister/blob/master/web/multipart.go#L131">Next</a></h3>
+    <p><code>func (m *MultipartReader) Next() (HeaderMap, io.Reader, os.Error)</code></p>
+    <p>
+Next returns the next part of a multipart/form-data body.  Next returnes
+os.EOF if no more parts remain. The application must read the returned
+Reader until an error is returned (os.EOF or other).
 </p>
 
 
@@ -949,7 +1013,7 @@ than maxLen, then ErrRequestEntityTooLarge is returned.
 Error responds to the request with an error.
 </p>
 
-    <h3 id="Request.ParseForm">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L236">ParseForm</a></h3>
+    <h3 id="Request.ParseForm">func (*Request) <a href="http://github.com/garyburd/twister/blob/master/web/web.go#L244">ParseForm</a></h3>
     <p><code>func (req *Request) ParseForm(maxRequestBodyLen int) os.Error</code></p>
     <p>
 ParseForm parses url-encoded form bodies. ParseForm is idempotent.  Most
@@ -1062,14 +1126,14 @@ trailing slash to the URL with the trailing slash.
 
 
 
-    <h3 id="NewRouter">func <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L198">NewRouter</a></h3>
+    <h3 id="NewRouter">func <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L197">NewRouter</a></h3>
     <p><code>func NewRouter() *Router</code></p>
     <p>
 NewRouter allocates and initializes a new Router.
 </p>
 
 
-    <h3 id="Router.Register">func (*Router) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L108">Register</a></h3>
+    <h3 id="Router.Register">func (*Router) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L107">Register</a></h3>
     <p><code>func (router *Router) Register(pattern string, handlers ...interface{}) *Router</code></p>
     <p>
 Register the route with the given pattern and handlers. The structure of the
@@ -1083,11 +1147,25 @@ where method is a string and handler is a Handler or a
 func(*Request). Use &#34;*&#34; to match all methods.
 </p>
 
-    <h3 id="Router.ServeWeb">func (*Router) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L189">ServeWeb</a></h3>
+    <h3 id="Router.ServeWeb">func (*Router) <a href="http://github.com/garyburd/twister/blob/master/web/router.go#L188">ServeWeb</a></h3>
     <p><code>func (router *Router) ServeWeb(req *Request)</code></p>
     <p>
 ServeWeb dispatches the request to a registered handler.
 </p>
+
+
+<h2 id="ServeFileOptions">type ServeFileOptions</h2>
+
+<pre>type ServeFileOptions struct {
+ // Map file extension to mime type.
+ MimeType map[string]string
+
+ // Response headers. 
+ Header HeaderMap
+}</pre>
+
+
+
 
 
 <hr>

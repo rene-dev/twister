@@ -51,7 +51,7 @@ var (
 )
 </pre>
 
-<h2 id="Run">func <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L469">Run</a></h2>
+<h2 id="Run">func <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L490">Run</a></h2>
 <p><code>func Run(addr string, handler web.Handler)</code></p>
 <p>
 Run is a convenience function for running an HTTP server. Run listens on the
@@ -193,7 +193,7 @@ LoggerFunc is a type adapter to allow the use of ordinary functions as Logger.
 
 
 
-    <h3 id="LoggerFunc.Log">func (LoggerFunc) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L72">Log</a></h3>
+    <h3 id="LoggerFunc.Log">func (LoggerFunc) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L76">Log</a></h3>
     <p><code>func (f LoggerFunc) Log(lr *LogRecord)</code></p>
     <p>
 Log calls f(lr).
@@ -229,12 +229,15 @@ Server defines parameters for running an HTTP server.
 
  // Log the request.
  Logger Logger
+
+ // If true, do not recover from handler panics.
+ NoRecoverHandlers bool
 }</pre>
 
 
 
 
-    <h3 id="Server.Serve">func (*Server) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L429">Serve</a></h3>
+    <h3 id="Server.Serve">func (*Server) <a href="http://github.com/garyburd/twister/blob/master/server/server.go#L450">Serve</a></h3>
     <p><code>func (s *Server) Serve() os.Error</code></p>
     <p>
 Serve accepts incoming HTTP connections on s.Listener, creating a new

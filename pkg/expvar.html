@@ -13,6 +13,10 @@
 <li><a href="#package">Package</a>
 <li><a href="#Publish">func Publish</a>
 <li><a href="#ServeWeb">func ServeWeb</a>
+<li><a href="#Func">type Func</a>
+            <ul>
+    <li><a href="#Func.MarshalJSON">func (Func) MarshalJSON</a>
+            </ul>
 <li><a href="#Int">type Int</a>
         <ul>
     <li><a href="#NewInt">func NewInt</a>
@@ -20,18 +24,6 @@
     <li><a href="#Int.MarshalJSON">func (*Int) MarshalJSON</a>
     <li><a href="#Int.Set">func (*Int) Set</a>
         </ul>
-<li><a href="#Int32Func">type Int32Func</a>
-            <ul>
-    <li><a href="#Int32Func.MarshalJSON">func (Int32Func) MarshalJSON</a>
-            </ul>
-<li><a href="#Int64Func">type Int64Func</a>
-            <ul>
-    <li><a href="#Int64Func.MarshalJSON">func (Int64Func) MarshalJSON</a>
-            </ul>
-<li><a href="#IntFunc">type IntFunc</a>
-            <ul>
-    <li><a href="#IntFunc.MarshalJSON">func (IntFunc) MarshalJSON</a>
-            </ul>
 <li><a href="#Map">type Map</a>
         <ul>
     <li><a href="#NewMap">func NewMap</a>
@@ -45,10 +37,6 @@
             <ul>
     <li><a href="#MarshalJSONFunc.MarshalJSON">func (MarshalJSONFunc) MarshalJSON</a>
             </ul>
-<li><a href="#ValueFunc">type ValueFunc</a>
-            <ul>
-    <li><a href="#ValueFunc.MarshalJSON">func (ValueFunc) MarshalJSON</a>
-            </ul>
 </ul>
 
 <h2 id="package">Package</h2>
@@ -58,7 +46,7 @@
 <p>
 The expvar package provides an interface for registering and publishing
 objects as JSON over HTTP. This is useful for publishing counters and other
-operational data to monitoring tools.
+operational data for monitoring tools.
 </p>
 <p>
 The application should wrap the ServeWeb function in this package with
@@ -84,9 +72,24 @@ is already registered, then the function will panic. This function is
 typically called from a package&#39;s init() function.
 </p>
 
-<h2 id="ServeWeb">func <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L177">ServeWeb</a></h2>
+<h2 id="ServeWeb">func <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L159">ServeWeb</a></h2>
 <p><code>func ServeWeb(req *web.Request)</code></p>
 
+
+<h2 id="Func">type Func</h2>
+<p>
+Func wraps a func() interface{} with JSON marshalling of the returned
+value. The function is called each time the object is marshaled.
+</p>
+
+<pre>type Func func() interface{}</pre>
+
+
+
+
+    <h3 id="Func.MarshalJSON">func (Func) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L71">MarshalJSON</a></h3>
+    <p><code>func (f Func) MarshalJSON() ([]byte, os.Error)</code></p>
+    
 
 <h2 id="Int">type Int</h2>
 <p>
@@ -100,61 +103,28 @@ implementing counters that can be updated by by concurrent goroutines.
 
 
 
-    <h3 id="NewInt">func <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L171">NewInt</a></h3>
+    <h3 id="NewInt">func <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L153">NewInt</a></h3>
     <p><code>func NewInt(name string) *Int</code></p>
     <p>
 NewInt allocates a new counter and publishes it using name.
 </p>
 
 
-    <h3 id="Int.Add">func (*Int) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L157">Add</a></h3>
+    <h3 id="Int.Add">func (*Int) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L139">Add</a></h3>
     <p><code>func (i *Int) Add(delta int64)</code></p>
     <p>
 Add atomically adds delta to the counter.
 </p>
 
-    <h3 id="Int.MarshalJSON">func (*Int) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L152">MarshalJSON</a></h3>
+    <h3 id="Int.MarshalJSON">func (*Int) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L134">MarshalJSON</a></h3>
     <p><code>func (i *Int) MarshalJSON() ([]byte, os.Error)</code></p>
     
-    <h3 id="Int.Set">func (*Int) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L164">Set</a></h3>
+    <h3 id="Int.Set">func (*Int) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L146">Set</a></h3>
     <p><code>func (i *Int) Set(value int64)</code></p>
     <p>
 Set atomically sets the counter to value.
 </p>
 
-
-<h2 id="Int32Func">type Int32Func</h2>
-
-<pre>type Int32Func func() int32</pre>
-
-
-
-
-    <h3 id="Int32Func.MarshalJSON">func (Int32Func) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L75">MarshalJSON</a></h3>
-    <p><code>func (f Int32Func) MarshalJSON() ([]byte, os.Error)</code></p>
-    
-
-<h2 id="Int64Func">type Int64Func</h2>
-
-<pre>type Int64Func func() int64</pre>
-
-
-
-
-    <h3 id="Int64Func.MarshalJSON">func (Int64Func) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L81">MarshalJSON</a></h3>
-    <p><code>func (f Int64Func) MarshalJSON() ([]byte, os.Error)</code></p>
-    
-
-<h2 id="IntFunc">type IntFunc</h2>
-
-<pre>type IntFunc func() int</pre>
-
-
-
-
-    <h3 id="IntFunc.MarshalJSON">func (IntFunc) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L69">MarshalJSON</a></h3>
-    <p><code>func (f IntFunc) MarshalJSON() ([]byte, os.Error)</code></p>
-    
 
 <h2 id="Map">type Map</h2>
 <p>
@@ -167,29 +137,29 @@ Map is a synchronized wrapper around a string-to-value map.
 
 
 
-    <h3 id="NewMap">func <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L100">NewMap</a></h3>
+    <h3 id="NewMap">func <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L82">NewMap</a></h3>
     <p><code>func NewMap(name string) *Map</code></p>
     <p>
 NewMap allocates a new Map and publishes it using name.
 </p>
 
 
-    <h3 id="Map.AddInt">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L131">AddInt</a></h3>
+    <h3 id="Map.AddInt">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L113">AddInt</a></h3>
     <p><code>func (m *Map) AddInt(key string, delta int64)</code></p>
     <p>
 AddInt adds delta to the *Int value stored for the given map key.
 </p>
 
-    <h3 id="Map.Get">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L118">Get</a></h3>
+    <h3 id="Map.Get">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L100">Get</a></h3>
     <p><code>func (m *Map) Get(key string) interface{}</code></p>
     
-    <h3 id="Map.Init">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L113">Init</a></h3>
+    <h3 id="Map.Init">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L95">Init</a></h3>
     <p><code>func (m *Map) Init() *Map</code></p>
     
-    <h3 id="Map.MarshalJSON">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L107">MarshalJSON</a></h3>
+    <h3 id="Map.MarshalJSON">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L89">MarshalJSON</a></h3>
     <p><code>func (m *Map) MarshalJSON() ([]byte, os.Error)</code></p>
     
-    <h3 id="Map.Set">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L124">Set</a></h3>
+    <h3 id="Map.Set">func (*Map) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L106">Set</a></h3>
     <p><code>func (m *Map) Set(key string, v interface{})</code></p>
     
 
@@ -207,21 +177,6 @@ is marshaled.
 
     <h3 id="MarshalJSONFunc.MarshalJSON">func (MarshalJSONFunc) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L63">MarshalJSON</a></h3>
     <p><code>func (f MarshalJSONFunc) MarshalJSON() ([]byte, os.Error)</code></p>
-    
-
-<h2 id="ValueFunc">type ValueFunc</h2>
-<p>
-ValueFunc wraps a func() interface{} with JSON marshalling of the returned
-value. The function is called each time the object is marshaled.
-</p>
-
-<pre>type ValueFunc func() interface{}</pre>
-
-
-
-
-    <h3 id="ValueFunc.MarshalJSON">func (ValueFunc) <a href="http://github.com/garyburd/twister/blob/master/expvar/expvar.go#L89">MarshalJSON</a></h3>
-    <p><code>func (f ValueFunc) MarshalJSON() ([]byte, os.Error)</code></p>
     
 
 <hr>
