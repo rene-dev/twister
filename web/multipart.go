@@ -15,13 +15,12 @@
 package web
 
 import (
-	"os"
+	"bufio"
 	"bytes"
-)
-
-var (
-	errMpFraming = os.NewError("twister: bad framing in multipart/form-data")
-	errMpHeader  = os.NewError("twsiter: bad multipart/form-data header")
+	"io"
+	"io/ioutil"
+	"math"
+	"os"
 )
 
 // Part represents an element of a multi-part request entity.
@@ -37,65 +36,27 @@ type Part struct {
 // added to the request Param. This function loads the entire request body in
 // memory. This may not be appropriate in some scenarios.
 func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error) {
-	if req.ContentType != "multipart/form-data" {
-		return nil, nil
-	}
-	p, err := req.BodyBytes(maxRequestBodyLen)
+	m, err := NewMultipartReader(req, maxRequestBodyLen)
 	if err != nil {
 		return nil, err
 	}
-	boundary := req.ContentParam["boundary"]
-	if boundary == "" {
-		return nil, os.NewError("twister: multipart/form-data boundary missing")
-	}
-
-	sep := []byte("\r\n--" + boundary)
-
-	// Position after first separator.
-	if bytes.HasPrefix(p, sep[2:]) {
-		p = p[len(sep)-2:]
-	} else {
-		i := bytes.Index(p, sep)
-		if i < 0 {
-			return nil, errMpFraming
-		}
-		p = p[i:]
-	}
-
-	var result []Part
-
+	var parts []Part
 	for {
-		// Handle trailing "--" or "\r\n"
-		if len(p) < 2 {
-			return nil, errMpFraming
-		}
-		if bytes.HasPrefix(p, dashdashBytes) {
+		header, r, err := m.Next()
+		if err == os.EOF {
 			break
+		} else if err != nil {
+			return nil, err
 		}
-		if !bytes.HasPrefix(p, crlfBytes) {
-			return nil, errMpFraming
-		}
-
-		// Split off part
-		i := bytes.Index(p, sep)
-		if i < 0 {
-			return nil, errMpFraming
-		}
-		part := p[2:i]
-		p = p[i+len(sep):]
-
-		header := make(HeaderMap)
-		n, err := header.ParseHttpHeaderBytes(part)
+		part, err := ioutil.ReadAll(r)
 		if err != nil {
 			return nil, err
 		}
-		part = part[n:]
-
 		if disp, dispParam := header.GetValueParam(HeaderContentDisposition); disp == "form-data" {
 			if name := dispParam["name"]; name != "" {
 				if filename := dispParam["filename"]; filename != "" {
 					contentType, contentParam := header.GetValueParam(HeaderContentType)
-					result = append(result, Part{
+					parts = append(parts, Part{
 						ContentType:  contentType,
 						ContentParam: contentParam,
 						Name:         name,
@@ -107,5 +68,157 @@ func ParseMultipartForm(req *Request, maxRequestBodyLen int) ([]Part, os.Error) 
 			}
 		}
 	}
-	return result, nil
+	return parts, nil
+}
+
+// MultipartReader reads a multipart/form-data request body.
+type MultipartReader struct {
+	br       *bufio.Reader
+	err      os.Error
+	boundary []byte
+	avail    int
+}
+
+var ErrNotMultipartFormData = os.NewError("twister: request not multipart/form-data")
+
+// NewMultipartReader returns a a multipart/form-data reader. 
+func NewMultipartReader(req *Request, maxRequestBodyLen int) (*MultipartReader, os.Error) {
+
+	if req.ContentType != "multipart/form-data" {
+		return nil, ErrNotMultipartFormData
+	}
+
+	boundary := req.ContentParam["boundary"]
+	if boundary == "" {
+		return nil, os.NewError("twister: multipart/form-data boundary missing")
+	}
+
+	if len(boundary) > 512 {
+		return nil, os.NewError("twister: multipart/form-data boundary too long")
+	}
+
+	if maxRequestBodyLen < 0 {
+		maxRequestBodyLen = math.MaxInt32
+	}
+
+	body := req.Body
+	if req.ContentLength > maxRequestBodyLen {
+		return nil, ErrRequestEntityTooLarge
+	} else if req.ContentLength < 0 {
+		body = io.LimitReader(body, int64(maxRequestBodyLen))
+	}
+
+	m := &MultipartReader{
+		br:       bufio.NewReader(body),
+		boundary: []byte("\r\n--" + boundary),
+	}
+
+	p, isPrefix, err := m.br.ReadLine()
+	if err != nil {
+		return nil, err
+	}
+
+	if isPrefix || !bytes.Equal(p, m.boundary[2:]) {
+		return nil, os.NewError("twister: multipart/form-data body malformed")
+	}
+
+	return m, nil
+}
+
+// Next returns the next part of a multipart/form-data body.  Next returnes
+// os.EOF if no more parts remain. The application must read the returned
+// Reader until an error is returned (os.EOF or other).
+func (m *MultipartReader) Next() (HeaderMap, io.Reader, os.Error) {
+	if m.err != nil {
+		return nil, nil, m.err
+	}
+
+	header := HeaderMap{}
+	m.err = header.ParseHttpHeader(m.br)
+	if m.err != nil {
+		return nil, nil, m.err
+	}
+
+	m.avail = 0
+	return header, &partReader{m, nil}, nil
+}
+
+
+func (m *MultipartReader) fill() os.Error {
+	if m.err != nil {
+		return m.err
+	}
+
+	// To avoid unnecessary buffer sliding, don't peek more than the buffered
+	// amount unless we are getting close to the end of the buffered data (size
+	// of boundary + 20 bytes of fluff).
+	n := m.br.Buffered()
+	if n <= len(m.boundary)+20 {
+		n = 4096
+	}
+	p, err := m.br.Peek(n)
+
+	// 4 = len("--\r\n")
+	if len(p) < len(m.boundary)+4 {
+		if err == nil || err == os.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+		m.err = err
+		return err
+	}
+
+	i := bytes.Index(p, m.boundary)
+	switch {
+	case i == 0:
+		switch {
+		case bytes.HasPrefix(p[len(m.boundary):], crlfBytes):
+			m.br.ReadSlice('\n')
+			m.br.ReadSlice('\n')
+			return os.EOF
+		case bytes.HasPrefix(p[len(m.boundary):], dashDashCrlfBytes):
+			m.br.ReadSlice('\n')
+			m.br.ReadSlice('\n')
+			m.err = os.EOF
+			return os.EOF
+		default:
+			m.avail = len(m.boundary)
+		}
+	case i < 0:
+		m.avail = len(p) - len(m.boundary) + 1
+	default:
+		m.avail = i
+	}
+	return nil
+}
+
+type partReader struct {
+	m   *MultipartReader
+	err os.Error
+}
+
+func (r *partReader) Read(p []byte) (int, os.Error) {
+	if r.err != nil {
+		return 0, r.err
+	}
+	nn := 0
+	for len(p) > 0 {
+		if r.m.avail == 0 {
+			r.err = r.m.fill()
+			if r.err != nil {
+				break
+			}
+		}
+		n := len(p)
+		if n > r.m.avail {
+			n = r.m.avail
+		}
+		n, _ = r.m.br.Read(p[:n])
+		nn += n
+		r.m.avail -= n
+		p = p[n:]
+	}
+	if nn > 0 {
+		return nn, nil
+	}
+	return 0, r.err
 }

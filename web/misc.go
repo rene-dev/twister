@@ -19,7 +19,6 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -44,9 +43,9 @@ func FormatDeltaDays(delta int) string {
 }
 
 var (
-	colonSpaceBytes = []byte{':', ' '}
-	crlfBytes       = []byte{'\r', '\n'}
-	dashdashBytes   = []byte("--")
+	colonSpaceBytes   = []byte{':', ' '}
+	crlfBytes         = []byte{'\r', '\n'}
+	dashDashCrlfBytes = []byte{'-', '-', '\r', '\n'}
 )
 
 // HTTP status codes from RFC 2606
@@ -140,7 +139,7 @@ var statusText = map[int]string{
 func StatusText(status int) string {
 	s, found := statusText[status]
 	if !found {
-		s = fmt.Sprintf("Status %d", status)
+		s = "Status " + strconv.Itoa(status)
 	}
 	return s
 }

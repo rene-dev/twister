@@ -159,6 +159,7 @@ var getValueParamTests = []struct {
 	{`text/html; foo="b\"a\"r"`, "text/html", map[string]string{"foo": "b\"a\"r"}},
 	{`text/html; foo="b;ar"`, "text/html", map[string]string{"foo": "b;ar"}},
 	{`text/html; FOO="bar"`, "text/html", map[string]string{"foo": "bar"}},
+	{`form-data; filename="file.txt"; name=file`, "form-data", map[string]string{"filename": "file.txt", "name": "file"}},
 }
 
 func TestGetValueParam(t *testing.T) {
