@@ -71,7 +71,7 @@ func (conn *Conn) ReadMessage() (chunk []byte, hasMore bool, err os.Error) {
 }
 
 // WriteMessage write a message to the client. The message cannot contain the
-// bytes with value 0 or 127.
+// bytes with value 0 or 255.
 func (conn *Conn) WriteMessage(p []byte) os.Error {
 	// Support text framing for now. Revisit after browsers support framing
 	// described in later specs.
