@@ -25,18 +25,19 @@ import (
 
 var scratch [1024]byte
 
-func scratchReadFrom(r io.Reader) (n int64, err os.Error) {
-	for {
-		m, err := r.Read(scratch[:])
-		n += int64(m)
-		if err == os.EOF {
-			break
+func skipReader(r io.Reader, n int) os.Error {
+	for n > 0 {
+		m := n
+		if m > len(scratch) {
+			m = len(scratch)
 		}
+		m, err := r.Read(scratch[:m])
 		if err != nil {
-			return n, err
+			return err
 		}
+		n -= m
 	}
-	return n, nil
+	return nil
 }
 
 // Part represents an element of a multi-part request entity.
@@ -152,7 +153,7 @@ func NewMultipartReader(req *Request, maxRequestBodyLen int) (*MultipartReader, 
 // os.EOF if no more parts remain. 
 func (m *MultipartReader) Next() (HeaderMap, io.Reader, os.Error) {
 	if m.r != nil {
-		scratchReadFrom(m.r)
+		skipReader(m.r, math.MaxInt32)
 		m.r = nil
 	}
 
@@ -199,12 +200,11 @@ func (m *MultipartReader) fill() os.Error {
 	case i == 0:
 		switch {
 		case bytes.HasPrefix(p[len(m.boundary):], crlfBytes):
-			m.br.ReadSlice('\n')
-			m.br.ReadSlice('\n')
+			skipReader(m.br, len(m.boundary)+len(crlfBytes))
 			return os.EOF
 		case bytes.HasPrefix(p[len(m.boundary):], dashDashCrlfBytes):
-			m.br.ReadSlice('\n')
-			m.br.ReadSlice('\n')
+			// Skip final boundary and up to 4096 bytes of junk following the boundary.
+			skipReader(m.br, len(m.boundary)+len(dashDashCrlfBytes)+4096)
 			m.err = os.EOF
 			return os.EOF
 		default:
