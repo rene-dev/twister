@@ -103,8 +103,6 @@ type Request struct {
 
 	// Attributes attached to the request by middleware. 
 	Attribute map[string]interface{}
-
-	formParsed bool
 }
 
 // ErrorHandler handles request errors.
@@ -242,13 +240,13 @@ func (req *Request) BodyBytes(maxLen int) ([]byte, os.Error) {
 // applications should use the ParseForm middleware instead of calling this
 // method directly.
 func (req *Request) ParseForm(maxRequestBodyLen int) os.Error {
-	if req.formParsed ||
+	if req.Attribute["twister.web.formparsed"] != nil ||
 		req.ContentType != "application/x-www-form-urlencoded" ||
 		req.ContentLength == 0 ||
 		(req.Method != "POST" && req.Method != "PUT") {
 		return nil
 	}
-	req.formParsed = true
+	req.Attribute["twister.web.formparsed"] = true
 	p, err := req.BodyBytes(maxRequestBodyLen)
 	if err != nil {
 		return err
