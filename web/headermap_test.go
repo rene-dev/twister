@@ -122,22 +122,6 @@ func TestParseHttpHeader(t *testing.T) {
 	}
 }
 
-func TestParseHttpHeaderBytes(t *testing.T) {
-	for _, tt := range parseHTTPHeaderTests {
-		header := HeaderMap{}
-		n, err := header.ParseHttpHeaderBytes([]byte(tt.s))
-		if err != nil {
-			t.Errorf("ParseHttpHeaderBytes error for %s = %v", tt.name, err)
-		}
-		if !reflect.DeepEqual(tt.header, header) {
-			t.Errorf("ParseHttpHeaderBytes for %s = %q, want %q", tt.name, header, tt.header)
-		}
-		if n != len(tt.s) {
-			t.Errorf("ParseHeaderBytes returned n = %d, want %d", n, len(tt.s))
-		}
-	}
-}
-
 var getValueParamTests = []struct {
 	s     string
 	value string
