@@ -29,6 +29,10 @@ func coreHandler(req *web.Request) {
 		})
 }
 
+func panicHandler(req *web.Request) {
+	panic(os.NewError("Panic Attack!"))
+}
+
 var coreTempl = template.MustParse(coreStr, template.FormatterMap{"": template.HTMLFormatter})
 
 const coreStr = `
@@ -48,6 +52,7 @@ Status: {status} {message}
 <a href="/core/a/blorg/">/core/a/blorg/</a><br>
 <a href="/core/b/foo/c/bar">/core/b/foo/c/bar</a><br> 
 <a href="/core/b/foo/c/bar/">/core/b/foo/c/bar/</a> (not found)<br>
+<a href="/core/panic">/core/panic</a><br>
 <form method="post" action="/core/c"><input type="hidden" name="xsrf" value="{xsrf}"><input type=text value="hello" name=b><input type="submit"></form>
 <form method="post" action="/core/c"><input type=text value="hello" name=b><input value="xsrf fail" type="submit"></form>
 <hr>

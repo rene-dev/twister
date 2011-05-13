@@ -36,6 +36,7 @@ func main() {
 				Register("/core/", "GET", coreHandler).
 				Register("/core/a/<a>/", "GET", coreHandler).
 				Register("/core/b/<b>/c/<c>", "GET", coreHandler).
+				Register("/core/panic", "GET", panicHandler).
 				Register("/core/c", "POST", coreHandler)))))
 
 	listener, err := net.Listen("tcp", ":8080")
