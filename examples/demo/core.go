@@ -19,6 +19,9 @@ func coreErrorHandler(req *web.Request, status int, reason os.Error, header web.
 }
 
 func coreHandler(req *web.Request) {
+	if req.Param.Get("panic") == "before" {
+		panic(os.NewError("Panic Attack!"))
+	}
 	coreTempl.Execute(
 		req.Respond(web.StatusOK, web.HeaderContentType, "text/html"),
 		map[string]interface{}{
@@ -27,10 +30,9 @@ func coreHandler(req *web.Request) {
 			"message": "ok",
 			"xsrf":    req.Param.Get(web.XSRFParamName),
 		})
-}
-
-func panicHandler(req *web.Request) {
-	panic(os.NewError("Panic Attack!"))
+	if req.Param.Get("panic") != "after" {
+		panic(os.NewError("Panic Attack!"))
+	}
 }
 
 var coreTempl = template.MustParse(coreStr, template.FormatterMap{"": template.HTMLFormatter})
@@ -52,7 +54,8 @@ Status: {status} {message}
 <a href="/core/a/blorg/">/core/a/blorg/</a><br>
 <a href="/core/b/foo/c/bar">/core/b/foo/c/bar</a><br> 
 <a href="/core/b/foo/c/bar/">/core/b/foo/c/bar/</a> (not found)<br>
-<a href="/core/panic">/core/panic</a><br>
+<a href="/core/?panic=before">/core/?panic=before</a><br>
+<a href="/core/?panic=after">/core/?panic=after</a><br>
 <form method="post" action="/core/c"><input type="hidden" name="xsrf" value="{xsrf}"><input type=text value="hello" name=b><input type="submit"></form>
 <form method="post" action="/core/c"><input type=text value="hello" name=b><input value="xsrf fail" type="submit"></form>
 <hr>

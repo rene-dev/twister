@@ -221,12 +221,12 @@ func (t requestReader) Read(p []byte) (int, os.Error) {
 
 func (t *transaction) Respond(status int, header web.HeaderMap) (body web.ResponseBody) {
 	if t.hijacked {
-		log.Println("twister: Respond called on hijacked connection")
-		return nil
+		log.Println("twister.server: Respond called on hijacked connection")
+		return &nullResponseBody{err: web.ErrInvalidState}
 	}
 	if t.respondCalled {
-		log.Println("twister: Multiple calls to Respond")
-		return nil
+		log.Println("twister.server: Multiple calls to Respond")
+		return &nullResponseBody{err: web.ErrInvalidState}
 	}
 	t.respondCalled = true
 	t.requestErr = web.ErrInvalidState
@@ -234,7 +234,7 @@ func (t *transaction) Respond(status int, header web.HeaderMap) (body web.Respon
 	t.header = header
 
 	if te := header.Get(web.HeaderTransferEncoding); te != "" {
-		log.Println("twister: transfer encoding not allowed")
+		log.Println("twister.server: transfer encoding not allowed")
 		header[web.HeaderTransferEncoding] = nil, false
 	}
 
