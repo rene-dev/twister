@@ -161,6 +161,7 @@ func (m HeaderMap) GetList(key string) []string {
 	return result
 }
 
+// ValueParams represents a value with parameters.
 type ValueParams struct {
 	Value string
 	Param map[string]string
@@ -182,7 +183,7 @@ func (p byQuality) Less(i, j int) bool {
 	return qj < qi
 }
 
-// GetAccept returns an Accept-* parts in descending quality order.
+// GetAccept returns a parsed Accept-* header in descending quality order.
 func (m HeaderMap) GetAccept(key string) []ValueParams {
 	parts := m.GetList(key)
 	result := make([]ValueParams, len(parts))
