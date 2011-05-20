@@ -63,7 +63,7 @@ valid until the next call to ReadMessage.
     <p><code>func (conn *Conn) WriteMessage(p []byte) os.Error</code></p>
     <p>
 WriteMessage write a message to the client. The message cannot contain the
-bytes with value 0 or 127.
+bytes with value 0 or 255.
 </p>
 
 
