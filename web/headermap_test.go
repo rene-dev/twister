@@ -158,3 +158,29 @@ func TestGetValueParam(t *testing.T) {
 		}
 	}
 }
+
+var getAcceptTests = []struct {
+	s   string
+	vps []ValueParams
+}{
+	{"audio/*; q=0.2, audio/basic", []ValueParams{
+		{"audio/basic", map[string]string{}},
+		{"audio/*", map[string]string{"q": "0.2"}},
+	}},
+	{"text/plain; q=0.5, text/html, text/x-dvi; q=0.8, text/x-c", []ValueParams{
+		{"text/html", map[string]string{}},
+		{"text/x-c", map[string]string{}},
+		{"text/x-dvi", map[string]string{"q": "0.8"}},
+		{"text/plain", map[string]string{"q": "0.5"}},
+	}},
+}
+
+func TestGetAccept(t *testing.T) {
+	for _, tt := range getAcceptTests {
+		header := NewHeaderMap(HeaderAccept, tt.s)
+		vps := header.GetAccept(HeaderAccept)
+		if !reflect.DeepEqual(vps, tt.vps) {
+			t.Errorf("accept(%q)=%v, want %v", tt.s, vps, tt.vps)
+		}
+	}
+}

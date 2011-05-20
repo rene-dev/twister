@@ -15,11 +15,13 @@
 package web
 
 import (
-	"os"
-	"io"
 	"bufio"
-	"strings"
 	"bytes"
+	"io"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 // Octet types from RFC 2616
@@ -156,6 +158,40 @@ func (m HeaderMap) GetList(key string) []string {
 			result = append(result, s[begin:end])
 		}
 	}
+	return result
+}
+
+type ValueParams struct {
+	Value string
+	Param map[string]string
+}
+
+type byQuality []ValueParams
+
+func (p byQuality) Len() int      { return len(p) }
+func (p byQuality) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p byQuality) Less(i, j int) bool {
+	qi := float64(1)
+	if s, ok := p[i].Param["q"]; ok {
+		qi, _ = strconv.Atof64(s)
+	}
+	qj := float64(1)
+	if s, ok := p[j].Param["q"]; ok {
+		qj, _ = strconv.Atof64(s)
+	}
+	return qj < qi
+}
+
+// GetAccept returns an Accept-* parts in descending quality order.
+func (m HeaderMap) GetAccept(key string) []ValueParams {
+	parts := m.GetList(key)
+	result := make([]ValueParams, len(parts))
+	for i, part := range parts {
+		value, param, _ := splitValueParam(part)
+		result[i].Value = value
+		result[i].Param = param
+	}
+	sort.Sort(byQuality(result))
 	return result
 }
 
