@@ -30,7 +30,7 @@ func coreHandler(req *web.Request) {
 			"message": "ok",
 			"xsrf":    req.Param.Get(web.XSRFParamName),
 		})
-	if req.Param.Get("panic") != "after" {
+	if req.Param.Get("panic") == "after" {
 		panic(os.NewError("Panic Attack!"))
 	}
 }

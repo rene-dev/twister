@@ -15,7 +15,9 @@
 package web
 
 import (
+	"log"
 	"os"
+	"runtime/debug"
 )
 
 type filterResponder struct {
@@ -37,13 +39,28 @@ func FilterRespond(req *Request, filter func(status int, header HeaderMap) (int,
 // SetErrorHandler returns a handler that sets the request's error handler e.
 func SetErrorHandler(e ErrorHandler, h Handler) Handler {
 	return HandlerFunc(func(req *Request) {
+		/*
+		   Disable until there's a way to get stack trace of panic. 
+		   Otherwise, it's difficult to debug code.
+		*/
 		defer func() {
 			if r := recover(); r != nil {
-				if err, ok := r.(os.Error); ok {
-					e(req, StatusInternalServerError, err, NewHeaderMap())
-				} else {
-					panic(r)
+				url := "none"
+				if req != nil && req.URL != nil {
+					url = req.URL.String()
 				}
+				stack := string(debug.Stack())
+				log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
+				var err os.Error
+				switch r := r.(type) {
+				case string:
+					err = os.NewError(r)
+				case os.Error:
+					err = r
+				default:
+					err = os.NewError("unknown")
+				}
+				e(req, StatusInternalServerError, err, NewHeaderMap())
 			}
 		}()
 		req.ErrorHandler = e
