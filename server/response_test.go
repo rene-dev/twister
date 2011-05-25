@@ -16,8 +16,11 @@ package server
 
 import (
 	"bytes"
-	"testing"
+	"io"
+	"os"
 	"regexp"
+	"strings"
+	"testing"
 )
 
 var chunkHeaderRegexp = regexp.MustCompile("^[0-9A-Z]+\r\n")
@@ -70,6 +73,32 @@ func TestChunkedResponse(t *testing.T) {
 		out := buf.String()
 		if out != tt.out {
 			t.Errorf("%v\ngot:  %q\nwant: %q", tt.n, out, tt.out)
+		}
+	}
+}
+
+type addReaderFrom struct {
+	io.Writer
+}
+
+func (w addReaderFrom) ReadFrom(src io.Reader) (n int64, err os.Error) {
+	return io.Copy(w.Writer, src)
+}
+
+func TestIdentityResponseReadFrom(t *testing.T) {
+	var buf bytes.Buffer
+	data := "01234567890"
+	const headerLen = 5
+	for _, wr := range []io.Writer{writerOnly{&buf}, addReaderFrom{&buf}} {
+		buf.Reset()
+		w, _ := newIdentityResponseBody(wr, []byte(data[:headerLen]), 1024, len(data)-headerLen)
+		io.Copy(w, strings.NewReader(data[headerLen:]))
+		n, _ := w.finish()
+		if buf.String() != data {
+			t.Errorf("copy to %T returned %q, expected %q", wr, buf.String(), data)
+		}
+		if n != len(data) {
+			t.Errorf("copy to %T returned len %d, expected %d", wr, n, len(data))
 		}
 	}
 }

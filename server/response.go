@@ -15,10 +15,10 @@
 package server
 
 import (
+	"bufio"
+	"github.com/garyburd/twister/web"
 	"io"
 	"os"
-	"github.com/garyburd/twister/web"
-	"bufio"
 )
 
 type responseBody interface {
@@ -64,6 +64,7 @@ func (w *nullResponseBody) finish() (int, os.Error) {
 type identityResponseBody struct {
 	err os.Error
 	bw  *bufio.Writer
+	wr  io.Writer
 
 	// Value of Content-Length header.
 	contentLength int
@@ -76,7 +77,7 @@ type identityResponseBody struct {
 }
 
 func newIdentityResponseBody(wr io.Writer, header []byte, bufferSize, contentLength int) (*identityResponseBody, os.Error) {
-	w := &identityResponseBody{contentLength: contentLength}
+	w := &identityResponseBody{wr: wr, contentLength: contentLength}
 
 	w.bw, w.err = bufio.NewWriterSize(wr, bufferSize)
 	if w.err != nil {
@@ -85,6 +86,23 @@ func newIdentityResponseBody(wr io.Writer, header []byte, bufferSize, contentLen
 
 	w.headerWritten, w.err = w.bw.Write(header)
 	return w, w.err
+}
+
+type writerOnly struct{ io.Writer }
+
+func (w *identityResponseBody) ReadFrom(src io.Reader) (n int64, err os.Error) {
+	if rf, ok := w.wr.(io.ReaderFrom); ok {
+		err = w.bw.Flush()
+		if err != nil {
+			return
+		}
+		n, err = rf.ReadFrom(src)
+		w.written += int(n)
+		return
+	}
+	// Fall back to default io.Copy implementation.
+	// Use wrapper to hide r.ReadFrom from io.Copy.
+	return io.Copy(writerOnly{w}, src)
 }
 
 func (w *identityResponseBody) Write(p []byte) (int, os.Error) {
