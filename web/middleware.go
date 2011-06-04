@@ -39,10 +39,6 @@ func FilterRespond(req *Request, filter func(status int, header HeaderMap) (int,
 // SetErrorHandler returns a handler that sets the request's error handler e.
 func SetErrorHandler(e ErrorHandler, h Handler) Handler {
 	return HandlerFunc(func(req *Request) {
-		/*
-		   Disable until there's a way to get stack trace of panic. 
-		   Otherwise, it's difficult to debug code.
-		*/
 		defer func() {
 			if r := recover(); r != nil {
 				url := "none"
