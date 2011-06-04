@@ -451,6 +451,10 @@ func (s *Server) Serve() os.Error {
 	for {
 		conn, e := s.Listener.Accept()
 		if e != nil {
+			if e, ok := e.(net.Error); ok && e.Temporary() {
+				log.Printf("twister.server: accept error %v", e)
+				continue
+			}
 			return e
 		}
 		go s.serveConnection(conn)

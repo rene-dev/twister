@@ -19,6 +19,7 @@ import (
 	"github.com/garyburd/twister/web"
 	"net"
 	"os"
+	"syscall"
 	"testing"
 )
 
@@ -32,20 +33,21 @@ func (a testAddr) String() string {
 	return string(a)
 }
 
+var defaultErrs = []os.Error{nil, os.EOF}
+
 type testListener struct {
-	in, out     bytes.Buffer
-	done        chan bool
-	acceptCount int
-	readToEOF   bool
+	in, out bytes.Buffer
+	done    chan bool
+	readAll bool
+	errs    []os.Error
 }
 
 func (l *testListener) Accept() (conn net.Conn, err os.Error) {
-	if l.acceptCount > 0 {
-		return nil, os.EOF
+	err = l.errs[0]
+	if len(l.errs) > 1 {
+		l.errs = l.errs[1:]
 	}
-	l.acceptCount += 1
-	l.done = make(chan bool)
-	return testConn{l}, nil
+	return testConn{l}, err
 }
 
 func (l *testListener) Close() os.Error {
@@ -63,7 +65,7 @@ type testConn struct {
 func (c testConn) Read(b []byte) (int, os.Error) {
 	n, err := c.in.Read(b)
 	if err == os.EOF {
-		c.readToEOF = true
+		c.readAll = true
 	}
 	return n, err
 }
@@ -117,109 +119,115 @@ func testHandler(req *web.Request) {
 }
 
 var serverTests = []struct {
-	in        string
-	out       string
-	readToEOF bool
+	in      string
+	out     string
+	readAll bool
+	errs    []os.Error
 }{
 	{
-		"GET / HTTP/1.0\r\n\r\n",
-		"HTTP/1.0 200 OK\r\nConnection: close\r\n\r\n",
-		false,
+		in:  "GET / HTTP/1.0\r\n\r\n",
+		out: "HTTP/1.0 200 OK\r\nConnection: close\r\n\r\n",
 	},
 	{
-		"GET /?w=Hello HTTP/1.0\r\n\r\n",
-		"HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nHello",
-		false,
+		in:  "GET / HTTP/1.0\r\n\r\n",
+		out: "HTTP/1.0 200 OK\r\nConnection: close\r\n\r\n",
 	},
 	{
-		"GET /?w=Hello HTTP/1.0\r\nConnection: keep-alive\r\n\r\n",
-		"HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nHello",
-		false,
+		in:  "GET /?w=Hello HTTP/1.0\r\n\r\n",
+		out: "HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nHello",
 	},
 	{
-		"GET /?cl=5&w=Hello HTTP/1.0\r\n\r\n",
-		"HTTP/1.0 200 OK\r\nConnection: close\r\nContent-Length: 5\r\n\r\nHello",
-		false,
+		in:  "GET /?w=Hello HTTP/1.0\r\nConnection: keep-alive\r\n\r\n",
+		out: "HTTP/1.0 200 OK\r\nConnection: close\r\n\r\nHello",
 	},
 	{
-		"GET /?cl=5&w=Hello HTTP/1.0\r\nConnection: keep-alive\r\n\r\n",
-		"HTTP/1.0 200 OK\r\nContent-Length: 5\r\n\r\nHello",
-		true,
+		in:  "GET /?cl=5&w=Hello HTTP/1.0\r\n\r\n",
+		out: "HTTP/1.0 200 OK\r\nConnection: close\r\nContent-Length: 5\r\n\r\nHello",
 	},
 	{
-		"GET /?w=Hello HTTP/1.1\r\n\r\n",
-		"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n",
-		true,
+		in:      "GET /?cl=5&w=Hello HTTP/1.0\r\nConnection: keep-alive\r\n\r\n",
+		out:     "HTTP/1.0 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		readAll: true,
 	},
 	{
-		"GET /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
-		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
-		true,
+		in:      "GET /?w=Hello HTTP/1.1\r\n\r\n",
+		out:     "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n",
+		readAll: true,
+	},
+	{
+		in:      "GET /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
+		out:     "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		readAll: true,
 	},
 	{
 		// POST
-		"POST /?cl=5 HTTP/1.1\r\nContent-Length: 7\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nw=Hello",
-		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
-		true,
+		in:      "POST /?cl=5 HTTP/1.1\r\nContent-Length: 7\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\nw=Hello",
+		out:     "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		readAll: true,
 	},
 	{
 		// POST with expect
-		"POST /?cl=5 HTTP/1.1\r\nContent-Length: 7\r\nContent-Type: application/x-www-form-urlencoded\r\nExpect: 100-continue\r\n\r\nw=Hello",
-		"HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
-		true,
+		in:      "POST /?cl=5 HTTP/1.1\r\nContent-Length: 7\r\nContent-Type: application/x-www-form-urlencoded\r\nExpect: 100-continue\r\n\r\nw=Hello",
+		out:     "HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		readAll: true,
 	},
 	{
 		// Expect connection close because request body not read by handler.
-		"POST /?cl=0 HTTP/1.1\r\nContent-Length: 7\r\n\r\nw=Hello",
-		"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
-		false,
+		in:  "POST /?cl=0 HTTP/1.1\r\nContent-Length: 7\r\n\r\nw=Hello",
+		out: "HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
 	},
 	{
 		// Two requests with identity encoded resposne.
-		"GET /?cl=5&w=Hello HTTP/1.1\r\n\r\n" +
+		in: "GET /?cl=5&w=Hello HTTP/1.1\r\n\r\n" +
 			"GET /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
-		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello" +
+		out: "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello" +
 			"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
-		true,
+		readAll: true,
 	},
 	{
 		// Two requests with chunked encoded response.
-		"GET /?w=Hello HTTP/1.1\r\n\r\n" +
+		in: "GET /?w=Hello HTTP/1.1\r\n\r\n" +
 			"GET /?w=Hello HTTP/1.1\r\n\r\n",
-		"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n" +
+		out: "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n" +
 			"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n",
-		true,
+		readAll: true,
 	},
 	{
 		// HEAD does not include body for identity encoded responses.
-		"HEAD /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
-		"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n",
-		true,
+		in:      "HEAD /?cl=5&w=Hello HTTP/1.1\r\n\r\n",
+		out:     "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n",
+		readAll: true,
 	},
 	{
 		// HEAD does not include body for chunked  encoded responses.
-		"HEAD /?w=Hello HTTP/1.1\r\n\r\n",
-		"HTTP/1.1 200 OK\r\n\r\n",
-		true,
+		in:      "HEAD /?w=Hello HTTP/1.1\r\n\r\n",
+		out:     "HTTP/1.1 200 OK\r\n\r\n",
+		readAll: true,
 	},
 	{
 		// panic
-		"GET /?panic=before HTTP/1.1\r\n\r\n",
-		"",
-		false,
+		in: "GET /?panic=before HTTP/1.1\r\n\r\n",
 	},
 	{
 		// panic
-		"GET /?panic=after HTTP/1.1\r\n\r\n",
-		"",
-		false,
+		in: "GET /?panic=after HTTP/1.1\r\n\r\n",
+	},
+	{
+		// temporary error
+		in:      "GET /?w=Hello HTTP/1.1\r\n\r\n",
+		out:     "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0005\r\nHello\r\n0\r\n\r\n",
+		readAll: true,
+		errs:    []os.Error{os.Errno(syscall.EINTR), nil, os.EOF},
 	},
 }
 
 func TestServer(t *testing.T) {
 	for _, st := range serverTests {
-		l := &testListener{}
+		l := &testListener{done: make(chan bool), errs: st.errs}
 		l.in.WriteString(st.in)
+		if l.errs == nil {
+			l.errs = defaultErrs
+		}
 		err := (&Server{Listener: l, Handler: web.HandlerFunc(testHandler)}).Serve()
 		if err != os.EOF {
 			t.Errorf("Server() = %v", err)
@@ -229,8 +237,8 @@ func TestServer(t *testing.T) {
 		if out != st.out {
 			t.Errorf("in=%q\ngot:  %q\nwant: %q", st.in, out, st.out)
 		}
-		if l.readToEOF != st.readToEOF {
-			t.Errorf("in=%q readToEOF = %v, want %v", st.in, l.readToEOF, st.readToEOF)
+		if l.readAll != st.readAll {
+			t.Errorf("in=%q readAll = %v, want %v", st.in, l.readAll, st.readAll)
 		}
 	}
 }
