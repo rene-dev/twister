@@ -15,29 +15,29 @@
 package web
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 )
 
 var ParseCookieValuesTests = []struct {
 	values []string
-	m      ParamMap
+	m      Param
 }{
-	{[]string{"a=b"}, ParamMap{"a": []string{"b"}}},
-	{[]string{"a=b; c"}, ParamMap{"a": []string{"b"}}},
-	{[]string{"a=b; =c"}, ParamMap{"a": []string{"b"}}},
-	{[]string{"a=b; ; "}, ParamMap{"a": []string{"b"}}},
-	{[]string{"a=b; c=d"}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b; c=d"}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b;c=d"}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{" a=b;c=d "}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b", "c=d"}, ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b", "c=x=y"}, ParamMap{"a": []string{"b"}, "c": []string{"x=y"}}},
+	{[]string{"a=b"}, Param{"a": []string{"b"}}},
+	{[]string{"a=b; c"}, Param{"a": []string{"b"}}},
+	{[]string{"a=b; =c"}, Param{"a": []string{"b"}}},
+	{[]string{"a=b; ; "}, Param{"a": []string{"b"}}},
+	{[]string{"a=b; c=d"}, Param{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b; c=d"}, Param{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b;c=d"}, Param{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{" a=b;c=d "}, Param{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b", "c=d"}, Param{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b", "c=x=y"}, Param{"a": []string{"b"}, "c": []string{"x=y"}}},
 }
 
 func TestParseCookieValues(t *testing.T) {
 	for _, pt := range ParseCookieValuesTests {
-		m := make(ParamMap)
+		m := make(Param)
 		if err := parseCookieValues(pt.values, m); err != nil {
 			t.Errorf("parseCookieValues(%q) error %q", pt.values, err)
 		}

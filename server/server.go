@@ -91,7 +91,7 @@ type transaction struct {
 	responseErr        os.Error
 	write100Continue   bool
 	status             int
-	header             web.HeaderMap
+	header             web.Header
 	headerSize         int
 }
 
@@ -138,7 +138,7 @@ func (t *transaction) prepare() (err os.Error) {
 		return err
 	}
 
-	header := web.HeaderMap{}
+	header := web.Header{}
 	err = header.ParseHttpHeader(t.br)
 	if err != nil {
 		return err
@@ -219,7 +219,7 @@ func (t requestReader) Read(p []byte) (int, os.Error) {
 	return n, t.requestErr
 }
 
-func (t *transaction) Respond(status int, header web.HeaderMap) (body web.ResponseBody) {
+func (t *transaction) Respond(status int, header web.Header) (body io.Writer) {
 	if t.hijacked {
 		log.Println("twister.server: Respond called on hijacked connection")
 		return &nullResponseBody{err: web.ErrInvalidState}
@@ -298,16 +298,13 @@ func (t *transaction) Respond(status int, header web.HeaderMap) (body web.Respon
 	return t.responseBody
 }
 
-func (t *transaction) Hijack() (conn net.Conn, buf []byte, err os.Error) {
+func (t *transaction) Hijack() (conn net.Conn, br *bufio.Reader, err os.Error) {
 	if t.respondCalled {
 		return nil, nil, web.ErrInvalidState
 	}
 
 	conn = t.conn
-	buf, err = t.br.Peek(t.br.Buffered())
-	if err != nil {
-		panic("twister.server: unexpected error peeking at bufio")
-	}
+	br = t.br
 
 	if t.server.Logger != nil {
 		t.server.Logger.Log(&LogRecord{

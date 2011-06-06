@@ -83,7 +83,7 @@ func renderTemplate(req *web.Request, tmpl string, p *page) {
 
 func main() {
 	const titleParam = "<title:[a-zA-Z0-9]+>"
-	h := web.ProcessForm(10000, true, // limit size of form to 10k, enable xsrf
+	h := web.FormHandler(10000, true, // limit size of form to 10k, enable xsrf
 		web.NewRouter().
 			Register("/view/"+titleParam, "GET", viewHandler).
 			Register("/edit/"+titleParam, "GET", editHandler, "POST", saveHandler))

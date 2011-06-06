@@ -22,7 +22,8 @@ import (
 )
 
 type responseBody interface {
-	web.ResponseBody
+	io.Writer
+	web.Flusher
 
 	// finish the response body and return an error if the connection should be
 	// closed due to a write error.

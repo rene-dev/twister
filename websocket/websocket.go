@@ -15,11 +15,11 @@
 package websocket
 
 import (
-	"github.com/garyburd/twister/web"
 	"bufio"
-	"bytes"
+	//"bytes"
 	"crypto/md5"
 	"encoding/binary"
+	"github.com/garyburd/twister/web"
 	"io"
 	"net"
 	"os"
@@ -107,7 +107,7 @@ func webSocketKey(req *web.Request, name string) (key []byte, err os.Error) {
 
 // Upgrade upgrades the HTTP connection to the WebSocket protocol. The 
 // caller is responsible for closing the returned connection.
-func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.HeaderMap) (conn *Conn, err os.Error) {
+func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.Header) (conn *Conn, err os.Error) {
 
 	if req.Method != "GET" {
 		req.Respond(web.StatusMethodNotAllowed)
@@ -144,7 +144,7 @@ func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.HeaderM
 		return nil, err
 	}
 
-	netConn, buf, err := req.Responder.Hijack()
+	netConn, br, err := req.Responder.Hijack()
 	if err != nil {
 		return nil, err
 	}
@@ -155,17 +155,20 @@ func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.HeaderM
 		}
 	}()
 
-	var r io.Reader
-	if len(buf) > 0 {
-		r = io.MultiReader(bytes.NewBuffer(buf), netConn)
-	} else {
-		r = netConn
-	}
+	/*
+		var r io.Reader
+		if br.Buffered() > 0 {
+			buf, _ := br.Peek(br.Buffered())
+			r = io.MultiReader(bytes.NewBuffer(buf), netConn)
+		} else {
+			r = netConn
+		}
 
-	br, err := bufio.NewReaderSize(r, readBufSize)
-	if err != nil {
-		return nil, err
-	}
+		br, err = bufio.NewReaderSize(r, readBufSize)
+		if err != nil {
+			return nil, err
+		}
+	*/
 
 	bw, err := bufio.NewWriterSize(netConn, writeBufSize)
 	if err != nil {
@@ -188,7 +191,7 @@ func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.HeaderM
 	location := "ws://" + req.URL.Host + req.URL.RawPath
 	protocol := req.Header.Get(web.HeaderSecWebSocketProtocol)
 
-	h := make(web.HeaderMap)
+	h := make(web.Header)
 	for k, v := range header {
 		h[k] = v
 	}
@@ -200,7 +203,7 @@ func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.HeaderM
 		h.Set("Sec-Websocket-Protocol", protocol)
 	}
 
-	if _, err := bw.WriteString("HTTP/1.1 101 WebSocket Protocol Handshake"); err != nil {
+	if _, err := bw.WriteString("HTTP/1.1 101 WebSocket Protocol Handshake\r\n"); err != nil {
 		return nil, err
 	}
 

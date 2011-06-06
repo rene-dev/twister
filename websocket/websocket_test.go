@@ -15,11 +15,11 @@
 package websocket
 
 import (
-	"testing"
 	"bufio"
 	"bytes"
 	"github.com/garyburd/twister/web"
 	"io/ioutil"
+	"testing"
 )
 
 func testHandler(req *web.Request) {
@@ -49,12 +49,12 @@ func testHandler(req *web.Request) {
 
 var webSocketTests = []struct {
 	in     string
-	header web.HeaderMap
+	header web.Header
 	fail   bool
 }{
 	{in: "", fail: true},
 	{
-		header: web.NewHeaderMap(
+		header: web.NewHeader(
 			"Connection", "Upgrade",
 			"Origin", "http://localhost:8080",
 			"Host", "localhost:8080",
@@ -64,7 +64,7 @@ var webSocketTests = []struct {
 		in: "P\u05e4>mX\x18k",
 	},
 	{
-		header: web.NewHeaderMap(
+		header: web.NewHeader(
 			"Connection", "Upgrade",
 			"Origin", "http://localhost:8080",
 			"Host", "localhost:8080",
@@ -74,7 +74,7 @@ var webSocketTests = []struct {
 		in: "P\u05e4>mX\x18k\x00Hello\xff",
 	},
 	{
-		header: web.NewHeaderMap(
+		header: web.NewHeader(
 			"Connection", "Upgrade",
 			"Origin", "http://localhost:8080",
 			"Host", "localhost:8080",
@@ -101,7 +101,7 @@ func TestRouter(t *testing.T) {
 
 		br := bufio.NewReader(bytes.NewBuffer(out))
 		br.ReadSlice('\n') // TODO: check correctness of status line
-		header := make(web.HeaderMap)
+		header := make(web.Header)
 		err := header.ParseHttpHeader(br)
 		if err != nil {
 			t.Errorf("%q, out=%q, header parse error %v", tt, string(out), err)

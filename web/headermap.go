@@ -64,20 +64,20 @@ var (
 	ErrHeadersTooLong = os.NewError("too many HTTP headers")
 )
 
-// HeaderMap maps header names to a slice of header values. 
+// Header maps header names to a slice of header values. 
 // 
 // The header names must be in canonical format: the first letter and letters
 // following '-' are uppercase and all other letters are lowercase.  The
 // Header* constants are in canonical format. Use the function HeaderName to
 // convert a string to canonical format.
-type HeaderMap map[string][]string
+type Header map[string][]string
 
-// NewHeaderMap returns a map initialized with the given key-value pairs.
-func NewHeaderMap(kvs ...string) HeaderMap {
+// NewHeader returns a map initialized with the given key-value pairs.
+func NewHeader(kvs ...string) Header {
 	if len(kvs)%2 == 1 {
-		panic("twister: even number args required for NewHeaderMap")
+		panic("twister: even number args required for NewHeader")
 	}
-	m := HeaderMap{}
+	m := Header{}
 	for i := 0; i < len(kvs); i += 2 {
 		m.Add(kvs[i], kvs[i+1])
 	}
@@ -85,17 +85,17 @@ func NewHeaderMap(kvs ...string) HeaderMap {
 }
 
 // Add appends value to slice for given key.
-func (m HeaderMap) Add(key string, value string) {
+func (m Header) Add(key string, value string) {
 	m[key] = append(m[key], value)
 }
 
 // Set value for given key, discarding previous values if any.
-func (m HeaderMap) Set(key string, value string) {
+func (m Header) Set(key string, value string) {
 	m[key] = []string{value}
 }
 
 // Get returns the first value for given key or "" if the key is not found.
-func (m HeaderMap) Get(key string) string {
+func (m Header) Get(key string) string {
 	values := m[key]
 	if len(values) == 0 {
 		return ""
@@ -107,7 +107,7 @@ func (m HeaderMap) Get(key string) string {
 // pairs for header with name key. The value and parameter keys are converted
 // to lowercase. All whitespace is trimmed. This format is used by the
 // Content-Type and Content-Disposition headers.
-func (m HeaderMap) GetValueParam(key string) (value string, param map[string]string) {
+func (m Header) GetValueParam(key string) (value string, param map[string]string) {
 	value, param, _ = splitValueParam(m.Get(key))
 	return
 }
@@ -115,7 +115,7 @@ func (m HeaderMap) GetValueParam(key string) (value string, param map[string]str
 // GetList returns list of comma separated values over multiple header values
 // for the given key. Commas are ignored in quoted strings. Quoted values are
 // not unescaped or unquoted. Whitespace is trimmmed.
-func (m HeaderMap) GetList(key string) []string {
+func (m Header) GetList(key string) []string {
 	var result []string
 	for _, s := range m[key] {
 		begin := 0
@@ -184,7 +184,7 @@ func (p byQuality) Less(i, j int) bool {
 }
 
 // GetAccept returns a parsed Accept-* header in descending quality order.
-func (m HeaderMap) GetAccept(key string) []ValueParams {
+func (m Header) GetAccept(key string) []ValueParams {
 	parts := m.GetList(key)
 	result := make([]ValueParams, len(parts))
 	for i, part := range parts {
@@ -197,7 +197,7 @@ func (m HeaderMap) GetAccept(key string) []ValueParams {
 }
 
 // WriteHttpHeader writes the map in HTTP header format.
-func (m HeaderMap) WriteHttpHeader(w io.Writer) os.Error {
+func (m Header) WriteHttpHeader(w io.Writer) os.Error {
 	for key, values := range m {
 		keyBytes := []byte(key)
 		for _, value := range values {
@@ -229,7 +229,7 @@ func (m HeaderMap) WriteHttpHeader(w io.Writer) os.Error {
 
 // ParseHttpHeader parses the HTTP headers and appends the values to the
 // supplied map. Header names are converted to canonical format.
-func (m HeaderMap) ParseHttpHeader(br *bufio.Reader) (err os.Error) {
+func (m Header) ParseHttpHeader(br *bufio.Reader) (err os.Error) {
 
 	const (
 		// Max size for header line

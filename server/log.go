@@ -17,9 +17,9 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"github.com/garyburd/twister/web"
 	"io"
 	"log"
-	"github.com/garyburd/twister/web"
 	"net"
 	"os"
 	"sync"
@@ -38,7 +38,7 @@ type LogRecord struct {
 	Status int
 
 	// Response headers.
-	Header web.HeaderMap
+	Header web.Header
 
 	// Number of bytes written to output including headers and transfer encoding.
 	Written int

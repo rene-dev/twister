@@ -115,11 +115,11 @@ func home(req *web.Request) {
 		homeLoggedOut(req)
 		return
 	}
-	param := make(web.ParamMap)
+	param := make(web.Param)
 	url := "http://api.twitter.com/1/statuses/home_timeline.json"
 	oauthClient.SignParam(token, "GET", url, param)
 	url = url + "?" + param.FormEncodedString()
-	resp, _, err := http.Get(url)
+	resp, err := http.Get(url)
 	if err != nil {
 		req.Error(web.StatusInternalServerError, err)
 		return
@@ -155,7 +155,7 @@ func readSettings() {
 func main() {
 	flag.Parse()
 	readSettings()
-	h := web.ProcessForm(10000, true, web.NewRouter().
+	h := web.FormHandler(10000, true, web.NewRouter().
 		Register("/", "GET", home).
 		Register("/login", "GET", login).
 		Register("/callback", "GET", authCallback))

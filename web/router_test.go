@@ -15,8 +15,8 @@
 package web
 
 import (
-	"testing"
 	"sort"
+	"testing"
 )
 
 type routeTestHandler string

@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/garyburd/twister/web"
 	"github.com/garyburd/twister/websocket"
-	"template"
-	"sync"
 	"log"
+	"sync"
+	"template"
 )
 
 var messageChan = make(chan []byte)
@@ -43,7 +43,7 @@ func chatWsHandler(req *web.Request) {
 	startHub()
 	conn, err := websocket.Upgrade(req, 1024, 1024, nil)
 	if err != nil {
-		log.Print("upgrade failed", err)
+		log.Print("Upgrade failed", err)
 		return
 	}
 
@@ -57,6 +57,7 @@ func chatWsHandler(req *web.Request) {
 	for {
 		p, hasMore, err := conn.ReadMessage()
 		if err != nil || hasMore {
+			log.Println("Exiting read loop, err:", err, " hasMore:", hasMore)
 			break
 		}
 		// copy because Receive reuses underling byte array.

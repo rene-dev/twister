@@ -101,7 +101,7 @@ func (c testConn) SetWriteTimeout(nsec int64) os.Error {
 
 func testHandler(req *web.Request) {
 	req.ParseForm(1000)
-	header := make(web.HeaderMap)
+	header := make(web.Header)
 	p := req.Param.Get("panic")
 	if p == "before" {
 		panic("before")

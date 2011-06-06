@@ -15,10 +15,10 @@
 package web
 
 import (
-	"testing"
-	"reflect"
 	"bufio"
 	"bytes"
+	"reflect"
+	"testing"
 )
 
 var quoteHeaderValueTests = []struct {
@@ -77,7 +77,7 @@ var getHeaderListTests = []struct {
 
 func TestGetHeaderList(t *testing.T) {
 	for _, tt := range getHeaderListTests {
-		header := NewHeaderMap("foo", tt.s)
+		header := NewHeader("foo", tt.s)
 		if l := header.GetList("foo"); !reflect.DeepEqual(tt.l, l) {
 			t.Errorf("GetList for %q = %q, want %q", tt.s, l, tt.l)
 		}
@@ -86,10 +86,10 @@ func TestGetHeaderList(t *testing.T) {
 
 var parseHTTPHeaderTests = []struct {
 	name   string
-	header HeaderMap
+	header Header
 	s      string
 }{
-	{"multihdr", NewHeaderMap(
+	{"multihdr", NewHeader(
 		HeaderContentType, "text/html",
 		HeaderCookie, "hello=world",
 		HeaderCookie, "foo=bar"),
@@ -98,7 +98,7 @@ CoOkie: hello=world
 Cookie: foo=bar
 
 `},
-	{"continuation", NewHeaderMap(
+	{"continuation", NewHeader(
 		HeaderContentType, "text/html",
 		HeaderCookie, "hello=world, foo=bar"),
 		`Cookie: hello=world,
@@ -111,7 +111,7 @@ Content-Type: text/html
 func TestParseHttpHeader(t *testing.T) {
 	for _, tt := range parseHTTPHeaderTests {
 		b := bufio.NewReader(bytes.NewBufferString(tt.s))
-		header := HeaderMap{}
+		header := Header{}
 		err := header.ParseHttpHeader(b)
 		if err != nil {
 			t.Errorf("ParseHttpHeader error for %s = %v", tt.name, err)
@@ -148,7 +148,7 @@ var getValueParamTests = []struct {
 
 func TestGetValueParam(t *testing.T) {
 	for _, tt := range getValueParamTests {
-		header := NewHeaderMap(HeaderContentType, tt.s)
+		header := NewHeader(HeaderContentType, tt.s)
 		value, param := header.GetValueParam(HeaderContentType)
 		if value != tt.value {
 			t.Errorf("%q, value=%s, want %s", tt.s, value, tt.value)
@@ -177,7 +177,7 @@ var getAcceptTests = []struct {
 
 func TestGetAccept(t *testing.T) {
 	for _, tt := range getAcceptTests {
-		header := NewHeaderMap(HeaderAccept, tt.s)
+		header := NewHeader(HeaderAccept, tt.s)
 		vps := header.GetAccept(HeaderAccept)
 		if !reflect.DeepEqual(vps, tt.vps) {
 			t.Errorf("accept(%q)=%v, want %v", tt.s, vps, tt.vps)

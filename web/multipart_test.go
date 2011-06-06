@@ -15,15 +15,15 @@
 package web
 
 import (
-	"testing"
 	"http"
-	"strings"
 	"reflect"
+	"strings"
+	"testing"
 )
 
 var multiPartTests = []struct {
 	body  string
-	param ParamMap
+	param Param
 	parts []Part
 }{
 	{
@@ -33,7 +33,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			"value" +
 			"\r\n--deadbeef--\r\n",
-		param: NewParamMap("name", "value"),
+		param: NewParam("name", "value"),
 		parts: []Part{},
 	},
 	{
@@ -47,7 +47,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			"world" +
 			"\r\n--deadbeef--\r\n",
-		param: NewParamMap("name", "value", "hello", "world"),
+		param: NewParam("name", "value", "hello", "world"),
 		parts: []Part{},
 	},
 	{
@@ -62,7 +62,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			"file-content" +
 			"\r\n--deadbeef--\r\n",
-		param: NewParamMap("hello", "world"),
+		param: NewParam("hello", "world"),
 		parts: []Part{
 			Part{
 				Name:         "file",
@@ -84,7 +84,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			"world" +
 			"\r\n--deadbeef--\r\n",
-		param: NewParamMap("hello", "world"),
+		param: NewParam("hello", "world"),
 		parts: []Part{
 			Part{
 				Name:         "file",
@@ -105,7 +105,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			strings.Repeat("ijkl", 1025) +
 			"\r\n--deadbeef--\r\n",
-		param: NewParamMap("name", strings.Repeat("abcd", 1025), "hello", strings.Repeat("ijkl", 1025)),
+		param: NewParam("name", strings.Repeat("abcd", 1025), "hello", strings.Repeat("ijkl", 1025)),
 		parts: []Part{},
 	},
 	{
@@ -116,7 +116,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			strings.Repeat("abcd", 1025) +
 			"\r\n--deadbeef--\r\n",
-		param: NewParamMap(),
+		param: NewParam(),
 		parts: []Part{
 			Part{
 				Name:         "file",
@@ -135,7 +135,7 @@ func TestMultiPart(t *testing.T) {
 			"",
 			&http.URL{},
 			ProtocolVersion11,
-			NewHeaderMap(HeaderContentType, "multipart/form-data; boundary=deadbeef"))
+			NewHeader(HeaderContentType, "multipart/form-data; boundary=deadbeef"))
 		if err != nil {
 			t.Fatal("error creating request")
 		}
