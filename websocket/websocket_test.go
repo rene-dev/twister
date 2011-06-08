@@ -85,13 +85,16 @@ var webSocketTests = []struct {
 	},
 }
 
-func TestRouter(t *testing.T) {
+func TestWebSocket(t *testing.T) {
 	for _, tt := range webSocketTests {
+		var test bytes.Buffer
+		tt.header.WriteHttpHeader(&test)
+
 		status, _, out := web.RunHandler("http://example.com/", "GET", tt.header, []byte(tt.in), web.HandlerFunc(testHandler))
 
 		fail := status >= 400
 		if fail != tt.fail {
-			t.Errorf("%q, fail=%b, want %b", fail, tt.fail)
+			t.Errorf("%q, fail=%v, want %v; status %d", test.String(), fail, tt.fail, status)
 			continue
 		}
 
@@ -104,12 +107,12 @@ func TestRouter(t *testing.T) {
 		header := make(web.Header)
 		err := header.ParseHttpHeader(br)
 		if err != nil {
-			t.Errorf("%q, out=%q, header parse error %v", tt, string(out), err)
+			t.Errorf("%q, out=%q, header parse error %v", test.String(), string(out), err)
 			continue
 		}
 		out, err = ioutil.ReadAll(br)
 		if len(out) < 16 {
-			t.Errorf("%q, expect 16 byte response, got %d", len(out))
+			t.Errorf("%q, expect 16 byte response, got %d", test.String(), len(out))
 			continue
 		}
 		// TODO: check correctness of response.

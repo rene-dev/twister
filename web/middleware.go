@@ -16,9 +16,7 @@ package web
 
 import (
 	"io"
-	"log"
 	"os"
-	"runtime/debug"
 )
 
 type filterResponder struct {
@@ -42,12 +40,6 @@ func SetErrorHandler(e ErrorHandler, h Handler) Handler {
 	return HandlerFunc(func(req *Request) {
 		defer func() {
 			if r := recover(); r != nil {
-				url := "none"
-				if req != nil && req.URL != nil {
-					url = req.URL.String()
-				}
-				stack := string(debug.Stack())
-				log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
 				var err os.Error
 				switch r := r.(type) {
 				case string:
@@ -58,6 +50,7 @@ func SetErrorHandler(e ErrorHandler, h Handler) Handler {
 					err = os.NewError("unknown")
 				}
 				e(req, StatusInternalServerError, err, NewHeader())
+				panic(r)
 			}
 		}()
 		req.ErrorHandler = e

@@ -16,7 +16,7 @@ package websocket
 
 import (
 	"bufio"
-	//"bytes"
+	"bytes"
 	"crypto/md5"
 	"encoding/binary"
 	"github.com/garyburd/twister/web"
@@ -155,20 +155,18 @@ func Upgrade(req *web.Request, readBufSize, writeBufSize int, header web.Header)
 		}
 	}()
 
-	/*
-		var r io.Reader
-		if br.Buffered() > 0 {
-			buf, _ := br.Peek(br.Buffered())
-			r = io.MultiReader(bytes.NewBuffer(buf), netConn)
-		} else {
-			r = netConn
-		}
+	var r io.Reader
+	if br.Buffered() > 0 {
+		buf, _ := br.Peek(br.Buffered())
+		r = io.MultiReader(bytes.NewBuffer(buf), netConn)
+	} else {
+		r = netConn
+	}
 
-		br, err = bufio.NewReaderSize(r, readBufSize)
-		if err != nil {
-			return nil, err
-		}
-	*/
+	br, err = bufio.NewReaderSize(r, readBufSize)
+	if err != nil {
+		return nil, err
+	}
 
 	bw, err := bufio.NewWriterSize(netConn, writeBufSize)
 	if err != nil {
