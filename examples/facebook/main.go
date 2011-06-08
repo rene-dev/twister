@@ -39,7 +39,7 @@ func getUrlEncodedForm(url string, param web.Param) (web.Param, os.Error) {
 	if param != nil {
 		url = url + "?" + param.FormEncodedString()
 	}
-	r, err := http.Get(url)
+	r, _, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func getJSON(url string, param web.Param) (interface{}, os.Error) {
 	if param != nil {
 		url = url + "?" + param.FormEncodedString()
 	}
-	r, err := http.Get(url)
+	r, _, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}

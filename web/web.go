@@ -211,14 +211,20 @@ func (req *Request) BodyBytes(maxLen int) ([]byte, os.Error) {
 			return nil, err
 		}
 	} else {
+
 		var err os.Error
-		lr := io.LimitedReader{R: req.Body, N: int64(maxLen) + 1}
-		if p, err = ioutil.ReadAll(&lr); err != nil {
+		if p, err = ioutil.ReadAll(io.LimitReader(req.Body, int64(maxLen))); err != nil {
 			return nil, err
 		}
-		if lr.N <= 0 {
-			return nil, ErrRequestEntityTooLarge
+		if len(p) >= maxLen {
+			// probe for unread data
+			var scratch [1]byte
+			n, _ := req.Body.Read(scratch[:1])
+			if n > 0 {
+				return nil, ErrRequestEntityTooLarge
+			}
 		}
+
 	}
 	return p, nil
 }
