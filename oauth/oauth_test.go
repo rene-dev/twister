@@ -23,7 +23,7 @@ import (
 var signatureTests = []struct {
 	method            string
 	url               string
-	param             web.Param
+	param             web.Values
 	base              string
 	clientCredentials Credentials
 	credentials       Credentials
@@ -32,7 +32,7 @@ var signatureTests = []struct {
 	{
 		"GeT",
 		"hTtp://pHotos.example.net/photos",
-		web.NewParam(
+		web.NewValues(
 			"oauth_consumer_key", "dpf43f3p2l4k3l03",
 			"oauth_token", "nnch734d00sl2jdk",
 			"oauth_nonce", "kllo9940pd9333jh",
@@ -48,7 +48,7 @@ var signatureTests = []struct {
 	{
 		"GET",
 		"http://PHOTOS.example.net:8001/Photos",
-		web.NewParam(
+		web.NewValues(
 			"oauth_consumer_key", "dpf43f3++p+#2l4k3l03",
 			"oauth_token", "nnch734d(0)0sl2jdk",
 			"oauth_nonce", "kllo~9940~pd9333jh",

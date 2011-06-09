@@ -23,7 +23,7 @@ import (
 
 var multiPartTests = []struct {
 	body  string
-	param Param
+	param Values
 	parts []Part
 }{
 	{
@@ -33,7 +33,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			"value" +
 			"\r\n--deadbeef--\r\n",
-		param: NewParam("name", "value"),
+		param: NewValues("name", "value"),
 		parts: []Part{},
 	},
 	{
@@ -47,7 +47,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			"world" +
 			"\r\n--deadbeef--\r\n",
-		param: NewParam("name", "value", "hello", "world"),
+		param: NewValues("name", "value", "hello", "world"),
 		parts: []Part{},
 	},
 	{
@@ -62,7 +62,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			"file-content" +
 			"\r\n--deadbeef--\r\n",
-		param: NewParam("hello", "world"),
+		param: NewValues("hello", "world"),
 		parts: []Part{
 			Part{
 				Name:         "file",
@@ -84,7 +84,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			"world" +
 			"\r\n--deadbeef--\r\n",
-		param: NewParam("hello", "world"),
+		param: NewValues("hello", "world"),
 		parts: []Part{
 			Part{
 				Name:         "file",
@@ -105,7 +105,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			strings.Repeat("ijkl", 1025) +
 			"\r\n--deadbeef--\r\n",
-		param: NewParam("name", strings.Repeat("abcd", 1025), "hello", strings.Repeat("ijkl", 1025)),
+		param: NewValues("name", strings.Repeat("abcd", 1025), "hello", strings.Repeat("ijkl", 1025)),
 		parts: []Part{},
 	},
 	{
@@ -116,7 +116,7 @@ var multiPartTests = []struct {
 			"\r\n" +
 			strings.Repeat("abcd", 1025) +
 			"\r\n--deadbeef--\r\n",
-		param: NewParam(),
+		param: NewValues(),
 		parts: []Part{
 			Part{
 				Name:         "file",

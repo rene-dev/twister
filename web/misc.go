@@ -163,7 +163,7 @@ const (
 // parseCookieValues parses cookies from values and adds them to m. The
 // function supports the Netscape draft specification for cookies
 // (http://goo.gl/1WSx3). 
-func parseCookieValues(values []string, m Param) os.Error {
+func parseCookieValues(values []string, m Values) os.Error {
 	for _, s := range values {
 		key := ""
 		begin := 0

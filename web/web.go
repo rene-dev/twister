@@ -70,10 +70,10 @@ type Request struct {
 	Header Header
 
 	// Request params from the query string, post body, routers and other.
-	Param Param
+	Param Values
 
 	// Cookies.
-	Cookie Param
+	Cookie Values
 
 	// Lowercase content type, not including params.
 	ContentType string
@@ -121,9 +121,9 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 		URL:             url,
 		ProtocolVersion: protocolVersion,
 		ErrorHandler:    defaultErrorHandler,
-		Param:           make(Param),
+		Param:           make(Values),
 		Header:          header,
-		Cookie:          make(Param),
+		Cookie:          make(Values),
 		Env:             make(map[string]interface{}),
 	}
 

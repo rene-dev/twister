@@ -20,15 +20,15 @@ import (
 	"os"
 )
 
-// Param maps parameter names to slices of paramete values.
-type Param map[string][]string
+// Values maps names to slices of values.
+type Values map[string][]string
 
-// NewParam returns a map initialized with the given key-value pairs.
-func NewParam(kvs ...string) Param {
+// NewValues returns a map initialized with the given key-value pairs.
+func NewValues(kvs ...string) Values {
 	if len(kvs)%2 == 1 {
 		panic("twister: even number args required for NewParam")
 	}
-	m := make(Param)
+	m := make(Values)
 	for i := 0; i < len(kvs); i += 2 {
 		m.Add(kvs[i], kvs[i+1])
 	}
@@ -36,7 +36,7 @@ func NewParam(kvs ...string) Param {
 }
 
 // Get returns the first value for given key or "" if the key is not found.
-func (m Param) Get(key string) string {
+func (m Values) Get(key string) string {
 	values, found := m[key]
 	if !found || len(values) == 0 {
 		return ""
@@ -45,18 +45,18 @@ func (m Param) Get(key string) string {
 }
 
 // Add appends value to slice for given key.
-func (m Param) Add(key string, value string) {
+func (m Values) Add(key string, value string) {
 	m[key] = append(m[key], value)
 }
 
 // Set value for given key, discarding previous values if any.
-func (m Param) Set(key string, value string) {
+func (m Values) Set(key string, value string) {
 	m[key] = []string{value}
 }
 
 // StringMap returns a string to string map by discarding all but the first
 // value for a key. 
-func (m Param) StringMap() map[string]string {
+func (m Values) StringMap() map[string]string {
 	result := make(map[string]string)
 	for key, values := range m {
 		result[key] = values[0]
@@ -66,7 +66,7 @@ func (m Param) StringMap() map[string]string {
 
 // FormEncodedBytes returns a buffer containing the URL form encoding of the
 // map.
-func (m Param) FormEncodedBytes() []byte {
+func (m Values) FormEncodedBytes() []byte {
 	var b bytes.Buffer
 	sep := false
 	for key, values := range m {
@@ -87,7 +87,7 @@ func (m Param) FormEncodedBytes() []byte {
 
 // FormEncodedString returns a string containing the URL form encoding of the
 // map.
-func (m Param) FormEncodedString() string {
+func (m Values) FormEncodedString() string {
 	return string(m.FormEncodedBytes())
 }
 
@@ -107,7 +107,7 @@ func dehex(c byte) byte {
 
 // ParseFormEncodedBytes parses the URL-encoded form and appends the values to
 // the supplied map. This function modifies the contents of p.
-func (m Param) ParseFormEncodedBytes(p []byte) os.Error {
+func (m Values) ParseFormEncodedBytes(p []byte) os.Error {
 	key := ""
 	j := 0
 	for i := 0; i < len(p); {

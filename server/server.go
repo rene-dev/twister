@@ -428,26 +428,26 @@ func (t *transaction) invokeHandler() {
 		defer func() {
 			if r := recover(); r != nil {
 				url := "none"
-                if t.req != nil && t.req.URL != nil {
+				if t.req != nil && t.req.URL != nil {
 					url = t.req.URL.String()
 				}
 				stack := string(debug.Stack())
 				log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
-                t.closeAfterResponse = true
+				t.closeAfterResponse = true
 			}
 		}()
 	}
-    t.server.Handler.ServeWeb(t.req)
+	t.server.Handler.ServeWeb(t.req)
 }
 
 // Finish the HTTP request
 func (t *transaction) finish() os.Error {
 	if !t.respondCalled {
-        url := "unknown"
-        if t.req != nil && t.req.URL != nil {
-            url = t.req.URL.String()
-        }
-        return os.NewError("twister: handler did not call respond while serving " + url)
+		url := "unknown"
+		if t.req != nil && t.req.URL != nil {
+			url = t.req.URL.String()
+		}
+		return os.NewError("twister: handler did not call respond while serving " + url)
 	}
 	var written int
 	if t.responseErr == nil {
@@ -481,7 +481,7 @@ func (t *transaction) finish() os.Error {
 }
 
 func (s *Server) serveConnection(conn net.Conn) {
-    defer conn.Close()
+	defer conn.Close()
 	if s.ReadTimeout != 0 {
 		conn.SetReadTimeout(s.ReadTimeout)
 	}
@@ -501,7 +501,7 @@ func (s *Server) serveConnection(conn net.Conn) {
 			break
 		}
 
-        t.invokeHandler()
+		t.invokeHandler()
 		if t.hijacked {
 			return
 		}

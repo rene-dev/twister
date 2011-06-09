@@ -21,23 +21,23 @@ import (
 
 var ParseCookieValuesTests = []struct {
 	values []string
-	m      Param
+	m      Values
 }{
-	{[]string{"a=b"}, Param{"a": []string{"b"}}},
-	{[]string{"a=b; c"}, Param{"a": []string{"b"}}},
-	{[]string{"a=b; =c"}, Param{"a": []string{"b"}}},
-	{[]string{"a=b; ; "}, Param{"a": []string{"b"}}},
-	{[]string{"a=b; c=d"}, Param{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b; c=d"}, Param{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b;c=d"}, Param{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{" a=b;c=d "}, Param{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b", "c=d"}, Param{"a": []string{"b"}, "c": []string{"d"}}},
-	{[]string{"a=b", "c=x=y"}, Param{"a": []string{"b"}, "c": []string{"x=y"}}},
+	{[]string{"a=b"}, Values{"a": []string{"b"}}},
+	{[]string{"a=b; c"}, Values{"a": []string{"b"}}},
+	{[]string{"a=b; =c"}, Values{"a": []string{"b"}}},
+	{[]string{"a=b; ; "}, Values{"a": []string{"b"}}},
+	{[]string{"a=b; c=d"}, Values{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b; c=d"}, Values{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b;c=d"}, Values{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{" a=b;c=d "}, Values{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b", "c=d"}, Values{"a": []string{"b"}, "c": []string{"d"}}},
+	{[]string{"a=b", "c=x=y"}, Values{"a": []string{"b"}, "c": []string{"x=y"}}},
 }
 
 func TestParseCookieValues(t *testing.T) {
 	for _, pt := range ParseCookieValuesTests {
-		m := make(Param)
+		m := make(Values)
 		if err := parseCookieValues(pt.values, m); err != nil {
 			t.Errorf("parseCookieValues(%q) error %q", pt.values, err)
 		}
