@@ -224,11 +224,12 @@ var serverTests = []struct {
 	},
 	{
 		// panic
-		in: "GET /?panic=before HTTP/1.1\r\n\r\n",
+		in: "GET /?cl=5&w=Hello&panic=before HTTP/1.1\r\n\r\n",
 	},
 	{
 		// panic
-		in: "GET /?panic=after HTTP/1.1\r\n\r\n",
+		in: "GET /?cl=5&w=Hello&panic=after HTTP/1.1\r\n\r\n",
+        out: "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
 	},
 	{
 		// temporary error

@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	ErrBadRequestLine = os.NewError("could not parse request line")
+	ErrBadRequestLine = os.NewError("twister.server: could not parse request line")
 )
 
 // Server defines parameters for running an HTTP server.
@@ -195,7 +195,7 @@ func (t *transaction) prepare() (err os.Error) {
 	case chunked:
 		req.Body = chunkedReader{t}
 	case req.ContentLength >= 0:
-		req.Body = chunkedReader{t}
+		req.Body = identityReader{t}
 		t.requestAvail = req.ContentLength
 		t.requestConsumed = req.ContentLength == 0
 	default:
@@ -320,11 +320,11 @@ func readChunkFraming(br *bufio.Reader, first bool) (int, os.Error) {
 
 func (t *transaction) Respond(status int, header web.Header) (body io.Writer) {
 	if t.hijacked {
-		log.Println("twister.server: Respond called on hijacked connection")
+		log.Println("twister: Respond called on hijacked connection")
 		return &nullResponseBody{err: web.ErrInvalidState}
 	}
 	if t.respondCalled {
-		log.Println("twister.server: Multiple calls to Respond")
+		log.Println("twister: Multiple calls to Respond")
 		return &nullResponseBody{err: web.ErrInvalidState}
 	}
 	t.respondCalled = true
@@ -333,7 +333,7 @@ func (t *transaction) Respond(status int, header web.Header) (body io.Writer) {
 	t.header = header
 
 	if te := header.Get(web.HeaderTransferEncoding); te != "" {
-		log.Println("twister.server: transfer encoding not allowed")
+		log.Println("twister: transfer encoding not allowed")
 		header[web.HeaderTransferEncoding] = nil, false
 	}
 
@@ -423,10 +423,31 @@ func (t *transaction) Hijack() (conn net.Conn, br *bufio.Reader, err os.Error) {
 	return
 }
 
+func (t *transaction) invokeHandler() {
+	if !t.server.NoRecoverHandlers {
+		defer func() {
+			if r := recover(); r != nil {
+				url := "none"
+                if t.req != nil && t.req.URL != nil {
+					url = t.req.URL.String()
+				}
+				stack := string(debug.Stack())
+				log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
+                t.closeAfterResponse = true
+			}
+		}()
+	}
+    t.server.Handler.ServeWeb(t.req)
+}
+
 // Finish the HTTP request
 func (t *transaction) finish() os.Error {
 	if !t.respondCalled {
-		t.req.Respond(web.StatusOK, web.HeaderContentType, "text/html charset=utf-8")
+        url := "unknown"
+        if t.req != nil && t.req.URL != nil {
+            url = t.req.URL.String()
+        }
+        return os.NewError("twister: handler did not call respond while serving " + url)
 	}
 	var written int
 	if t.responseErr == nil {
@@ -460,22 +481,7 @@ func (t *transaction) finish() os.Error {
 }
 
 func (s *Server) serveConnection(conn net.Conn) {
-	var t *transaction
-
-	if !s.NoRecoverHandlers {
-		defer func() {
-			if r := recover(); r != nil {
-				conn.Close()
-				url := "none"
-				if t != nil {
-					url = t.req.URL.String()
-				}
-				stack := string(debug.Stack())
-				log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
-			}
-		}()
-	}
-
+    defer conn.Close()
 	if s.ReadTimeout != 0 {
 		conn.SetReadTimeout(s.ReadTimeout)
 	}
@@ -484,30 +490,29 @@ func (s *Server) serveConnection(conn net.Conn) {
 	}
 	br := bufio.NewReader(conn)
 	for {
-		t = &transaction{
+		t := &transaction{
 			server: s,
 			conn:   conn,
 			br:     br}
 		if err := t.prepare(); err != nil {
 			if err != os.EOF {
-				log.Println("twister/server: prepare failed", err)
+				log.Println("twister: prepare failed", err)
 			}
 			break
 		}
 
-		s.Handler.ServeWeb(t.req)
+        t.invokeHandler()
 		if t.hijacked {
 			return
 		}
 		if err := t.finish(); err != nil {
-			log.Println("twister/server: finish failed", err)
+			log.Println("twister: finish failed", err)
 			break
 		}
 		if t.closeAfterResponse {
 			break
 		}
 	}
-	conn.Close()
 }
 
 // Serve accepts incoming HTTP connections on s.Listener, creating a new
