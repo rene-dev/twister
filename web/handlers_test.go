@@ -15,10 +15,10 @@
 package web
 
 import (
-	"testing"
 	"os"
-	"strconv"
 	"reflect"
+	"strconv"
+	"testing"
 )
 
 var testEtag = computeTestEtag()
@@ -37,8 +37,8 @@ func computeTestContentLength() string {
 var fileHandlerTests = []struct {
 	options        *ServeFileOptions
 	method         string
-	requestHeader  HeaderMap
-	responseHeader HeaderMap
+	requestHeader  Header
+	responseHeader Header
 	status         int
 	noBody         bool
 	url            string
@@ -47,7 +47,7 @@ var fileHandlerTests = []struct {
 		// Simple GET
 		method: "GET",
 		status: StatusOK,
-		responseHeader: NewHeaderMap(
+		responseHeader: NewHeader(
 			HeaderEtag, testEtag,
 			HeaderContentLength, testContentLength),
 	},
@@ -55,7 +55,7 @@ var fileHandlerTests = []struct {
 		// GET with ?v=
 		method: "GET",
 		status: StatusOK,
-		responseHeader: NewHeaderMap(
+		responseHeader: NewHeader(
 			HeaderEtag, testEtag,
 			HeaderCacheControl, "max-age=315360000",
 			HeaderContentLength, testContentLength),
@@ -65,8 +65,8 @@ var fileHandlerTests = []struct {
 		// GET with ?v= and cache control header in options
 		method:  "GET",
 		status:  StatusOK,
-		options: &ServeFileOptions{Header: NewHeaderMap(HeaderCacheControl, "foo, max-age=2, bar")},
-		responseHeader: NewHeaderMap(
+		options: &ServeFileOptions{Header: NewHeader(HeaderCacheControl, "foo, max-age=2, bar")},
+		responseHeader: NewHeader(
 			HeaderEtag, testEtag,
 			HeaderCacheControl, "foo, bar, max-age=315360000",
 			HeaderContentLength, testContentLength),
@@ -76,7 +76,7 @@ var fileHandlerTests = []struct {
 		// Simple HEAD
 		method: "HEAD",
 		status: StatusOK,
-		responseHeader: NewHeaderMap(
+		responseHeader: NewHeader(
 			HeaderEtag, testEtag,
 			HeaderContentLength, testContentLength),
 		noBody: true,
@@ -85,9 +85,9 @@ var fileHandlerTests = []struct {
 		// If-None-Match
 		method: "GET",
 		status: StatusNotModified,
-		requestHeader: NewHeaderMap(
+		requestHeader: NewHeader(
 			HeaderIfNoneMatch, testEtag),
-		responseHeader: NewHeaderMap(
+		responseHeader: NewHeader(
 			HeaderEtag, testEtag),
 		noBody: true,
 	},
@@ -95,10 +95,10 @@ var fileHandlerTests = []struct {
 		// If-None-Match with entity headers in options.
 		method:  "GET",
 		status:  StatusNotModified,
-		options: &ServeFileOptions{Header: NewHeaderMap(HeaderContentType, "text/plain")},
-		requestHeader: NewHeaderMap(
+		options: &ServeFileOptions{Header: NewHeader(HeaderContentType, "text/plain")},
+		requestHeader: NewHeader(
 			HeaderIfNoneMatch, testEtag),
-		responseHeader: NewHeaderMap(
+		responseHeader: NewHeader(
 			HeaderEtag, testEtag),
 		noBody: true,
 	},
@@ -106,9 +106,9 @@ var fileHandlerTests = []struct {
 		// If-None-Match with extra stuff in header
 		method: "GET",
 		status: StatusNotModified,
-		requestHeader: NewHeaderMap(
+		requestHeader: NewHeader(
 			HeaderIfNoneMatch, "random, "+testEtag+", junk"),
-		responseHeader: NewHeaderMap(
+		responseHeader: NewHeader(
 			HeaderEtag, testEtag),
 		noBody: true,
 	},

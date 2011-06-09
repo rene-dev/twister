@@ -28,7 +28,7 @@ type ServeFileOptions struct {
 	MimeType map[string]string
 
 	// Response headers. 
-	Header HeaderMap
+	Header Header
 }
 
 var defaultServeFileOptions ServeFileOptions
@@ -57,7 +57,7 @@ func ServeFile(req *Request, fname string, options *ServeFileOptions) {
 
 	status := StatusOK
 
-	header := HeaderMap{}
+	header := Header{}
 	if options.Header != nil {
 		for k, v := range options.Header {
 			header[k] = v

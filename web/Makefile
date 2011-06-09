@@ -25,5 +25,6 @@ GOFILES=\
     middleware.go\
     multipart.go\
     test.go\
+    deprecated.go\
 
 include $(GOROOT)/src/Make.pkg

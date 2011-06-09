@@ -163,7 +163,7 @@ const (
 // parseCookieValues parses cookies from values and adds them to m. The
 // function supports the Netscape draft specification for cookies
 // (http://goo.gl/1WSx3). 
-func parseCookieValues(values []string, m ParamMap) os.Error {
+func parseCookieValues(values []string, m Values) os.Error {
 	for _, s := range values {
 		key := ""
 		begin := 0
@@ -448,7 +448,7 @@ func CheckXSRF(req *Request, cookieName string, paramName string) os.Error {
 		}
 		expectedToken = hex.EncodeToString(p)
 		c := NewCookie(cookieName, expectedToken).String()
-		FilterRespond(req, func(status int, header HeaderMap) (int, HeaderMap) {
+		FilterRespond(req, func(status int, header Header) (int, Header) {
 			header.Add(HeaderSetCookie, c)
 			return status, header
 		})

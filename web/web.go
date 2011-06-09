@@ -17,16 +17,17 @@
 package web
 
 import (
+	"bufio"
 	"http"
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"net"
 	"os"
 	"path"
 	"strconv"
 	"strings"
-	"math"
 )
 
 var (
@@ -35,33 +36,23 @@ var (
 	ErrRequestEntityTooLarge = os.NewError("HTTP request entity too large")
 )
 
-// RequestBody represents the request body.
-type RequestBody interface {
-	io.Reader
-}
-
-// ResponseBody represents the response body.
-type ResponseBody interface {
-	io.Writer
-	// Flush writes any buffered data to the network.
-	Flush() os.Error
-}
-
 // Responder represents the response.
 type Responder interface {
 	// Respond commits the status and headers to the network and returns
 	// a writer for the response body.
-	Respond(status int, header HeaderMap) ResponseBody
+	Respond(status int, header Header) (responseBody io.Writer)
 
 	// Hijack lets the caller take over the connection from the HTTP server.
 	// The caller is responsible for closing the connection. Returns connection
-	// and bytes buffered by the server.
-	Hijack() (conn net.Conn, buf []byte, err os.Error)
+	// and bufio Reader with any data that might be buffered by the server.
+	// Hijack is not supported by all servers.
+	Hijack() (conn net.Conn, br *bufio.Reader, err os.Error)
 }
 
 // Request represents an HTTP request to the server.
 type Request struct {
-	Responder Responder // The response.
+	// The response.
+	Responder Responder
 
 	// Uppercase request method. GET, POST, etc.
 	Method string
@@ -76,13 +67,13 @@ type Request struct {
 	RemoteAddr string
 
 	// Header maps canonical header names to slices of header values.
-	Header HeaderMap
+	Header Header
 
 	// Request params from the query string, post body, routers and other.
-	Param ParamMap
+	Param Values
 
 	// Cookies.
-	Cookie ParamMap
+	Cookie Values
 
 	// Lowercase content type, not including params.
 	ContentType string
@@ -99,14 +90,14 @@ type Request struct {
 	ContentLength int
 
 	// The request body.
-	Body RequestBody
+	Body io.Reader
 
 	// Attributes attached to the request by middleware. 
-	Attribute map[string]interface{}
+	Env map[string]interface{}
 }
 
 // ErrorHandler handles request errors.
-type ErrorHandler func(req *Request, status int, reason os.Error, header HeaderMap)
+type ErrorHandler func(req *Request, status int, reason os.Error, header Header)
 
 // Handler is the interface for web handlers.
 type Handler interface {
@@ -123,17 +114,17 @@ func (f HandlerFunc) ServeWeb(req *Request) { f(req) }
 
 // NewRequest allocates and initializes a request. This function is provided
 // for the convenience of protocol adapters (fcgi, native http server, ...).
-func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion int, header HeaderMap) (req *Request, err os.Error) {
+func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion int, header Header) (req *Request, err os.Error) {
 	req = &Request{
 		RemoteAddr:      remoteAddr,
 		Method:          strings.ToUpper(method),
 		URL:             url,
 		ProtocolVersion: protocolVersion,
 		ErrorHandler:    defaultErrorHandler,
-		Param:           make(ParamMap),
+		Param:           make(Values),
 		Header:          header,
-		Cookie:          make(ParamMap),
-		Attribute:       make(map[string]interface{}),
+		Cookie:          make(Values),
+		Env:             make(map[string]interface{}),
 	}
 
 	err = req.Param.ParseFormEncodedBytes([]byte(req.URL.RawQuery))
@@ -161,13 +152,13 @@ func NewRequest(remoteAddr string, method string, url *http.URL, protocolVersion
 }
 
 // Respond is a convenience function that adds (key, value) pairs in
-// headerKeysAndValues to a HeaderMap and calls through to the connection's
+// headerKeysAndValues to a Header and calls through to the responder's
 // Respond method.
-func (req *Request) Respond(status int, headerKeysAndValues ...string) ResponseBody {
-	return req.Responder.Respond(status, NewHeaderMap(headerKeysAndValues...))
+func (req *Request) Respond(status int, headerKeysAndValues ...string) io.Writer {
+	return req.Responder.Respond(status, NewHeader(headerKeysAndValues...))
 }
 
-func defaultErrorHandler(req *Request, status int, reason os.Error, header HeaderMap) {
+func defaultErrorHandler(req *Request, status int, reason os.Error, header Header) {
 	header.Set(HeaderContentType, "text/plain; charset=utf-8")
 	w := req.Responder.Respond(status, header)
 	io.WriteString(w, StatusText(status))
@@ -178,7 +169,7 @@ func defaultErrorHandler(req *Request, status int, reason os.Error, header Heade
 
 // Error responds to the request with an error. 
 func (req *Request) Error(status int, reason os.Error, headerKeysAndValues ...string) {
-	req.ErrorHandler(req, status, reason, NewHeaderMap(headerKeysAndValues...))
+	req.ErrorHandler(req, status, reason, NewHeader(headerKeysAndValues...))
 }
 
 // Redirect responds to the request with a redirect to the specified URL.
@@ -195,7 +186,7 @@ func (req *Request) Redirect(url string, perm bool, headerKeysAndValues ...strin
 		url = d + url
 	}
 
-	header := NewHeaderMap(headerKeysAndValues...)
+	header := NewHeader(headerKeysAndValues...)
 	header.Set(HeaderLocation, url)
 	req.Responder.Respond(status, header)
 }
@@ -232,17 +223,17 @@ func (req *Request) BodyBytes(maxLen int) ([]byte, os.Error) {
 	return p, nil
 }
 
-// ParseForm parses url-encoded form bodies. ParseForm is idempotent.  Most
-// applications should use the ParseForm middleware instead of calling this
+// ParseForm parses url-encoded form bodies. ParseForm is idempotent. Most
+// applications should use the FormHandler middleware instead of calling this
 // method directly.
 func (req *Request) ParseForm(maxRequestBodyLen int) os.Error {
-	if req.Attribute["twister.web.formparsed"] != nil ||
+	if req.Env["twister.web.formparsed"] != nil ||
 		req.ContentType != "application/x-www-form-urlencoded" ||
 		req.ContentLength == 0 ||
 		(req.Method != "POST" && req.Method != "PUT") {
 		return nil
 	}
-	req.Attribute["twister.web.formparsed"] = true
+	req.Env["twister.web.formparsed"] = true
 	p, err := req.BodyBytes(maxRequestBodyLen)
 	if err != nil {
 		return err
@@ -251,4 +242,11 @@ func (req *Request) ParseForm(maxRequestBodyLen int) os.Error {
 		return err
 	}
 	return nil
+}
+
+// Flusher is implemented by response bodies that allow the HTTP handler to
+// flush buffered data to the network. Flush data to the network is useful for
+// implementing long polling and other Comet mechanisms. 
+type Flusher interface {
+	Flush() os.Error
 }

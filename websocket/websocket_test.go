@@ -15,11 +15,11 @@
 package websocket
 
 import (
-	"testing"
 	"bufio"
 	"bytes"
 	"github.com/garyburd/twister/web"
 	"io/ioutil"
+	"testing"
 )
 
 func testHandler(req *web.Request) {
@@ -49,12 +49,12 @@ func testHandler(req *web.Request) {
 
 var webSocketTests = []struct {
 	in     string
-	header web.HeaderMap
+	header web.Header
 	fail   bool
 }{
 	{in: "", fail: true},
 	{
-		header: web.NewHeaderMap(
+		header: web.NewHeader(
 			"Connection", "Upgrade",
 			"Origin", "http://localhost:8080",
 			"Host", "localhost:8080",
@@ -64,7 +64,7 @@ var webSocketTests = []struct {
 		in: "P\u05e4>mX\x18k",
 	},
 	{
-		header: web.NewHeaderMap(
+		header: web.NewHeader(
 			"Connection", "Upgrade",
 			"Origin", "http://localhost:8080",
 			"Host", "localhost:8080",
@@ -74,7 +74,7 @@ var webSocketTests = []struct {
 		in: "P\u05e4>mX\x18k\x00Hello\xff",
 	},
 	{
-		header: web.NewHeaderMap(
+		header: web.NewHeader(
 			"Connection", "Upgrade",
 			"Origin", "http://localhost:8080",
 			"Host", "localhost:8080",
@@ -85,13 +85,16 @@ var webSocketTests = []struct {
 	},
 }
 
-func TestRouter(t *testing.T) {
+func TestWebSocket(t *testing.T) {
 	for _, tt := range webSocketTests {
+		var test bytes.Buffer
+		tt.header.WriteHttpHeader(&test)
+
 		status, _, out := web.RunHandler("http://example.com/", "GET", tt.header, []byte(tt.in), web.HandlerFunc(testHandler))
 
 		fail := status >= 400
 		if fail != tt.fail {
-			t.Errorf("%q, fail=%b, want %b", fail, tt.fail)
+			t.Errorf("%q, fail=%v, want %v; status %d", test.String(), fail, tt.fail, status)
 			continue
 		}
 
@@ -101,15 +104,15 @@ func TestRouter(t *testing.T) {
 
 		br := bufio.NewReader(bytes.NewBuffer(out))
 		br.ReadSlice('\n') // TODO: check correctness of status line
-		header := make(web.HeaderMap)
+		header := make(web.Header)
 		err := header.ParseHttpHeader(br)
 		if err != nil {
-			t.Errorf("%q, out=%q, header parse error %v", tt, string(out), err)
+			t.Errorf("%q, out=%q, header parse error %v", test.String(), string(out), err)
 			continue
 		}
 		out, err = ioutil.ReadAll(br)
 		if len(out) < 16 {
-			t.Errorf("%q, expect 16 byte response, got %d", len(out))
+			t.Errorf("%q, expect 16 byte response, got %d", test.String(), len(out))
 			continue
 		}
 		// TODO: check correctness of response.

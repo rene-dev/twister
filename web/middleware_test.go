@@ -15,21 +15,21 @@
 package web
 
 import (
-	"testing"
 	"io"
-	"strings"
 	"os"
+	"strings"
+	"testing"
 )
 
 const testToken = "12345678"
 
 var xsrfTests = []struct {
-	url    string    // request URL
-	method string    // request method
-	header HeaderMap // request headers
-	body   string    // request body
-	status int       // expected response status
-	cookie bool      // true if cookie expected in response
+	url    string // request URL
+	method string // request method
+	header Header // request headers
+	body   string // request body
+	status int    // expected response status
+	cookie bool   // true if cookie expected in response
 }{
 	{url: "/",
 		method: "GET",
@@ -37,18 +37,18 @@ var xsrfTests = []struct {
 		cookie: true},
 	{url: "/?xsrf=" + testToken,
 		method: "POST",
-		header: NewHeaderMap(HeaderCookie, "xsrf="+testToken),
+		header: NewHeader(HeaderCookie, "xsrf="+testToken),
 		status: StatusOK},
 	{url: "/",
 		method: "POST",
-		header: NewHeaderMap(
+		header: NewHeader(
 			HeaderCookie, "xsrf="+testToken,
 			HeaderContentType, "application/x-www-form-urlencoded"),
 		body:   "xsrf=" + testToken,
 		status: StatusOK},
 	{url: "/",
 		method: "POST",
-		header: NewHeaderMap(
+		header: NewHeader(
 			HeaderXXSRFToken, testToken,
 			HeaderCookie, "xsrf="+testToken,
 			HeaderContentType, "application/x-www-form-urlencoded"),
@@ -56,27 +56,27 @@ var xsrfTests = []struct {
 		status: StatusOK},
 	{url: "/",
 		method: "POST",
-		header: NewHeaderMap(
+		header: NewHeader(
 			HeaderCookie, "xsrf="+testToken,
 			HeaderContentType, "application/x-www-form-urlencoded"),
 		body:   "junk",
 		status: StatusNotFound},
 	{url: "/",
 		method: "PUT",
-		header: NewHeaderMap(
+		header: NewHeader(
 			HeaderCookie, "xsrf="+testToken,
 			HeaderContentType, "application/x-www-form-urlencoded"),
 		body:   "junk",
 		status: StatusNotFound},
 	{url: "/",
 		method: "DELETE",
-		header: NewHeaderMap(
+		header: NewHeader(
 			HeaderCookie, "xsrf="+testToken,
 			HeaderContentType, "application/x-www-form-urlencoded"),
 		status: StatusNotFound},
 }
 
-func xsrfErrorHandler(req *Request, status int, reason os.Error, header HeaderMap) {
+func xsrfErrorHandler(req *Request, status int, reason os.Error, header Header) {
 	io.WriteString(req.Responder.Respond(status, header), req.Param.Get("xsrf"))
 }
 
@@ -85,7 +85,7 @@ func xsrfHandler(req *Request) {
 }
 
 func TestXSRF(t *testing.T) {
-	h := SetErrorHandler(xsrfErrorHandler, ProcessForm(1000, true, HandlerFunc(xsrfHandler)))
+	h := SetErrorHandler(xsrfErrorHandler, FormHandler(1000, true, HandlerFunc(xsrfHandler)))
 
 	for i, tt := range xsrfTests {
 		status, header, body := RunHandler(tt.url, tt.method, tt.header, []byte(tt.body), h)

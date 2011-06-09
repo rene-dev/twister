@@ -151,7 +151,7 @@ func NewMultipartReader(req *Request, maxRequestBodyLen int) (*MultipartReader, 
 
 // Next returns the next part of a multipart/form-data body.  Next returns
 // os.EOF if no more parts remain. 
-func (m *MultipartReader) Next() (HeaderMap, io.Reader, os.Error) {
+func (m *MultipartReader) Next() (Header, io.Reader, os.Error) {
 	if m.r != nil {
 		skipReader(m.r, math.MaxInt32)
 		m.r = nil
@@ -161,7 +161,7 @@ func (m *MultipartReader) Next() (HeaderMap, io.Reader, os.Error) {
 		return nil, nil, m.err
 	}
 
-	header := HeaderMap{}
+	header := Header{}
 	m.err = header.ParseHttpHeader(m.br)
 	if m.err != nil {
 		return nil, nil, m.err

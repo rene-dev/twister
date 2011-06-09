@@ -15,12 +15,12 @@
 package main
 
 import (
-	"path"
+	"github.com/garyburd/twister/web"
+	"io"
 	"log"
 	"mime"
+	"path"
 	"template"
-	"io"
-	"github.com/garyburd/twister/web"
 )
 
 // itemFormatter formats a Facebook feed item by invoking the appropriate child
@@ -49,7 +49,7 @@ func parseTemplate(filename string) *Template {
 }
 
 func (t *Template) respond(req *web.Request, status int, value interface{}, kvs ...string) {
-	header := web.NewHeaderMap(kvs...)
+	header := web.NewHeader(kvs...)
 	header.Set(web.HeaderContentType, t.mimeType)
 	err := t.t.Execute(req.Responder.Respond(status, header), value)
 	if err != nil {

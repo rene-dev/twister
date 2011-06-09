@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
-	"github.com/garyburd/twister/web"
-	"github.com/garyburd/twister/server"
 	"github.com/garyburd/twister/expvar"
 	"github.com/garyburd/twister/pprof"
-	"template"
-	"net"
+	"github.com/garyburd/twister/server"
+	"github.com/garyburd/twister/web"
 	"log"
+	"net"
+	"template"
 )
 
 func homeHandler(req *web.Request) {

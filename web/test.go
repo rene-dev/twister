@@ -15,30 +15,32 @@
 package web
 
 import (
-	"os"
-	"http"
+	"bufio"
 	"bytes"
+	"http"
+	"io"
 	"net"
+	"os"
 )
 
 type testTransaction struct {
 	in, out bytes.Buffer
 	status  int
-	header  HeaderMap
+	header  Header
 }
 
 type testResponder struct {
 	t *testTransaction
 }
 
-func (r testResponder) Respond(status int, header HeaderMap) ResponseBody {
+func (r testResponder) Respond(status int, header Header) io.Writer {
 	r.t.status = status
 	r.t.header = header
 	return testResponseBody{r.t}
 }
 
-func (r testResponder) Hijack() (net.Conn, []byte, os.Error) {
-	return testConn{r.t}, []byte{}, nil
+func (r testResponder) Hijack() (net.Conn, *bufio.Reader, os.Error) {
+	return testConn{r.t}, bufio.NewReader(&bytes.Buffer{}), nil
 }
 
 type testResponseBody struct {
@@ -101,7 +103,7 @@ func (a testAddr) String() string {
 
 // RunHandler runs the handler with a request created from the arguments and
 // returns the response. This function is intended to be used in tests.
-func RunHandler(url string, method string, reqHeader HeaderMap, reqBody []byte, handler Handler) (status int, header HeaderMap, respBody []byte) {
+func RunHandler(url string, method string, reqHeader Header, reqBody []byte, handler Handler) (status int, header Header, respBody []byte) {
 	var t testTransaction
 	if reqBody != nil {
 		t.in.Write(reqBody)
@@ -109,7 +111,7 @@ func RunHandler(url string, method string, reqHeader HeaderMap, reqBody []byte, 
 	remoteAddr := "1.2.3.4"
 	protocolVersion := ProtocolVersion11
 	if reqHeader == nil {
-		reqHeader = make(HeaderMap)
+		reqHeader = make(Header)
 	}
 	parsedURL, err := http.ParseURL(url)
 	if err != nil {

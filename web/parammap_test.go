@@ -15,27 +15,27 @@
 package web
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 )
 
 type ParseUrlEncodedFormTest struct {
 	s string
-	m ParamMap
+	m Values
 }
 
 var ParseUrlEncodedFormTests = []ParseUrlEncodedFormTest{
-	{"a=", ParamMap{"a": []string{""}}},
-	{"a=b", ParamMap{"a": []string{"b"}}},
-	{"a=b&c=d", ParamMap{"a": []string{"b"}, "c": []string{"d"}}},
-	{"a=b&a=c", ParamMap{"a": []string{"b", "c"}}},
-	{"a=Hello%20World", ParamMap{"a": []string{"Hello World"}}},
+	{"a=", Values{"a": []string{""}}},
+	{"a=b", Values{"a": []string{"b"}}},
+	{"a=b&c=d", Values{"a": []string{"b"}, "c": []string{"d"}}},
+	{"a=b&a=c", Values{"a": []string{"b", "c"}}},
+	{"a=Hello%20World", Values{"a": []string{"Hello World"}}},
 }
 
 func TestParseUrlEncodedForm(t *testing.T) {
 	for _, pt := range ParseUrlEncodedFormTests {
 		p := []byte(pt.s)
-		m := make(ParamMap)
+		m := make(Values)
 		m.ParseFormEncodedBytes(p)
 		if !reflect.DeepEqual(pt.m, m) {
 			t.Errorf("ParseFormEncodedBytes(%q) = %q, want %q", pt.s, m, pt.m)

@@ -15,42 +15,31 @@
 package web
 
 import (
-	"log"
+	"io"
 	"os"
-	"runtime/debug"
 )
 
 type filterResponder struct {
 	Responder
-	filter func(status int, header HeaderMap) (int, HeaderMap)
+	filter func(status int, header Header) (int, Header)
 }
 
-func (rf *filterResponder) Respond(status int, header HeaderMap) ResponseBody {
+func (rf *filterResponder) Respond(status int, header Header) io.Writer {
 	return rf.Responder.Respond(rf.filter(status, header))
 }
 
 // FilterRespond replaces the request's responder with one that filters the
 // arguments to Respond through the supplied filter. This function is intended
 // to be used by middleware.
-func FilterRespond(req *Request, filter func(status int, header HeaderMap) (int, HeaderMap)) {
+func FilterRespond(req *Request, filter func(status int, header Header) (int, Header)) {
 	req.Responder = &filterResponder{req.Responder, filter}
 }
 
 // SetErrorHandler returns a handler that sets the request's error handler e.
 func SetErrorHandler(e ErrorHandler, h Handler) Handler {
 	return HandlerFunc(func(req *Request) {
-		/*
-		   Disable until there's a way to get stack trace of panic. 
-		   Otherwise, it's difficult to debug code.
-		*/
 		defer func() {
 			if r := recover(); r != nil {
-				url := "none"
-				if req != nil && req.URL != nil {
-					url = req.URL.String()
-				}
-				stack := string(debug.Stack())
-				log.Printf("Panic while serving \"%s\": %v\n%s", url, r, stack)
 				var err os.Error
 				switch r := r.(type) {
 				case string:
@@ -60,7 +49,8 @@ func SetErrorHandler(e ErrorHandler, h Handler) Handler {
 				default:
 					err = os.NewError("unknown")
 				}
-				e(req, StatusInternalServerError, err, NewHeaderMap())
+				e(req, StatusInternalServerError, err, NewHeader())
+				panic(r)
 			}
 		}()
 		req.ErrorHandler = e
@@ -116,19 +106,14 @@ type proxyHeaderHandler struct {
 
 func (h proxyHeaderHandler) ServeWeb(req *Request) {
 	if s := req.Header.Get(h.addrName); s != "" {
-		req.Attribute["web.OriginalRemoteAddr"] = req.RemoteAddr
+		req.Env["twister.web.OriginalRemoteAddr"] = req.RemoteAddr
 		req.RemoteAddr = s
 	}
 	if s := req.Header.Get(h.schemeName); s != "" {
-		req.Attribute["web.OriginalScheme"] = req.URL.Scheme
+		req.Env["twister.web.OriginalScheme"] = req.URL.Scheme
 		req.URL.Scheme = s
 	}
 	h.h.ServeWeb(req)
-}
-
-// PorcessForm is deprecated. Use FormHandler.
-func ProcessForm(maxRequestBodyLen int, checkXSRF bool, handler Handler) Handler {
-	return FormHandler(maxRequestBodyLen, checkXSRF, handler)
 }
 
 // Name of XSRF cookie and request parameter.
