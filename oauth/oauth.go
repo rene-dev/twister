@@ -22,17 +22,17 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
-	"fmt"
 	"github.com/garyburd/twister/web"
 	"http"
 	"io"
 	"io/ioutil"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"fmt"
+	"strconv"
 )
 
 var noEscape = [256]bool{
@@ -111,7 +111,7 @@ func (p keyValueArray) Less(i, j int) bool {
 
 // writeBaseString writes method, url, and param to w using the OAuth signature
 // base string computation described in section 3.4.1 of the RFC.
-func writeBaseString(w io.Writer, method string, url string, param web.Values) {
+func writeBaseString(w io.Writer, method string, url string, param web.ParamMap) {
 	// Method
 	w.Write(encode(strings.ToUpper(method), false))
 	w.Write([]byte{'&'})
@@ -161,7 +161,7 @@ func writeBaseString(w io.Writer, method string, url string, param web.Values) {
 }
 
 // signature returns the OAuth signature as described in section 3.4 of the RFC.
-func signature(clientCredentials *Credentials, credentials *Credentials, method, url string, param web.Values) string {
+func signature(clientCredentials *Credentials, credentials *Credentials, method, url string, param web.ParamMap) string {
 	var key bytes.Buffer
 
 	key.Write(encode(clientCredentials.Secret, false))
@@ -212,7 +212,7 @@ type Credentials struct {
 }
 
 // SignParam adds an OAuth signature to param.
-func (c *Client) SignParam(credentials *Credentials, method, url string, param web.Values) {
+func (c *Client) SignParam(credentials *Credentials, method, url string, param web.ParamMap) {
 	param.Set("oauth_consumer_key", c.Credentials.Token)
 	param.Set("oauth_signature_method", "HMAC-SHA1")
 	param.Set("oauth_timestamp", strconv.Itoa64(time.Seconds()))
@@ -226,17 +226,8 @@ func (c *Client) SignParam(credentials *Credentials, method, url string, param w
 	}
 	param.Set("oauth_signature", signature(&c.Credentials, credentials, method, url, param))
 }
-///////////////////////////////
-//func postTweet(token *oauth.Credentials, url string, opt map[string]string) os.Error {
-//	param := make(web.ParamMap)
-//	for k, v := range opt {
-//		param.Set(k, v)
-//	}
-//	oauthClient.SignParam(token, "POST", url, param)
-//	res, err := http.PostForm(url, param.StringMap())
-///////////////////////////////
 
-func (c *Client) request(credentials *Credentials, url string, param web.Values) (*Credentials, web.Values, os.Error) {
+func (c *Client) request(credentials *Credentials, url string, param web.ParamMap) (*Credentials, web.ParamMap, os.Error) {
 	c.SignParam(credentials, "POST", url, param)
 	resp, err := http.PostForm(url, param.StringMap())
 	if err != nil {
@@ -250,7 +241,7 @@ func (c *Client) request(credentials *Credentials, url string, param web.Values)
 	if resp.StatusCode != 200 {
 		return nil, nil, os.NewError(fmt.Sprintf("OAuth server status %d, %s", resp.StatusCode, string(p)))
 	}
-	m := make(web.Values)
+	m := make(web.ParamMap)
 	err = m.ParseFormEncodedBytes(p)
 	if err != nil {
 		return nil, nil, err
@@ -267,7 +258,7 @@ func (c *Client) request(credentials *Credentials, url string, param web.Values)
 
 // RequestTemporaryCredentials requests temporary credentials from the server.
 func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, os.Error) {
-	m := make(web.Values)
+	m := make(web.ParamMap)
 	if callbackURL != "" {
 		m.Set("oauth_callback", callbackURL)
 	}
@@ -276,13 +267,8 @@ func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, 
 }
 
 // RequestToken requests token credentials from the server. 
-<<<<<<< HEAD
 func (c *Client) RequestToken(temporaryCredentials *Credentials, verifier string) (*Credentials, http.Values, os.Error) {
 	m := make(web.ParamMap)
-=======
-func (c *Client) RequestToken(temporaryCredentials *Credentials, verifier string) (*Credentials, map[string]string, os.Error) {
-	m := make(web.Values)
->>>>>>> b01d99d460f374a53d3056013defa5ee9205eb51
 	if verifier != "" {
 		m.Set("oauth_verifier", verifier)
 	}
