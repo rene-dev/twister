@@ -62,7 +62,7 @@ func webRequestFromHTTPRequest(w http.ResponseWriter, r *http.Request) *web.Requ
 	req.Responder = responder{w}
 	req.ContentLength = int(r.ContentLength)
 	if r.Form != nil {
-		req.Param = web.Param(map[string][]string(r.Form))
+		req.Param = web.Values(map[string][]string(r.Form))
 	}
 
 	for _, c := range r.Cookie {

@@ -111,7 +111,7 @@ func (p keyValueArray) Less(i, j int) bool {
 
 // writeBaseString writes method, url, and param to w using the OAuth signature
 // base string computation described in section 3.4.1 of the RFC.
-func writeBaseString(w io.Writer, method string, url string, param web.Param) {
+func writeBaseString(w io.Writer, method string, url string, param web.Values) {
 	// Method
 	w.Write(encode(strings.ToUpper(method), false))
 	w.Write([]byte{'&'})
@@ -161,7 +161,7 @@ func writeBaseString(w io.Writer, method string, url string, param web.Param) {
 }
 
 // signature returns the OAuth signature as described in section 3.4 of the RFC.
-func signature(clientCredentials *Credentials, credentials *Credentials, method, url string, param web.Param) string {
+func signature(clientCredentials *Credentials, credentials *Credentials, method, url string, param web.Values) string {
 	var key bytes.Buffer
 
 	key.Write(encode(clientCredentials.Secret, false))
@@ -212,7 +212,7 @@ type Credentials struct {
 }
 
 // SignParam adds an OAuth signature to param.
-func (c *Client) SignParam(credentials *Credentials, method, url string, param web.Param) {
+func (c *Client) SignParam(credentials *Credentials, method, url string, param web.Values) {
 	param.Set("oauth_consumer_key", c.Credentials.Token)
 	param.Set("oauth_signature_method", "HMAC-SHA1")
 	param.Set("oauth_timestamp", strconv.Itoa64(time.Seconds()))
@@ -227,7 +227,7 @@ func (c *Client) SignParam(credentials *Credentials, method, url string, param w
 	param.Set("oauth_signature", signature(&c.Credentials, credentials, method, url, param))
 }
 
-func (c *Client) request(credentials *Credentials, url string, param web.Param) (*Credentials, web.Param, os.Error) {
+func (c *Client) request(credentials *Credentials, url string, param web.Values) (*Credentials, web.Values, os.Error) {
 	c.SignParam(credentials, "POST", url, param)
 	resp, err := http.PostForm(url, param.StringMap())
 	if err != nil {
@@ -241,7 +241,7 @@ func (c *Client) request(credentials *Credentials, url string, param web.Param) 
 	if resp.StatusCode != 200 {
 		return nil, nil, os.NewError(fmt.Sprintf("OAuth server status %d, %s", resp.StatusCode, string(p)))
 	}
-	m := make(web.Param)
+	m := make(web.Values)
 	err = m.ParseFormEncodedBytes(p)
 	if err != nil {
 		return nil, nil, err
@@ -258,7 +258,7 @@ func (c *Client) request(credentials *Credentials, url string, param web.Param) 
 
 // RequestTemporaryCredentials requests temporary credentials from the server.
 func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, os.Error) {
-	m := make(web.Param)
+	m := make(web.Values)
 	if callbackURL != "" {
 		m.Set("oauth_callback", callbackURL)
 	}
@@ -268,7 +268,7 @@ func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, 
 
 // RequestToken requests token credentials from the server. 
 func (c *Client) RequestToken(temporaryCredentials *Credentials, verifier string) (*Credentials, map[string]string, os.Error) {
-	m := make(web.Param)
+	m := make(web.Values)
 	if verifier != "" {
 		m.Set("oauth_verifier", verifier)
 	}

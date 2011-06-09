@@ -35,7 +35,7 @@ var appID string
 var appSecret string
 
 // getUrlEncodedForm fetches a URL and decodes the response body as a URL encoded form.
-func getUrlEncodedForm(url string, param web.Param) (web.Param, os.Error) {
+func getUrlEncodedForm(url string, param web.Values) (web.Values, os.Error) {
 	if param != nil {
 		url = url + "?" + param.FormEncodedString()
 	}
@@ -51,7 +51,7 @@ func getUrlEncodedForm(url string, param web.Param) (web.Param, os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	m := make(web.Param)
+	m := make(web.Values)
 	err = m.ParseFormEncodedBytes(p)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func getUrlEncodedForm(url string, param web.Param) (web.Param, os.Error) {
 }
 
 // getJSON fetches a URL and decodes the response body as JSON.
-func getJSON(url string, param web.Param) (interface{}, os.Error) {
+func getJSON(url string, param web.Values) (interface{}, os.Error) {
 	if param != nil {
 		url = url + "?" + param.FormEncodedString()
 	}
@@ -96,8 +96,9 @@ func accessToken(req *web.Request) (string, os.Error) {
 
 // loginHandler redirects to Facebook OAuth2 authorization page.
 func loginHandler(req *web.Request) {
-	m := web.NewParam(
+	m := web.NewValues(
 		"client_id", appID, // defined in settings.go
+		"scope", "read_stream",
 		"redirect_uri", req.URL.Scheme+"://"+req.URL.Host+"/callback")
 	req.Redirect("https://graph.facebook.com/oauth/authorize?"+m.FormEncodedString(), false)
 }
@@ -117,7 +118,7 @@ func authCallbackHandler(req *web.Request) {
 		return
 	}
 	f, err := getUrlEncodedForm("https://graph.facebook.com/oauth/access_token",
-		web.NewParam(
+		web.NewValues(
 			"client_id", appID, // defined in settings.go
 			"client_secret", appSecret, // defined in settings.go
 			"redirect_uri", req.URL.Scheme+"://"+req.URL.Host+"/callback",
@@ -154,8 +155,7 @@ func homeHandler(req *web.Request) {
 		loggedOutHandler(req)
 		return
 	}
-	feed, err := getJSON("https://graph.facebook.com/me/home",
-		web.NewParam("access_token", token))
+	feed, err := getJSON("https://graph.facebook.com/me/home", web.NewValues("access_token", token))
 	if err != nil {
 		req.Error(web.StatusInternalServerError, err,
 			web.HeaderSetCookie, web.NewCookie("fbtok", "").Delete().String())
