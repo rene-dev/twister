@@ -166,8 +166,26 @@ var serverTests = []struct {
 		readAll: true,
 	},
 	{
+		// POST with chunked body
+		in:      "POST /?cl=5 HTTP/1.1\r\nTransfer-Encoding: chunked\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n7\r\nw=Hello\r\n0\r\n\r\n",
+		out:     "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		readAll: true,
+	},
+	{
+		// POST with very chunky body
+		in:      "POST /?cl=5 HTTP/1.1\r\nTransfer-Encoding: chunked\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\n1\r\nw\r\n1\r\n=\r\n5\r\nHello\r\n0\r\n\r\n",
+		out:     "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		readAll: true,
+	},
+	{
 		// POST with expect
 		in:      "POST /?cl=5 HTTP/1.1\r\nContent-Length: 7\r\nContent-Type: application/x-www-form-urlencoded\r\nExpect: 100-continue\r\n\r\nw=Hello",
+		out:     "HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
+		readAll: true,
+	},
+	{
+		// POST with expect and chunked body
+		in:      "POST /?cl=5 HTTP/1.1\r\nTransfer-Encoding: chunked\r\nContent-Type: application/x-www-form-urlencoded\r\nExpect: 100-continue\r\n\r\n7\r\nw=Hello\r\n0\r\n\r\n",
 		out:     "HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello",
 		readAll: true,
 	},

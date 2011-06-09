@@ -81,12 +81,14 @@ type transaction struct {
 	conn               net.Conn
 	br                 *bufio.Reader
 	responseBody       responseBody
-	chunked            bool
+	chunkedResponse    bool
+	chunkedRequest     bool
 	closeAfterResponse bool
 	hijacked           bool
 	req                *web.Request
 	requestAvail       int
 	requestErr         os.Error
+	requestConsumed    bool
 	respondCalled      bool
 	responseErr        os.Error
 	write100Continue   bool
@@ -168,11 +170,6 @@ func (t *transaction) prepare() (err os.Error) {
 	}
 	t.req = req
 
-	t.requestAvail = req.ContentLength
-	if t.requestAvail < 0 {
-		t.requestAvail = 0
-	}
-
 	if s := req.Header.Get(web.HeaderExpect); s != "" {
 		t.write100Continue = strings.ToLower(s) == "100-continue"
 	}
@@ -187,37 +184,139 @@ func (t *transaction) prepare() (err os.Error) {
 	}
 
 	req.Responder = t
-	req.Body = requestReader{t}
+
+	te := header.GetList(web.HeaderTransferEncoding)
+	chunked := len(te) > 0 && te[0] == "chunked"
+
+	switch {
+	case req.Method == "GET" || req.Method == "HEAD":
+		req.Body = identityReader{t}
+		t.requestConsumed = true
+	case chunked:
+		req.Body = chunkedReader{t}
+	case req.ContentLength >= 0:
+		req.Body = chunkedReader{t}
+		t.requestAvail = req.ContentLength
+		t.requestConsumed = req.ContentLength == 0
+	default:
+		req.Body = identityReader{t}
+		t.closeAfterResponse = true
+	}
+
 	return nil
 }
 
-type requestReader struct {
-	*transaction
-}
-
-func (t requestReader) Read(p []byte) (int, os.Error) {
+func (t *transaction) checkRead() os.Error {
 	if t.requestErr != nil {
 		if t.requestErr == web.ErrInvalidState {
 			log.Println("twister: Request Read after response started.")
 		}
-		return 0, t.requestErr
+		return t.requestErr
 	}
 	if t.write100Continue {
 		t.write100Continue = false
 		io.WriteString(t.conn, "HTTP/1.1 100 Continue\r\n\r\n")
+	}
+	return nil
+}
+
+type identityReader struct{ *transaction }
+
+func (t identityReader) Read(p []byte) (int, os.Error) {
+	if err := t.checkRead(); err != nil {
+		return 0, err
 	}
 	if t.requestAvail <= 0 {
 		t.requestErr = os.EOF
 		return 0, t.requestErr
 	}
 	if len(p) > t.requestAvail {
-		p = p[0:t.requestAvail]
+		p = p[:t.requestAvail]
 	}
 	var n int
 	n, t.requestErr = t.br.Read(p)
 	t.requestAvail -= n
+	if t.requestAvail == 0 {
+		t.requestConsumed = true
+	}
 	return n, t.requestErr
 }
+
+type chunkedReader struct{ *transaction }
+
+func (t chunkedReader) Read(p []byte) (n int, err os.Error) {
+	if err = t.checkRead(); err != nil {
+		return 0, err
+	}
+	if t.requestAvail == 0 {
+		// We delay reading the first chunk length to this point to ensure that
+		// we don't read the body until 100-continue is send (if needed).
+		t.requestAvail, t.requestErr = readChunkFraming(t.br, true)
+		if t.requestErr != nil {
+			return 0, t.requestErr
+			if t.requestErr == os.EOF {
+				t.requestConsumed = true
+			}
+		}
+	}
+	if len(p) > t.requestAvail {
+		p = p[:t.requestAvail]
+	}
+	n, err = t.br.Read(p)
+	t.requestErr = err
+	t.requestAvail -= n
+	if err == nil && t.requestAvail == 0 {
+		// We read the next chunk length here to ensure that the entire request
+		// body encoding is consumed in case where the application reads
+		// exactly the number of bytes in the decoded body.
+		t.requestAvail, t.requestErr = readChunkFraming(t.br, false)
+		if t.requestErr == os.EOF {
+			t.requestConsumed = true
+		}
+	}
+	return n, err
+}
+
+func readChunkFraming(br *bufio.Reader, first bool) (int, os.Error) {
+	if !first {
+		// trailer from previous chunk
+		p := make([]byte, 2)
+		if _, err := io.ReadFull(br, p); err != nil {
+			return 0, err
+		}
+		if p[0] != '\r' && p[1] != '\n' {
+			return 0, os.NewError("twister: bad chunked format")
+		}
+	}
+
+	line, isPrefix, err := br.ReadLine()
+	if err != nil {
+		return 0, err
+	}
+	if isPrefix {
+		return 0, os.NewError("twister: bad chunked format")
+	}
+	n, err := strconv.Btoui64(string(line), 16)
+	if err != nil {
+		return 0, err
+	}
+	if n == 0 {
+		for {
+			line, isPrefix, err = br.ReadLine()
+			if err != nil {
+				return 0, err
+			}
+			if isPrefix {
+				return 0, os.NewError("twister: bad chunked format")
+			}
+			if len(line) == 0 {
+				return 0, os.EOF
+			}
+		}
+	}
+	return int(n), nil
+}
+
 
 func (t *transaction) Respond(status int, header web.Header) (body io.Writer) {
 	if t.hijacked {
@@ -238,34 +337,34 @@ func (t *transaction) Respond(status int, header web.Header) (body io.Writer) {
 		header[web.HeaderTransferEncoding] = nil, false
 	}
 
-	if t.requestAvail > 0 {
+	if !t.requestConsumed {
 		t.closeAfterResponse = true
 	}
 
-	t.chunked = true
+	t.chunkedResponse = true
 	contentLength := -1
 
 	if status == web.StatusNotModified {
 		header[web.HeaderContentType] = nil, false
 		header[web.HeaderContentLength] = nil, false
-		t.chunked = false
+		t.chunkedResponse = false
 	} else if s := header.Get(web.HeaderContentLength); s != "" {
 		contentLength, _ = strconv.Atoi(s)
-		t.chunked = false
+		t.chunkedResponse = false
 	} else if t.req.ProtocolVersion < web.ProtocolVersion(1, 1) {
 		t.closeAfterResponse = true
 	}
 
 	if t.closeAfterResponse {
 		header.Set(web.HeaderConnection, "close")
-		t.chunked = false
+		t.chunkedResponse = false
 	}
 
 	if t.req.Method == "HEAD" {
-		t.chunked = false
+		t.chunkedResponse = false
 	}
 
-	if t.chunked {
+	if t.chunkedResponse {
 		header.Set(web.HeaderTransferEncoding, "chunked")
 	}
 
@@ -290,7 +389,7 @@ func (t *transaction) Respond(status int, header web.Header) (body io.Writer) {
 	switch {
 	case t.req.Method == "HEAD":
 		t.responseBody, _ = newNullResponseBody(t.conn, b.Bytes())
-	case t.chunked:
+	case t.chunkedResponse:
 		t.responseBody, _ = newChunkedResponseBody(t.conn, b.Bytes(), bufferSize)
 	default:
 		t.responseBody, _ = newIdentityResponseBody(t.conn, b.Bytes(), bufferSize, contentLength)
