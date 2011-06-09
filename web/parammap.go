@@ -21,7 +21,7 @@ import (
 )
 
 // ParamMap maps parameter names to slices of paramete values.
-type ParamMap map[string][]string
+type ParamMap http.Values
 
 // NewParamMap returns a map initialized with the given key-value pairs.
 func NewParamMap(kvs ...string) ParamMap {
@@ -56,10 +56,10 @@ func (m ParamMap) Set(key string, value string) {
 
 // StringMap returns a string to string map by discarding all but the first
 // value for a key. 
-func (m ParamMap) StringMap() map[string]string {
-	result := make(map[string]string)
+func (m ParamMap) StringMap() http.Values {
+	result := make(http.Values)
 	for key, values := range m {
-		result[key] = values[0]
+		result.Add(key,values[0])
 	}
 	return result
 }

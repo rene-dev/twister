@@ -226,6 +226,15 @@ func (c *Client) SignParam(credentials *Credentials, method, url string, param w
 	}
 	param.Set("oauth_signature", signature(&c.Credentials, credentials, method, url, param))
 }
+///////////////////////////////
+//func postTweet(token *oauth.Credentials, url string, opt map[string]string) os.Error {
+//	param := make(web.ParamMap)
+//	for k, v := range opt {
+//		param.Set(k, v)
+//	}
+//	oauthClient.SignParam(token, "POST", url, param)
+//	res, err := http.PostForm(url, param.StringMap())
+///////////////////////////////
 
 func (c *Client) request(credentials *Credentials, url string, param web.ParamMap) (*Credentials, web.ParamMap, os.Error) {
 	c.SignParam(credentials, "POST", url, param)
@@ -267,7 +276,7 @@ func (c *Client) RequestTemporaryCredentials(callbackURL string) (*Credentials, 
 }
 
 // RequestToken requests token credentials from the server. 
-func (c *Client) RequestToken(temporaryCredentials *Credentials, verifier string) (*Credentials, map[string]string, os.Error) {
+func (c *Client) RequestToken(temporaryCredentials *Credentials, verifier string) (*Credentials, http.Values, os.Error) {
 	m := make(web.ParamMap)
 	if verifier != "" {
 		m.Set("oauth_verifier", verifier)
